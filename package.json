@@ -1,0 +1,22 @@
+{
+  "name": "financial-budgeting-copilot",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AI_SS_02 — Financial & Budgeting Copilot · interactive demo (MoMRAH / Agency for Financial Affairs and Budget). One multi-agent platform: conversational analysis, monitoring & early-warning, and two end-to-end financial journeys (budget execution, claims & disbursement) — every AI output is a draft pending human approval.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "standalone": "node scripts/build-standalone.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  }
+}

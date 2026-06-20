@@ -1,0 +1,1420 @@
+import React, { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
+import * as RC from "recharts";
+
+/* =========================================================================
+   Financial & Budgeting Copilot (AI_SS_02) — interactive demo.
+   MoMRAH · Agency for Financial Affairs and Budget.
+   One multi-agent platform with connected agentic journeys + the UC-06
+   Financial Performance Analysis report builder (4 steps).
+   Trilingual: Arabic (RTL) · English · 中文 (?ln=zh / ?ln=en / ?ln=ar).
+   Every AI output is a DRAFT — nothing is a financial decision until approved.
+   All figures are synthetic demo data (BRD V0.1).
+   ========================================================================= */
+const BUILD_TIME = (typeof BUILD_STAMP !== "undefined" && BUILD_STAMP) ? BUILD_STAMP : "@@BUILD@@";
+const LANGS = ["ar", "en", "zh"];
+const URL_LANG = (() => { try { const p = new URLSearchParams(window.location.search).get("ln"); return LANGS.indexOf(p) >= 0 ? p : null; } catch (e) { return null; } })();
+
+/* ---- Agents (engines) & data sources ---- */
+const ENGINES = [
+  { key: "orch", icon: "✦", lvl: "L1" },
+  { key: "consol", icon: "⛁", lvl: "L1" },
+  { key: "deviation", icon: "◉", lvl: "L2" },
+  { key: "forecast", icon: "📈", lvl: "L3" },
+  { key: "close", icon: "⇄", lvl: "L3" },
+  { key: "comply", icon: "🛡", lvl: "L3" },
+];
+const SOURCES11 = [
+  { key: "sap", status: "ok", sla: "daily", fresh: 99 }, { key: "etimad", status: "ok", sla: "daily", fresh: 97 },
+  { key: "esnad", status: "ok", sla: "daily", fresh: 95 }, { key: "grp", status: "ok", sla: "daily", fresh: 96 },
+  { key: "tahseel", status: "amber", sla: "weekly", fresh: 78 }, { key: "makeen", status: "ok", sla: "weekly", fresh: 92 },
+  { key: "efaa", status: "ok", sla: "weekly", fresh: 90 }, { key: "sanad", status: "ok", sla: "weekly", fresh: 91 },
+  { key: "balady", status: "ok", sla: "daily", fresh: 94 }, { key: "gl", status: "ok", sla: "daily", fresh: 98 },
+  { key: "bi", status: "ok", sla: "daily", fresh: 93 },
+];
+
+/* ---- hub charts ---- */
+const UTIL_BY_AMANA = [
+  { k: "RUH", v: 78 }, { k: "JED", v: 91 }, { k: "MAK", v: 63 },
+  { k: "EAS", v: 69 }, { k: "MED", v: 54 }, { k: "ASR", v: 47 },
+];
+
+/* ---- alerts / deviations ---- */
+const ALERTS = [
+  { id: "DV-2041", sev: "red", src: "SAP · UC-02", scn: "q_overrun",
+    t: { en: "Jeddah Amana · operating budget at 91% — projected overrun", ar: "أمانة جدة · تنفيذ تشغيلي 91٪ — تجاوز متوقع", zh: "吉达阿玛纳 · 运营预算执行 91%——预计超支" },
+    rc: { en: "Execution outpaced the payment plan; projected SAR 96M overrun by year-end.", ar: "تجاوز التنفيذ خطة الدفع؛ تجاوز متوقع 96 مليون ريال بنهاية العام.", zh: "执行进度超过付款计划；预计年底超支 9,600 万里亚尔。" } },
+  { id: "DV-2044", sev: "red", src: "Etimad · UC-02", scn: "q_duplicate",
+    t: { en: "Suspected duplicate invoice · vendor 700412", ar: "اشتباه فاتورة مكررة · المورّد 700412", zh: "疑似重复发票 · 供应商 700412" },
+    rc: { en: "Two claims of SAR 1.84M filed 6 days apart against contract CT-5520.", ar: "مطالبتان بقيمة 1.84 مليون ريال بفارق 6 أيام على العقد CT-5520.", zh: "针对合同 CT-5520，6 天内提交两笔各 184 万里亚尔的索赔。" } },
+  { id: "DV-2050", sev: "amber", src: "Tahseel · UC-13", scn: "q_collection",
+    t: { en: "Collection gap widened · Asir Amana", ar: "اتساع فجوة التحصيل · أمانة عسير", zh: "征收缺口扩大 · 阿西尔阿玛纳" },
+    rc: { en: "Billing-vs-collection variance reached 14% (> 10% threshold).", ar: "بلغ الفرق بين الفوترة والتحصيل 14٪ (يتجاوز حد 10٪).", zh: "开票与征收差异达 14%(超过 10% 阈值)。" } },
+  { id: "DV-2053", sev: "amber", src: "SAP · UC-09", scn: null,
+    t: { en: "Abnormal trial-balance entry · account 2310", ar: "رصيد غير اعتيادي في ميزان المراجعة · الحساب 2310", zh: "试算平衡异常分录 · 科目 2310" },
+    rc: { en: "Accrued-liabilities balance deviates from the 6-month pattern.", ar: "رصيد الالتزامات المستحقة ينحرف عن نمط 6 أشهر.", zh: "应计负债余额偏离过去 6 个月的模式。" } },
+  { id: "DV-2057", sev: "info", src: "Esnad · UC-08", scn: null,
+    t: { en: "Dormant contract · CT-8841 (92 days no activity)", ar: "عقد خامل · CT-8841 (92 يوماً دون حركة)", zh: "休眠合同 · CT-8841(92 天无活动)" },
+    rc: { en: "No disbursement activity for 92 days — candidate for release.", ar: "لا حركة صرف منذ 92 يوماً — مرشح للإفراج عن المخصص.", zh: "92 天无支付活动——可考虑释放预算。" } },
+];
+
+/* ---- Assistant scenarios (scripted) ---- */
+const SCN = {
+  q_fiscal: { type: "single", engines: ["orch", "consol", "forecast"],
+    steps: [["orch", "think_intent"], ["consol", "think_route"], ["forecast", "think_run"], ["orch", "think_compose"]],
+    a: { en: "Riyadh Region Amana has SAR 1.21B of available fiscal space: an approved ceiling of SAR 1.60B less SAR 0.31B commitments and SAR 0.08B reservations. Utilization is 78%.",
+         ar: "يبلغ الحيز المالي المتاح لأمانة منطقة الرياض 1.21 مليار ريال: سقف معتمد 1.60 مليار ريال مخصوماً منه 0.31 مليار التزامات و0.08 مليار حجوزات. ونسبة التنفيذ 78٪.",
+         zh: "利雅得地区阿玛纳的可用财政空间为 12.1 亿里亚尔:核定上限 16.0 亿里亚尔,扣除 3.1 亿承诺与 0.8 亿预留。执行率 78%。" },
+    conf: 90, srcs: ["src_sap", "src_etimad", "src_gl"], viz: "util", report: "rep_fiscal" },
+  q_overrun: { type: "cross", engines: ["orch", "deviation", "forecast"],
+    steps: [["orch", "think_intent"], ["deviation", "think_run"], ["forecast", "think_run"], ["orch", "think_compose"]],
+    a: { en: "Jeddah Governorate Amana is the main risk: 91% operating-budget utilization with a projected SAR 96M overrun by year-end. A reallocation of SAR 120M from Asir under-execution is recommended — open the Budget Execution journey to review and approve it.",
+         ar: "أمانة محافظة جدة هي الخطر الأبرز: 91٪ تنفيذ تشغيلي مع تجاوز متوقع 96 مليون ريال بنهاية العام. ويُوصى بإعادة توزيع 120 مليون ريال من نقص تنفيذ عسير — افتح مسار تنفيذ الميزانية للمراجعة والاعتماد.",
+         zh: "吉达省阿玛纳是主要风险:运营预算执行率 91%,预计年底超支 9,600 万里亚尔。建议从阿西尔的执行不足中调拨 1.2 亿里亚尔——请打开「预算执行」流程进行复核与审批。" },
+    conf: 87, srcs: ["src_sap", "src_etimad"], viz: "util", report: "rep_overrun", red: true,
+    actions: [{ lk: "act_open_budget", to: "budget" }] },
+  q_duplicate: { type: "cross", engines: ["orch", "deviation", "comply"],
+    steps: [["orch", "think_intent"], ["deviation", "think_run"], ["comply", "think_run"], ["orch", "think_compose"]],
+    a: { en: "One suspected duplicate this month: vendor 700412 filed INV-55021 and INV-55088 (each SAR 1.84M) 6 days apart against contract CT-5520. The Audit Agent recommends blocking INV-55021. This is a draft pending your approval — open the Claims & Disbursement journey to act.",
+         ar: "تكرار واحد مشتبه به هذا الشهر: قدّم المورّد 700412 الفاتورتين INV-55021 وINV-55088 (كل منهما 1.84 مليون ريال) بفارق 6 أيام على العقد CT-5520. ويوصي وكيل التدقيق بحجب INV-55021. وهذه مسودة بانتظار اعتمادك — افتح مسار المطالبات والصرف.",
+         zh: "本月有一笔疑似重复:供应商 700412 针对合同 CT-5520,6 天内提交了 INV-55021 与 INV-55088(各 184 万里亚尔)。审计智能体建议拦截 INV-55021。此为待您审批的草稿——请打开「索赔与支付」流程处理。" },
+    conf: 94, srcs: ["src_etimad", "src_esnad"], report: "rep_dup", red: true,
+    actions: [{ lk: "act_open_claims", to: "claims" }] },
+  q_collection: { type: "single", engines: ["orch", "consol", "deviation"],
+    steps: [["orch", "think_intent"], ["consol", "think_route"], ["deviation", "think_run"], ["orch", "think_compose"]],
+    a: { en: "The overall collection rate is 88.6%, up 1.4 points month-on-month. The widest gap is Asir Amana, where billing-vs-collection variance reached 14% and raised an early-warning alert.",
+         ar: "بلغت نسبة التحصيل الإجمالية 88.6٪، بارتفاع 1.4 نقطة شهرياً. وأكبر فجوة في أمانة عسير حيث بلغ الفرق بين الفوترة والتحصيل 14٪ وأطلق تنبيهاً مبكراً.",
+         zh: "整体征收率为 88.6%,环比上升 1.4 个百分点。最大缺口在阿西尔阿玛纳,开票与征收差异达 14%,已触发预警。" },
+    conf: 89, srcs: ["src_tahseel", "src_makeen"], report: "rep_collect" },
+  q_vague: { type: "escalate", engines: ["orch"],
+    steps: [["orch", "think_intent"], ["orch", "think_perm"]],
+    a: { en: "I can't answer that. The request falls outside your permission scope and the platform is read-only for sensitive vendor and beneficiary records. I can instead provide aggregated, source-backed financial analytics.",
+         ar: "لا أستطيع الإجابة على ذلك. يقع الطلب خارج نطاق صلاحياتك، والمنصة للقراءة فقط فيما يخص بيانات الموردين والمستفيدين الحساسة. ويمكنني بدلاً من ذلك تقديم تحليلات مالية مجمّعة ومدعومة بالمصادر.",
+         zh: "我无法回答该请求。它超出了您的权限范围,且平台对敏感的供应商与受益人记录仅为只读。我可以改为提供聚合的、有数据来源支撑的财务分析。" },
+    conf: null, srcs: [] },
+};
+const PRESETS = ["q_fiscal", "q_overrun", "q_duplicate", "q_collection", "q_vague"];
+
+/* ---- Storyline G-03 (budget execution) ---- */
+const STORY_BUDGET = {
+  key: "budget",
+  nodes: [
+    { k: "consol", uc: "UC-01", kind: "data", icon: "⛁",
+      title: { en: "Consolidate source data", ar: "تجميع بيانات المصدر", zh: "汇聚源数据" },
+      actor: { en: "System / Orchestrator", ar: "النظام / المنسّق", zh: "系统 / 编排器" },
+      desc: { en: "Pull approved ceilings, commitments and payment plans from SAP, Etimad and GRP; standardize and validate.", ar: "سحب السقوف والالتزامات وخطط الدفع المعتمدة من ساب واعتماد وGRP؛ ثم التوحيد والتحقق.", zh: "从 SAP、Etimad 和 GRP 拉取核定上限、承诺与付款计划;标准化并校验。" },
+      out: { en: "Standardized, validated budget dataset — 6 Amanas, FY2026.", ar: "مجموعة بيانات ميزانية موحّدة ومتحقق منها — 6 أمانات، 2026.", zh: "标准化、已校验的预算数据集——6 个阿玛纳,2026 财年。" },
+      metric: { en: "6 Amanas", ar: "6 أمانات", zh: "6 个阿玛纳" } },
+    { k: "deviation", uc: "UC-02", kind: "agent", icon: "◉",
+      title: { en: "Deviation & execution scan", ar: "فحص الانحرافات والتنفيذ", zh: "偏差与执行扫描" },
+      actor: { en: "Deviation Agent", ar: "وكيل الانحرافات", zh: "偏差智能体" },
+      desc: { en: "Compare actual execution against ceilings and payment plans across departments.", ar: "مقارنة التنفيذ الفعلي بالسقوف وخطط الدفع عبر الإدارات.", zh: "将各部门的实际执行与上限和付款计划进行比对。" },
+      table: { cols: { en: ["Amana", "Utilization", "Status"], ar: ["الأمانة", "نسبة التنفيذ", "الحالة"], zh: ["阿玛纳", "执行率", "状态"] },
+        rows: [{ a: "Jeddah", v: "91%", f: "red" }, { a: "Riyadh", v: "78%", f: "amber" }, { a: "Asir", v: "47%", f: "info" }] },
+      out: { en: "1 high-risk overrun (Jeddah), 1 under-execution (Asir).", ar: "تجاوز عالي الخطورة (جدة)، ونقص تنفيذ (عسير).", zh: "1 项高风险超支(吉达),1 项执行不足(阿西尔)。" },
+      metric: { en: "1 RED", ar: "إنذار أحمر", zh: "1 个红色" } },
+    { k: "fiscal", uc: "UC-07", kind: "fiscal", icon: "∑",
+      title: { en: "Recompute fiscal space", ar: "إعادة حساب الحيز المالي", zh: "重新计算财政空间" },
+      actor: { en: "Budget Planning Agent", ar: "وكيل تخطيط الميزانية", zh: "预算规划智能体" },
+      desc: { en: "Fiscal space = approved ceiling − commitments − payment plan − reservations.", ar: "الحيز المالي = السقف المعتمد − الالتزامات − خطة الدفع − الحجوزات.", zh: "财政空间 = 核定上限 − 承诺 − 付款计划 − 预留。" },
+      fiscal: { ceiling: 6.40, commit: 0.98, plan: 0.42, reserve: 0.18, space: 4.82 },
+      out: { en: "Available fiscal space recalculated to SAR 4.82B.", ar: "إعادة حساب الحيز المالي المتاح إلى 4.82 مليار ريال.", zh: "可用财政空间重新计算为 48.2 亿里亚尔。" },
+      metric: { en: "SAR 4.82B", ar: "4.82 مليار", zh: "48.2 亿" } },
+    { k: "realloc", uc: "UC-08", kind: "review", icon: "✦",
+      title: { en: "AI reallocation recommendation", ar: "توصية إعادة التوزيع", zh: "AI 调拨建议" },
+      actor: { en: "Reallocation Agent → Human reviewer", ar: "وكيل إعادة التوزيع ← المراجع البشري", zh: "调拨智能体 → 人工复核" },
+      desc: { en: "Within approved ceilings, the agent proposes a transfer to cover the Jeddah overrun from under-executed budgets.", ar: "ضمن السقوف المعتمدة، يقترح الوكيل مناقلة لتغطية تجاوز جدة من ميزانيات منخفضة التنفيذ.", zh: "在核定上限内,智能体建议从执行不足的预算中调拨以弥补吉达的超支。" },
+      review: {
+        headline: { en: "Reallocate SAR 120M from Asir under-execution to Jeddah operating budget.", ar: "إعادة توزيع 120 مليون ريال من نقص تنفيذ عسير إلى الميزانية التشغيلية لجدة.", zh: "从阿西尔执行不足中调拨 1.2 亿里亚尔至吉达运营预算。" },
+        conf: 82,
+        why: { en: "Asir is at 47% utilization with SAR 210M unspent and no committed pipeline this quarter, while Jeddah is projected to overrun by SAR 96M. The transfer stays within the regional operating ceiling and approved transfer rule BT-07.", ar: "عسير عند 47٪ تنفيذ مع 210 مليون ريال غير مصروفة ودون التزامات هذا الربع، بينما يُتوقع تجاوز جدة بمقدار 96 مليون ريال. وتبقى المناقلة ضمن السقف التشغيلي للمنطقة وقاعدة المناقلة المعتمدة BT-07.", zh: "阿西尔执行率 47%,本季度有 2.1 亿里亚尔未支出且无承诺管线,而吉达预计超支 9,600 万里亚尔。该调拨仍在地区运营上限及核定调拨规则 BT-07 之内。" },
+        srcs: ["SAP · GL 5100", "Etimad", "Rule BT-07"],
+        approveLog: { en: "Approved reallocation SAR 120M Asir → Jeddah (UC-08)", ar: "اعتماد إعادة توزيع 120 مليون ريال من عسير إلى جدة (UC-08)", zh: "已批准调拨 1.2 亿里亚尔 阿西尔 → 吉达(UC-08)" } },
+      out: { en: "Transfer recorded; Jeddah projected overrun cleared.", ar: "تسجيل المناقلة؛ معالجة تجاوز جدة المتوقع.", zh: "已记录调拨;吉达的预计超支已化解。" },
+      metric: { en: "needs approval", ar: "يلزم اعتماد", zh: "需审批" } },
+    { k: "report", uc: "UC-10", kind: "report", icon: "📄",
+      title: { en: "Budget execution report", ar: "تقرير تنفيذ الميزانية", zh: "预算执行报告" },
+      actor: { en: "Reporting Agent → Human approval", ar: "وكيل التقارير ← اعتماد بشري", zh: "报告智能体 → 人工审批" },
+      desc: { en: "Generate a narrative report with the deviation, the recalculated fiscal space and the approved reallocation.", ar: "إنشاء تقرير سردي يتضمن الانحراف والحيز المالي المعاد حسابه والمناقلة المعتمدة.", zh: "生成包含偏差、重算财政空间与已批准调拨的叙述性报告。" },
+      report: {
+        title: { en: "Q2 Budget Execution — Jeddah / Asir", ar: "تنفيذ ميزانية الربع الثاني — جدة / عسير", zh: "二季度预算执行——吉达 / 阿西尔" },
+        narrative: { en: "Q2 budget execution stands at 71.4% overall. Jeddah Amana reached 91% utilization, triggering a projected SAR 96M overrun; an approved transfer of SAR 120M from Asir under-execution restored balance within the regional ceiling. Available fiscal space stands at SAR 4.82B. All figures are traceable to SAP and Etimad source records.", ar: "بلغ تنفيذ ميزانية الربع الثاني 71.4٪ إجمالاً. وصلت أمانة جدة إلى 91٪، ما تسبب بتجاوز متوقع 96 مليون ريال؛ وأعادت مناقلة معتمدة بقيمة 120 مليون ريال من نقص تنفيذ عسير التوازن ضمن سقف المنطقة. ويبلغ الحيز المالي المتاح 4.82 مليار ريال. وجميع الأرقام قابلة للتتبع إلى سجلات ساب واعتماد.", zh: "二季度预算整体执行率为 71.4%。吉达阿玛纳达到 91%,引发预计 9,600 万里亚尔超支;一笔从阿西尔执行不足中调拨的 1.2 亿里亚尔(已批准)在地区上限内恢复了平衡。可用财政空间为 48.2 亿里亚尔。所有数字均可追溯至 SAP 与 Etimad 源记录。" },
+        rows: [
+          { l: { en: "Overall utilization", ar: "نسبة التنفيذ الإجمالية", zh: "整体执行率" }, v: "71.4%" },
+          { l: { en: "Reallocation approved", ar: "المناقلة المعتمدة", zh: "已批准调拨" }, v: "SAR 120M" },
+          { l: { en: "Fiscal space", ar: "الحيز المالي", zh: "财政空间" }, v: "SAR 4.82B" }] },
+      out: { en: "Report ready for the General Budget Department.", ar: "التقرير جاهز للإدارة العامة للميزانية.", zh: "报告已就绪,提交给预算总局。" },
+      metric: { en: "PDF ready", ar: "جاهز PDF", zh: "PDF 就绪" } },
+  ],
+};
+
+/* ---- Storyline G-04 (claims & disbursement) ---- */
+const STORY_CLAIMS = {
+  key: "claims",
+  nodes: [
+    { k: "consol", uc: "UC-01", kind: "data", icon: "⛁",
+      title: { en: "Ingest claim & contract", ar: "استلام المطالبة والعقد", zh: "接收索赔与合同" },
+      actor: { en: "System / Orchestrator", ar: "النظام / المنسّق", zh: "系统 / 编排器" },
+      desc: { en: "Claim CL-77310 received via Etimad, linked to contract CT-5520 and its disbursement plan.", ar: "استلام المطالبة CL-77310 عبر اعتماد، مرتبطة بالعقد CT-5520 وخطة صرفه.", zh: "通过 Etimad 接收索赔 CL-77310,关联合同 CT-5520 及其支付计划。" },
+      out: { en: "Claim SAR 1.84M linked to contract CT-5520 (ceiling SAR 9.0M).", ar: "ربط مطالبة بقيمة 1.84 مليون ريال بالعقد CT-5520 (سقف 9.0 مليون ريال).", zh: "184 万里亚尔索赔关联至合同 CT-5520(上限 900 万里亚尔)。" },
+      metric: { en: "CL-77310", ar: "CL-77310", zh: "CL-77310" } },
+    { k: "deviation", uc: "UC-02", kind: "agent", icon: "◉",
+      title: { en: "Audit & duplicate detection", ar: "التدقيق وكشف التكرار", zh: "审计与重复检测" },
+      actor: { en: "Audit Agent", ar: "وكيل التدقيق", zh: "审计智能体" },
+      desc: { en: "Run completeness checks and scan for duplicate invoices and contract overruns.", ar: "تشغيل فحوص الاكتمال والبحث عن الفواتير المكررة وتجاوزات العقد.", zh: "运行完整性检查,扫描重复发票与合同超支。" },
+      table: { cols: { en: ["Check", "Result"], ar: ["الفحص", "النتيجة"], zh: ["检查", "结果"] },
+        rows: [{ a: { en: "Completeness", ar: "الاكتمال", zh: "完整性" }, v: { en: "Pass", ar: "مجتاز", zh: "通过" }, f: "info" },
+               { a: { en: "Duplicate invoice", ar: "فاتورة مكررة", zh: "重复发票" }, v: { en: "Match found", ar: "تطابق", zh: "发现匹配" }, f: "red" },
+               { a: { en: "Contract ceiling", ar: "سقف العقد", zh: "合同上限" }, v: { en: "Within limit", ar: "ضمن الحد", zh: "在限额内" }, f: "info" }] },
+      out: { en: "Potential duplicate of invoice INV-55021 (SAR 1.84M) detected.", ar: "اكتشاف تكرار محتمل للفاتورة INV-55021 (1.84 مليون ريال).", zh: "检测到发票 INV-55021(184 万里亚尔)可能重复。" },
+      metric: { en: "1 duplicate", ar: "تكرار واحد", zh: "1 笔重复" } },
+    { k: "comply", uc: "UC-11", kind: "fiscal", icon: "🛡",
+      title: { en: "Compliance verification (IPSAS)", ar: "التحقق من الامتثال (IPSAS)", zh: "合规校验(IPSAS)" },
+      actor: { en: "Compliance Agent", ar: "وكيل الامتثال", zh: "合规智能体" },
+      desc: { en: "Verify accrual treatment and supporting documents against IPSAS and ministry policy.", ar: "التحقق من المعالجة على أساس الاستحقاق والمستندات الداعمة وفق IPSAS وسياسات الوزارة.", zh: "依据 IPSAS 与部委政策核验权责发生制处理与支持文件。" },
+      fiscal: { ceiling: 9.00, commit: 6.20, plan: 1.84, reserve: 0, space: 0.96 },
+      out: { en: "Compliant — 1 note: attach completion certificate before payment.", ar: "مطابق — ملاحظة واحدة: إرفاق شهادة الإنجاز قبل الصرف.", zh: "合规——1 条提示:付款前需附竣工证书。" },
+      metric: { en: "Compliant", ar: "مطابق", zh: "合规" } },
+    { k: "disb", uc: "UC-08", kind: "review", icon: "✦",
+      title: { en: "AI disbursement recommendation", ar: "توصية الصرف", zh: "AI 支付建议" },
+      actor: { en: "Disbursement Agent → Human reviewer", ar: "وكيل الصرف ← المراجع البشري", zh: "支付智能体 → 人工复核" },
+      desc: { en: "Given the duplicate match, the agent recommends holding the duplicate and approving a single net payment.", ar: "نظراً للتطابق، يوصي الوكيل بإيقاف المكررة واعتماد دفعة صافية واحدة.", zh: "鉴于重复匹配,智能体建议拦截重复项并核准单笔净额付款。" },
+      review: {
+        headline: { en: "Reject duplicate INV-55021; issue one payment order of SAR 1.84M against CT-5520.", ar: "رفض الفاتورة المكررة INV-55021؛ وإصدار أمر صرف واحد بقيمة 1.84 مليون ريال على CT-5520.", zh: "拒绝重复发票 INV-55021;针对 CT-5520 开具一笔 184 万里亚尔的付款单。" },
+        conf: 94,
+        why: { en: "INV-55021 and INV-55088 share the same vendor, amount and line items, filed 6 days apart; only one matches a delivered milestone. Paying both would overrun the contract by SAR 1.84M.", ar: "تتشارك INV-55021 وINV-55088 المورّد ذاته والمبلغ والبنود، وقُدّمتا بفارق 6 أيام؛ وواحدة فقط تطابق مرحلة منجزة. ودفع كليهما يتجاوز العقد بمقدار 1.84 مليون ريال.", zh: "INV-55021 与 INV-55088 供应商、金额、明细相同,相隔 6 天提交;仅一笔匹配已交付里程碑。两笔均付将使合同超支 184 万里亚尔。" },
+        srcs: ["Etimad invoices", "CT-5520", "Esnad milestones"],
+        approveLog: { en: "Approved payment order SAR 1.84M; duplicate INV-55021 rejected (UC-08)", ar: "اعتماد أمر صرف 1.84 مليون ريال؛ ورفض المكررة INV-55021 (UC-08)", zh: "已核准付款单 184 万里亚尔;已拒绝重复项 INV-55021(UC-08)" } },
+      out: { en: "Payment order approved; duplicate blocked; SAP entry proposed.", ar: "اعتماد أمر الصرف؛ حجب المكررة؛ واقتراح قيد ساب.", zh: "已核准付款单;已拦截重复项;已建议 SAP 分录。" },
+      metric: { en: "needs approval", ar: "يلزم اعتماد", zh: "需审批" } },
+    { k: "report", uc: "UC-10", kind: "report", icon: "📄",
+      title: { en: "Disbursement summary", ar: "ملخص الصرف", zh: "支付摘要" },
+      actor: { en: "Reporting Agent → Human approval", ar: "وكيل التقارير ← اعتماد بشري", zh: "报告智能体 → 人工审批" },
+      desc: { en: "Summarize the audit, the blocked duplicate and the approved payment, with full audit trail.", ar: "تلخيص التدقيق والمكررة المحجوبة والدفعة المعتمدة، مع سجل تدقيق كامل.", zh: "总结审计、被拦截的重复项与已核准付款,并附完整审计轨迹。" },
+      report: {
+        title: { en: "Disbursement Summary — CL-77310", ar: "ملخص الصرف — CL-77310", zh: "支付摘要——CL-77310" },
+        narrative: { en: "Claim CL-77310 for SAR 1.84M against contract CT-5520 was audited; a duplicate invoice (INV-55021) was detected and blocked, preventing a SAR 1.84M contract overrun. A single net payment order of SAR 1.84M was approved by the authorized officer and a corresponding SAP entry proposed. The full chain — invoice, milestone, approval — is preserved in the audit trail.", ar: "تم تدقيق المطالبة CL-77310 بقيمة 1.84 مليون ريال على العقد CT-5520؛ واكتُشفت فاتورة مكررة (INV-55021) وحُجبت، ما منع تجاوزاً للعقد بقيمة 1.84 مليون ريال. واعتمد المسؤول المخوّل أمر صرف صافٍ واحد بقيمة 1.84 مليون ريال مع اقتراح قيد ساب مقابل. وسلسلة الإثبات الكاملة — الفاتورة والمرحلة والاعتماد — محفوظة في سجل التدقيق.", zh: "针对合同 CT-5520 的 184 万里亚尔索赔 CL-77310 已完成审计;检测并拦截了一张重复发票(INV-55021),避免了 184 万里亚尔的合同超支。授权官员核准了单笔 184 万里亚尔净额付款单,并建议了相应的 SAP 分录。完整链条——发票、里程碑、审批——均保存在审计轨迹中。" },
+        rows: [
+          { l: { en: "Claim", ar: "المطالبة", zh: "索赔" }, v: "CL-77310" },
+          { l: { en: "Duplicate blocked", ar: "المكررة المحجوبة", zh: "拦截的重复项" }, v: "INV-55021" },
+          { l: { en: "Payment approved", ar: "الدفعة المعتمدة", zh: "已核准付款" }, v: "SAR 1.84M" }] },
+      out: { en: "Summary ready for the Audit Department.", ar: "الملخص جاهز لإدارة التدقيق.", zh: "摘要已就绪,提交给审计部门。" },
+      metric: { en: "PDF ready", ar: "جاهز PDF", zh: "PDF 就绪" } },
+  ],
+};
+
+const LINEAGE = [
+  { en: "Report: Fiscal space SAR 4.82B", ar: "التقرير: الحيز المالي 4.82 مليار", zh: "报告:财政空间 48.2 亿", node: "report" },
+  { en: "Analysis: ceiling − commitments − plan − reserve", ar: "التحليل: السقف − الالتزامات − الخطة − الحجز", zh: "分析:上限 − 承诺 − 计划 − 预留", node: "analysis" },
+  { en: "Standardized: GL 5100 consolidated", ar: "موحّد: تجميع الحساب 5100", zh: "标准化:科目 5100 汇总", node: "fact" },
+  { en: "Source: SAP/Asas · Etimad", ar: "المصدر: ساب/أساس · اعتماد", zh: "来源:SAP/Asas · Etimad", node: "data" },
+];
+
+/* =========================================================================
+   UC-06 — Financial Performance Analysis data
+   ========================================================================= */
+const UC_KPIS = [
+  { key: "kp_orig", value: "16,532", unit: "M", tag: "flat", sub: "kp_orig_s" },
+  { key: "kp_rev", value: "3,420", unit: "M", tag: "flat", sub: "kp_rev_s" },
+  { key: "kp_cur", value: "17,370", unit: "M", tag: "up", sub: "kp_cur_s" },
+  { key: "kp_act", value: "11,117", unit: "M", tag: "down", sub: "kp_act_s" },
+  { key: "kp_rem", value: "6,253", unit: "M", tag: "flat", sub: "kp_rem_s" },
+  { key: "kp_rate", value: "64.0", unit: "%", tag: "down", sub: "kp_rate_s" },
+  { key: "kp_chg", value: "838", unit: "M", tag: "flat", sub: "kp_chg_s" },
+];
+const UC_MAP = [
+  { id: "nb", x: 168, y: 46, rate: 71, name: { en: "Northern Borders", ar: "الحدود الشمالية", zh: "北部边境" } },
+  { id: "jouf", x: 188, y: 60, rate: 80, name: { en: "Al Jouf", ar: "الجوف", zh: "焦夫" } },
+  { id: "tabuk", x: 120, y: 88, rate: 66, name: { en: "Tabuk", ar: "تبوك", zh: "塔布克" } },
+  { id: "hail", x: 215, y: 100, rate: 73, name: { en: "Hail", ar: "حائل", zh: "哈伊勒" } },
+  { id: "qassim", x: 250, y: 122, rate: 77, name: { en: "Qassim", ar: "القصيم", zh: "卡西姆" } },
+  { id: "east", x: 300, y: 152, rate: 62, name: { en: "Eastern Province", ar: "الشرقية", zh: "东部省" } },
+  { id: "mad", x: 155, y: 140, rate: 54, name: { en: "Madinah", ar: "المدينة", zh: "麦地那" } },
+  { id: "ruh", x: 272, y: 158, rate: 78, name: { en: "Riyadh", ar: "الرياض", zh: "利雅得" } },
+  { id: "mak", x: 138, y: 188, rate: 63, name: { en: "Makkah", ar: "مكة", zh: "麦加" } },
+  { id: "baha", x: 168, y: 206, rate: 41, name: { en: "Al Baha", ar: "الباحة", zh: "巴哈" } },
+  { id: "asir", x: 190, y: 226, rate: 88, name: { en: "Asir", ar: "عسير", zh: "阿西尔" } },
+  { id: "najran", x: 240, y: 238, rate: 69, name: { en: "Najran", ar: "نجران", zh: "纳季兰" } },
+  { id: "jazan", x: 182, y: 256, rate: 58, name: { en: "Jazan", ar: "جازان", zh: "吉赞" } },
+];
+const UC_SPEND = [
+  { m: "Jan", budget: 3127, actual: 1890 }, { m: "Feb", budget: 3821, actual: 2446 },
+  { m: "Mar", budget: 4516, actual: 3002 }, { m: "Apr", budget: 5906, actual: 3780 },
+];
+const UC_SERVICES = [
+  { name: { en: "Developmental Housing", ar: "الإسكان التنموي", zh: "发展性住房" }, pct: 96.8, actual: 4047, budget: 4181 },
+  { name: { en: "Real Estate Development", ar: "التطوير العقاري", zh: "房地产开发" }, pct: 95.3, actual: 3749, budget: 3934 },
+  { name: { en: "Parks", ar: "الحدائق", zh: "公园" }, pct: 97.6, actual: 2480, budget: 2539 },
+  { name: { en: "Roads", ar: "الطرق", zh: "道路" }, pct: 95.3, actual: 2349, budget: 2465 },
+  { name: { en: "Financial Support", ar: "الدعم المالي", zh: "财政支持" }, pct: 95.1, actual: 2104, budget: 2212 },
+];
+const UC_VISION = [
+  { name: "Housing Program 2.0", port: { en: "Housing & Urban", ar: "الإسكان والحضري", zh: "住房与城市" }, b: 4531, a: 4525, r: 7, rate: "99.9%" },
+  { name: "Supported Housing Financial Sc.", port: { en: "Housing Support", ar: "دعم الإسكان", zh: "住房支持" }, b: 4470, a: 4470, r: 0, rate: "100.0%" },
+  { name: "Flood Risk Mitigation - Phase 1", port: { en: "Water & Drainage", ar: "المياه والصرف", zh: "水与排水" }, b: 2943, a: 2901, r: 41, rate: "98.6%" },
+  { name: "Urban Roads Development - Ph.2", port: { en: "Roads & Mobility", ar: "الطرق والتنقل", zh: "道路与交通" }, b: 1919, a: 1893, r: 26, rate: "98.6%" },
+  { name: "Land Expropriation", port: { en: "Land & Assets", ar: "الأراضي والأصول", zh: "土地与资产" }, b: 1806, a: 1524, r: 282, rate: "84.4%" },
+  { name: "Riyadh Road Rehabilitation", port: { en: "Roads & Mobility", ar: "الطرق والتنقل", zh: "道路与交通" }, b: 1701, a: 1672, r: 30, rate: "98.3%" },
+];
+const REVENUE_SOURCES = [
+  { key: "wl", name: { en: "White Lands Fees", ar: "رسوم الأراضي البيضاء", zh: "白地费" }, net: 2323, collected: 1580, weight: 32.6, color: "#1B8354" },
+  { key: "tb", name: { en: "Tobacco Revenue", ar: "إيرادات التبغ", zh: "烟草收入" }, net: 1045, collected: 857, weight: 14.9, color: "#2563eb" },
+  { key: "ac", name: { en: "Accommodation Revenue", ar: "إيرادات الإيواء", zh: "住宿收入" }, net: 1588, collected: 1175, weight: 21.0, color: "#F8C630" },
+  { key: "pf", name: { en: "Penalties & Fines", ar: "الغرامات والمخالفات", zh: "罚款与罚金" }, net: 1412, collected: 1076, weight: 18.4, color: "#6d5ae6" },
+  { key: "om", name: { en: "Other Municipal Revenues", ar: "إيرادات بلدية أخرى", zh: "其他市政收入" }, net: 927, collected: 661, weight: 13.0, color: "#e32700" },
+];
+const AR_LEGEND = [{ k: "rp_unpaid", v: "1260 M", c: "#e32700" }, { k: "rp_exec", v: "790 M", c: "#e29700" }, { k: "rp_done", v: "540 M", c: "#1B8354" }];
+const AR_BUCKETS = ["buck_current", "1M", "2M", "3M", "4M", "5M", "6M+"];
+const AR_MATRIX = [
+  { m: "Nov 2025", v: [0.0, 0.2, 0.5, 1.0, 2.4, 5.2, 10.4] }, { m: "Dec 2025", v: [0.0, 0.3, 0.8, 1.5, 3.6, 5.6, 7.6] },
+  { m: "Jan 2026", v: [0.2, 0.7, 1.6, 2.9, 4.9, 5.1, 4.9] }, { m: "Feb 2026", v: [0.5, 1.4, 2.9, 4.1, 4.9, 3.6, 2.1] },
+  { m: "Mar 2026", v: [1.8, 3.2, 4.3, 4.0, 3.2, 1.5, 0.8] }, { m: "Apr 2026", v: [5.0, 4.5, 3.6, 2.5, 1.7, 0.6, 0.4] },
+];
+const REGIONAL_ACHIEVE = [
+  { name: { en: "Riyadh Amana", ar: "أمانة الرياض", zh: "利雅得阿玛纳" }, pct: 79.4, target: 82.0 },
+  { name: { en: "Eastern Province Amana", ar: "أمانة المنطقة الشرقية", zh: "东部省阿玛纳" }, pct: 90.2, target: 86.0 },
+  { name: { en: "Al Madinah Amana", ar: "أمانة المدينة المنورة", zh: "麦地那阿玛纳" }, pct: 63.5, target: 75.0 },
+  { name: { en: "Makkah Amana", ar: "أمانة مكة المكرمة", zh: "麦加阿玛纳" }, pct: 81.2, target: 80.0 },
+  { name: { en: "Asir Amana", ar: "أمانة عسير", zh: "阿西尔阿玛纳" }, pct: 88.0, target: 84.0 },
+];
+function arHeat(v) { if (v <= 0.3) return ["#f7faf8", "#5c6b63"]; if (v <= 1) return ["#fef7e0", "#6b5210"]; if (v <= 2) return ["#fdeab8", "#6b5210"]; if (v <= 3) return ["#fcd987", "#6b4e10"]; if (v <= 4) return ["#f7b65d", "#5a3a08"]; if (v <= 5) return ["#ef8f4a", "#fff"]; if (v <= 6) return ["#e3683f", "#fff"]; if (v <= 8) return ["#d24a36", "#fff"]; return ["#b42318", "#fff"]; }
+const UC_SLIDES = [
+  { id: "syn", chart: "map", title: { en: "I. Executive Synthesis", ar: "أولاً. الخلاصة التنفيذية", zh: "一、执行综述" },
+    narr: { en: "The executive report indicates that Asir Amana performs best at the moment, Al Baha Amana needs closer follow-up, and Developmental Housing plus Housing Program 2.0 remain the largest concentrations in the sample.", ar: "يشير التقرير التنفيذي إلى أن أمانة عسير هي الأفضل أداءً حالياً، وأن أمانة الباحة تحتاج إلى متابعة أدق، وأن الإسكان التنموي وبرنامج الإسكان 2.0 يظلان أكبر التركزات في العينة.", zh: "执行报告显示:阿西尔阿玛纳目前表现最佳,巴哈阿玛纳需更密切跟进,发展性住房与住房计划 2.0 仍是样本中最大的集中点。" } },
+  { id: "kpi", chart: "kpi", title: { en: "II. Key Highlights", ar: "ثانياً. أبرز المؤشرات", zh: "二、关键要点" },
+    narr: { en: "Current budget rose to SAR 17,370M against an original SAR 16,532M; actual spend of SAR 11,117M yields a 64.0% spending rate, leaving SAR 6,253M unspent for the period.", ar: "ارتفعت الميزانية الحالية إلى 17,370 مليون ريال مقابل 16,532 مليون أصلية؛ والإنفاق الفعلي 11,117 مليون يعطي نسبة إنفاق 64.0٪، ويتبقى 6,253 مليون غير مصروف للفترة.", zh: "现行预算升至 173.70 亿里亚尔(原始 165.32 亿);实际支出 111.17 亿,支出率 64.0%,本期尚余 62.53 亿未支出。" } },
+  { id: "exp", chart: "spend", title: { en: "III. Preliminary Explanation", ar: "ثالثاً. التفسير الأولي", zh: "三、初步解释" },
+    narr: { en: "Spending accelerated from January to April, with actual spend tracking below the rising current-budget line — consistent with a back-loaded execution pattern typical of project-heavy doors.", ar: "تسارع الإنفاق من يناير إلى أبريل، مع بقاء الإنفاق الفعلي دون خط الميزانية الحالية المتصاعد — بما يتسق مع نمط تنفيذ مؤجَّل يغلب على أبواب المشاريع.", zh: "支出从 1 月到 4 月加速,实际支出始终低于上升的现行预算线——与项目类预算门常见的后置执行模式一致。" } },
+  { id: "svc", chart: "svc", title: { en: "IV. Service Concentration", ar: "رابعاً. تركّز الخدمات", zh: "四、服务集中度" },
+    narr: { en: "Execution rates across the main services are tightly clustered between 95% and 98%, with Parks (97.6%) and Developmental Housing (96.8%) leading; concentration risk sits with the two largest housing lines.", ar: "تتركّز نسب التنفيذ للخدمات الرئيسية بين 95٪ و98٪، وتتصدّر الحدائق (97.6٪) والإسكان التنموي (96.8٪)؛ ويتركّز خطر التركّز في خطّي الإسكان الأكبر.", zh: "主要服务的执行率紧密集中在 95%–98%,公园(97.6%)与发展性住房(96.8%)领先;集中度风险落在两条最大的住房线上。" } },
+  { id: "init", chart: "vision", title: { en: "V. Initiative Structure", ar: "خامساً. بنية المبادرات", zh: "五、举措结构" },
+    narr: { en: "Vision-program execution is strong overall, but Land Expropriation lags at 84.4% with SAR 282M remaining — the main candidate for a follow-up review.", ar: "تنفيذ برامج الرؤية قوي إجمالاً، لكن نزع الملكية متأخر عند 84.4٪ مع تبقّي 282 مليون ريال — وهو المرشّح الأبرز للمراجعة.", zh: "愿景计划整体执行强劲,但土地征收落后于 84.4%,尚余 2.82 亿里亚尔——是后续复核的主要对象。" } },
+  { id: "rec", chart: "none", title: { en: "VI. Recommendations", ar: "سادساً. التوصيات", zh: "六、建议" },
+    narr: { en: "Recommend a targeted follow-up on Al Baha Amana (spend rate < 50%) and on Land Expropriation; maintain the current trajectory elsewhere. All recommendations are drafts pending human approval.", ar: "يُوصى بمتابعة موجّهة لأمانة الباحة (نسبة إنفاق < 50٪) ولنزع الملكية؛ والإبقاء على المسار الحالي في غير ذلك. وجميع التوصيات مسودات بانتظار الاعتماد البشري.", zh: "建议对巴哈阿玛纳(支出率 < 50%)和土地征收进行定向跟进;其余维持当前轨迹。所有建议均为待人工审批的草稿。" } },
+];
+
+/* =========================================================================
+   i18n  (en · ar · zh)
+   ========================================================================= */
+const I18N = {
+  en: {
+    appName: "Financial & Budgeting Copilot",
+    sso_title: "Momrah Single Sign-On", sso_sub: "Unified national access to the Ministry of Municipalities and Housing digital services.",
+    brandLine: "Financial & Budgeting Copilot", signInTitle: "Sign In", identity: "Identity", password: "Password",
+    securityCode: "Security code", or_: "or", login_btn: "Login",
+    nic1: "NIC", nic2: "National Identity Card", noAccount: "Don't have an account?", createAccount: "Create New Account",
+    loginHint: "Password is pre-filled for the demo (no real authentication).",
+    copyright: "© 2026 — Ministry of Municipalities and Housing · Agency for Financial Affairs and Budget", syntheticData: "Synthetic demo data — not real records",
+    logout: "Sign out", resetDemo: "Reset demo",
+    coverage: "Scope", cov_consolidated: "Consolidated", cov_hq: "Ministry HQ", cov_amanas: "Amanas",
+    analyst_full: "Financial Data Analyst", manager_full: "Budget Execution Manager", leader_full: "Senior Leadership",
+    analyst_desc: "Asks the Orchestrator, runs analyses, handles alerts, builds UC-06 reports, drives budget & claims journeys.",
+    manager_desc: "Reviews budget execution, approves reallocations within ceilings, monitors deviations.",
+    leader_desc: "Reads executive dashboards and reports across Consolidated / HQ / Amanas — read-only.",
+    nav_hub: "Hub", nav_chat: "Conversational Analysis", nav_monitor: "Monitoring & Alerts",
+    nav_perf: "Performance Analysis", nav_budget: "Budget Execution", nav_claims: "Claims & Disbursement", nav_reports: "Reports",
+    eng_orch: "Orchestrator Agent", eng_consol: "Data Consolidation & Quality", eng_deviation: "Deviation & Early Warning",
+    eng_forecast: "Forecasting & Scenarios", eng_close: "Reconciliation & Closing", eng_comply: "Compliance & Audit",
+    engd_orch: "Routes inquiries across agents, composes outputs, generates reports.",
+    engd_consol: "Consolidates & validates data from approved systems (UC-01).",
+    engd_deviation: "Detects deviations, anomalies and duplicates; raises alerts (UC-02).",
+    engd_forecast: "Rolling forecasts, fiscal space and scenario simulation (UC-04/05/07).",
+    engd_close: "Pre-close validation, balance reconciliation and adjustments (UC-09).",
+    engd_comply: "IPSAS compliance, accounting memos and audit trail (UC-11/10).",
+    online: "Online", autonomous: "autonomous",
+    src_sap: "SAP / Asas", src_etimad: "Etimad", src_esnad: "Esnad", src_grp: "GRP", src_tahseel: "Tahseel",
+    src_makeen: "Makeen", src_efaa: "Efaa", src_sanad: "Sanad", src_balady: "Balady", src_gl: "GL", src_bi: "BI Dash",
+    hub_hello: "Welcome", hub_sub: "One multi-agent platform · connected financial journeys",
+    k_fiscal: "Available fiscal space", k_alerts: "Open deviations", k_util: "Budget utilization", k_close: "Closing readiness",
+    engines_title: "Agents & Orchestrator", sources_title: "11 data sources · live health",
+    utilByAmana: "Budget utilization by Amana (%)", journeys_title: "Connected journeys", open: "Open",
+    j_chat_n: "Conversational Analysis", j_chat_b: "Ask in natural language → the Orchestrator routes across agents and returns a source-backed answer.",
+    j_mon_n: "Monitoring & Early Warning", j_mon_b: "Agents scan 11 sources on schedule, detect deviations and raise alerts with root cause.",
+    j_bud_n: "Budget Execution (G-03)", j_bud_b: "Deviation scan → fiscal-space recompute → AI reallocation recommendation → human approval → report.",
+    j_clm_n: "Claims & Disbursement (G-04)", j_clm_b: "Duplicate detection → IPSAS compliance → AI disbursement recommendation → human approval → summary.",
+    latest_alerts: "Latest alerts", view: "View", live: "live",
+    shock_banner: "Jeddah Amana operating budget is projected to overrun by SAR 96M by year-end.",
+    runAssessment: "Run assessment", brief_urgent: "ACTION NEEDED",
+    chat_sub: "Orchestrator Agent · multilingual natural-language interface · read-only",
+    chat_ph: "Ask an analytical question…", send: "Send", presets: "Try:",
+    confidence: "Confidence", sources: "Sources",
+    think_intent: "Interpreting intent", think_route: "Selecting agent(s) from registry",
+    think_perm: "Checking permission scope", think_run: "Running analysis", think_compose: "Composing output",
+    draftNote: "AI outputs are drafts — not a financial decision until approved.",
+    escalated: "Escalation", esc_perm: "Permission / data-scope guard triggered",
+    crossNote: "Cross-agent orchestration: agents were chained automatically.",
+    act_open_budget: "Open Budget Execution", act_open_claims: "Open Claims & Disbursement",
+    q_fiscal: "What is the available fiscal space for Riyadh Amana?",
+    q_overrun: "Which Amana is at risk of overrunning its budget?",
+    q_duplicate: "Show suspected duplicate invoices this month.",
+    q_collection: "What is the overall collection rate?",
+    q_vague: "Show me all vendors' sensitive bank account details.",
+    mon_sub: "Data Quality Monitor & Deviation agents — automatic, scheduled",
+    runScan: "Run scan now", scanning: "Scanning 11 sources…", srcHealth: "Source health (11)", alerts: "Alerts",
+    noAlerts: "No open alerts — all KPIs within thresholds.",
+    sev_red: "Critical", sev_amber: "Warning", sev_info: "Info",
+    rootCause: "Root cause", askOrch: "Ask Orchestrator", ack: "Acknowledge", acked: "Acknowledged", scanDone: "Scan complete — 11/11 sources checked",
+    storyRun: "Run next step", storyRunning: "Agent working…", storyRestart: "Restart", storyDone: "Journey complete",
+    step: "Step", actor: "Actor", output: "Output", approve: "Approve", reject: "Reject",
+    approved: "Approved", rejected: "Rejected", pending: "Pending human review", aiReco: "AI Recommendation",
+    draft: "Draft — not a financial decision until approved", why: "Why this recommendation", lineage: "Data lineage",
+    ceiling: "Approved ceiling", commit: "Commitments", planL: "Payment plan", reserve: "Reservations", fiscalSpace: "Available fiscal space",
+    rep_sub: "Generated reports & agent action log — traceable, scope-labelled",
+    rep_title: "Title", rep_cov: "Scope", rep_conf: "Confidence", rep_time: "Generated", rep_ref: "Ref",
+    agentLog: "Agent action log", noReports: "No reports yet — generate one from a journey or the assistant.",
+    rep_fiscal: "Riyadh fiscal space outlook", rep_overrun: "Jeddah overrun & reallocation", rep_dup: "Duplicate-invoice audit",
+    rep_collect: "Collection performance", rep_budget: "Q2 budget execution report", rep_claims: "Disbursement summary CL-77310", rep_uc06: "Financial performance & management analysis",
+    running: "Running…", agentlog_h: "Agent activity",
+    log_route: "Orchestrator routed inquiry to agents", log_alert: "Monitor raised a deviation alert",
+    log_scan: "Data Quality Monitor scanned 11 sources — 10 green, 1 amber",
+    log_report: "Report generated · ref", log_approve: "Authorized officer approved a recommendation",
+    log_idle: "Knowledge agent indexed inquiry into the knowledge base", log_uc06: "Performance Analysis agent assembled a report",
+    redline: "The platform only recommends and is read-only — it never edits source data, executes payments, or auto-approves.",
+    // UC-06
+    uc_title: "Financial Performance Analysis", uc_sub: "UC-06 · performance, regional gaps, service concentration and initiative structure.",
+    uc_dept_a: "General Department of Financial Planning and Performance", uc_dept_b: "Financial Performance Analysis Department",
+    uc_registry: "Financial Performance Analysis Registry", uc_new: "Create New Report",
+    uc_total: "Total Reports", uc_pub: "Published", uc_appr: "Approved", uc_inrev: "In Review",
+    uc_back: "Back",
+    s1: "Operational Parameters", s2: "Generate Dashboard", s3: "Review Commentary", s4: "Report Detail",
+    uc_cfg: "Configure Filter Parameters", uc_cfg_sub: "Define the analysis scope and dimensional filter criteria to generate the dashboard.",
+    f_level: "Level of Analysis", f_amana: "Amana", f_muni: "Municipality", f_fy: "Fiscal Year", f_period: "Period Type", f_specific: "Specific Period",
+    opt_ministry: "Ministry", opt_allAmanas: "All Amanas", opt_allMuni: "All Municipalities", opt_monthly: "Monthly", opt_quarterly: "Quarterly",
+    uc_generate: "Generate Analytical Dashboard",
+    reason_h: "AI Analysis & Reasoning Engine", reason_sub: "Please wait, the AI agent is performing dynamic financial reasoning…",
+    rstep1: "Financial Performance Analysis Agent starting, ingesting departmental performance metrics…",
+    rstep2: "Orchestrating 'Performance & Variance Analysis' workflow, calculating KPIs and deviations…",
+    rstep3: "Orchestrating 'Narrative Commentary Generation' workflow, synthesizing explanations for performance gaps…",
+    rstep4: "Orchestrating 'Decision Dashboard Assembly' workflow, compiling visual performance layouts…",
+    scope_sum: "Scope Summary", obj_sum: "Objective Data Summary", balance_check: "Mathematical balance check: Passed",
+    viewData: "View Supporting Data", ai_brief: "AI Brief", goCommentary: "Go to Commentary Review",
+    kp_orig: "Original Budget", kp_orig_s: "Original budget before adjustments.",
+    kp_rev: "Budget vs Revenue", kp_rev_s: "Approved budget against realized revenue.",
+    kp_cur: "Current Budget", kp_cur_s: "Current approved budget in the selected scope.",
+    kp_act: "Actual Spend", kp_act_s: "Actual spend for the selected period.",
+    kp_rem: "Remaining Balance", kp_rem_s: "Unspent balance from the current budget.",
+    kp_rate: "Spending Rate", kp_rate_s: "Actual spend divided by current budget.",
+    kp_chg: "Increases / Decreases", kp_chg_s: "Difference between current and original budget.",
+    tag_up: "IMPROVING", tag_flat: "STABLE", tag_down: "SLIPPING",
+    map_title: "Regional Financial Performance Map", map_sub: "Selected regions are colored by adjusted spend rate after deferred-debt adjustment.",
+    lg_green: "Green · Strong ≥75%", lg_yellow: "Yellow · Watch 50–74%", lg_red: "Red · Alert <50%",
+    spend_title: "Spending Performance", spend_budget: "Current Budget", spend_actual: "Actual Spend", spend_trend: "Actual Spend Trend",
+    fdetail: "Financial Detail Analysis", door_title: "Budget Door Analysis", door_sub: "Budget doors → executing entity → final use", door_total: "Displayed flow total",
+    svc_title: "Main Service Analysis", vision_title: "Vision Programs",
+    vp_init: "Initiative / Project", vp_port: "Portfolio", vp_budget: "Current Budget", vp_actual: "Actual Spend", vp_rem: "Remaining", vp_rate: "Execution Rate",
+    rev_split: "Revenue Source Split", rs_collected: "Collected", rs_outstanding: "Outstanding", rs_weight: "Source Weight",
+    col_rate: "Collection Rate by Source", cc_collected: "Collected", cc_net: "Net Invoiced",
+    recv_prog: "Receivable Progression", rp_caption: "AR bucket migration based on invoiced and open receivable balances",
+    rp_unpaid: "Unpaid Receivables", rp_exec: "Executable Receivables", rp_done: "Executed Collections",
+    rp_matrix: "Invoiced Amount / AR Migration Across Aging Buckets", rp_unit: "Unit: % of displayed receivable base", buck_current: "Current",
+    reg_ach: "Regional Collection Achievement", ra_target: "Target", ra_gap: "Gap",
+    st_above: "Above target", st_near: "Near target", st_below: "Below target",
+    mapNote: "Markers are indicative; colored by adjusted spend rate.",
+    cw_title: "Interpretive Commentary Review Workspace", cw_sub: "The dashboard is generated first as a unified performance view. The final report type is then selected here to guide the commentary and report output.",
+    finalType: "Final Report Type", rt_exec: "Executive Report", rt_init: "Initiatives Report", rt_detail: "Detailed Report",
+    slidePages: "Slide Pages", dataTables: "Data Tables", addTables: "Add / Configure Tables",
+    narrComment: "Narrative Commentary", aiConf: "AI Confidence Score", dataSrcLink: "Data Source Link", dataSrcVal: "National Portal (Budget Expenditures)",
+    mathOk: "Mathematical consistency checked against source worksheets", chartLabel: "Chart", chart_map: "Regional Map", chart_kpi: "KPI Cards", chart_spend: "Spending Performance", chart_svc: "Service Analysis", chart_vision: "Vision Programs", chart_none: "Text only",
+    copilot_h: "AI Co-pilot Chat Assistant", copilot_target: "Target Card for Conversation", copilot_hello: "Hi! Select any commentary card from the left to start rewriting it.", copilot_ph: "Type rewrite instructions (e.g., make it more concise)…",
+    showDiff: "Show Diff", discussAI: "Discuss with AI", prev: "Back", next: "Next", assemble: "Assemble & Compile Final Draft",
+    backWs: "Back to Report Workspace", submitReview: "Submit for Review", exportPptx: "Export to PPTX", exportPdf: "Export PDF",
+    st_draft: "DRAFT", st_review: "IN REVIEW", page: "Page", of: "of",
+    cover_country: "Kingdom of Saudi Arabia", cover_min: "Ministry of Municipalities and Housing", cover_persp: "Perspective: Planning & Financial Performance", cover_scope: "Scope", cover_agency: "Agency for Financial Affairs and Budget",
+    submitted: "Report submitted for review", note_demo: "Synthetic data · drafts pending human approval",
+  },
+  ar: {
+    appName: "مساعد الشؤون المالية والميزانية",
+    sso_title: "الدخول الموحّد لوزارة الشؤون البلدية", sso_sub: "وصول وطني موحّد إلى الخدمات الرقمية لوزارة الشؤون البلدية والقروية والإسكان.",
+    brandLine: "مساعد الشؤون المالية والميزانية", signInTitle: "تسجيل الدخول", identity: "الهوية", password: "كلمة المرور",
+    securityCode: "رمز التحقق", or_: "أو", login_btn: "دخول",
+    nic1: "النفاذ الوطني", nic2: "النفاذ الوطني الموحّد", noAccount: "ليس لديك حساب؟", createAccount: "إنشاء حساب جديد",
+    loginHint: "كلمة المرور معبأة مسبقاً للعرض التجريبي (لا يوجد تحقق فعلي).",
+    copyright: "© 2026 — وزارة الشؤون البلدية والقروية والإسكان · وكالة الشؤون المالية والميزانية", syntheticData: "بيانات تجريبية — ليست سجلات حقيقية",
+    logout: "تسجيل الخروج", resetDemo: "إعادة ضبط العرض",
+    coverage: "النطاق", cov_consolidated: "موحّد", cov_hq: "مقر الوزارة", cov_amanas: "الأمانات",
+    analyst_full: "محلل البيانات المالية", manager_full: "مدير تنفيذ الميزانية", leader_full: "القيادة العليا",
+    analyst_desc: "يسأل المنسّق، يشغّل التحليلات، يعالج التنبيهات، ينشئ تقارير UC-06، ويقود مسارات الميزانية والمطالبات.",
+    manager_desc: "يراجع تنفيذ الميزانية، يعتمد المناقلات ضمن السقوف، ويراقب الانحرافات.",
+    leader_desc: "يطّلع على اللوحات والتقارير التنفيذية عبر الموحّد / المقر / الأمانات — للقراءة فقط.",
+    nav_hub: "الرئيسية", nav_chat: "التحليل الحواري", nav_monitor: "المراقبة والتنبيهات",
+    nav_perf: "تحليل الأداء", nav_budget: "تنفيذ الميزانية", nav_claims: "المطالبات والصرف", nav_reports: "التقارير",
+    eng_orch: "وكيل التنسيق", eng_consol: "تجميع البيانات وجودتها", eng_deviation: "الانحرافات والإنذار المبكر",
+    eng_forecast: "التنبؤ والسيناريوهات", eng_close: "التسوية والإقفال", eng_comply: "الامتثال والتدقيق",
+    engd_orch: "يوجّه الاستعلامات بين الوكلاء، يركّب المخرجات، وينشئ التقارير.",
+    engd_consol: "يجمّع ويتحقق من البيانات من الأنظمة المعتمدة (UC-01).",
+    engd_deviation: "يكشف الانحرافات والشذوذ والتكرار؛ ويصدر التنبيهات (UC-02).",
+    engd_forecast: "تنبؤات متجددة، حيز مالي، ومحاكاة سيناريوهات (UC-04/05/07).",
+    engd_close: "تحقق قبل الإقفال، تسوية الأرصدة، وقيود تصحيحية (UC-09).",
+    engd_comply: "امتثال IPSAS، مذكرات محاسبية، وسجل تدقيق (UC-11/10).",
+    online: "متصل", autonomous: "مستقل",
+    src_sap: "ساب / أساس", src_etimad: "اعتماد", src_esnad: "إسناد", src_grp: "GRP", src_tahseel: "تحصيل",
+    src_makeen: "مكين", src_efaa: "إيفاء", src_sanad: "سند", src_balady: "بلدي", src_gl: "الأستاذ", src_bi: "لوحة BI",
+    hub_hello: "مرحباً", hub_sub: "منصة واحدة متعددة الوكلاء · مسارات مالية مترابطة",
+    k_fiscal: "الحيز المالي المتاح", k_alerts: "انحرافات مفتوحة", k_util: "نسبة تنفيذ الميزانية", k_close: "جاهزية الإقفال",
+    engines_title: "الوكلاء والمنسّق", sources_title: "11 مصدر بيانات · الحالة المباشرة",
+    utilByAmana: "نسبة تنفيذ الميزانية حسب الأمانة (٪)", journeys_title: "المسارات المترابطة", open: "فتح",
+    j_chat_n: "التحليل الحواري", j_chat_b: "اسأل باللغة الطبيعية ← يوجّه المنسّق بين الوكلاء ويعيد إجابة مدعومة بالمصادر.",
+    j_mon_n: "المراقبة والإنذار المبكر", j_mon_b: "تفحص الوكلاء 11 مصدراً وفق جدول، وتكشف الانحرافات وتصدر تنبيهات مع السبب الجذري.",
+    j_bud_n: "تنفيذ الميزانية (ج-03)", j_bud_b: "فحص الانحراف ← إعادة حساب الحيز ← توصية إعادة توزيع ← اعتماد بشري ← تقرير.",
+    j_clm_n: "المطالبات والصرف (ج-04)", j_clm_b: "كشف التكرار ← امتثال IPSAS ← توصية صرف ← اعتماد بشري ← ملخص.",
+    latest_alerts: "أحدث التنبيهات", view: "عرض", live: "مباشر",
+    shock_banner: "يُتوقع تجاوز الميزانية التشغيلية لأمانة جدة بمقدار 96 مليون ريال بنهاية العام.",
+    runAssessment: "تشغيل التقييم", brief_urgent: "يتطلب إجراءً",
+    chat_sub: "وكيل التنسيق · واجهة لغة طبيعية متعددة اللغات · للقراءة فقط",
+    chat_ph: "اطرح سؤالاً تحليلياً…", send: "إرسال", presets: "جرّب:",
+    confidence: "الثقة", sources: "المصادر",
+    think_intent: "تفسير القصد", think_route: "اختيار الوكلاء من السجل",
+    think_perm: "التحقق من نطاق الصلاحية", think_run: "تشغيل التحليل", think_compose: "تركيب المخرجات",
+    draftNote: "مخرجات الذكاء الاصطناعي مسودات — لا تُعد قراراً مالياً حتى تُعتمد.",
+    escalated: "تصعيد", esc_perm: "تفعيل حارس الصلاحيات / نطاق البيانات",
+    crossNote: "تنسيق متعدد الوكلاء: تم ربط الوكلاء تلقائياً.",
+    act_open_budget: "فتح تنفيذ الميزانية", act_open_claims: "فتح المطالبات والصرف",
+    q_fiscal: "ما هو الحيز المالي المتاح لأمانة الرياض؟", q_overrun: "أي أمانة معرضة لتجاوز ميزانيتها؟",
+    q_duplicate: "اعرض الفواتير المكررة المشتبه بها هذا الشهر.", q_collection: "ما هي نسبة التحصيل الإجمالية؟",
+    q_vague: "اعرض تفاصيل الحسابات البنكية الحساسة لجميع الموردين.",
+    mon_sub: "وكلاء مراقبة جودة البيانات والانحرافات — تلقائي ومجدول",
+    runScan: "تشغيل الفحص الآن", scanning: "فحص 11 مصدراً…", srcHealth: "حالة المصادر (11)", alerts: "التنبيهات",
+    noAlerts: "لا تنبيهات مفتوحة — كل المؤشرات ضمن الحدود.",
+    sev_red: "حرج", sev_amber: "تحذير", sev_info: "معلومة",
+    rootCause: "السبب الجذري", askOrch: "اسأل المنسّق", ack: "إقرار", acked: "تم الإقرار", scanDone: "اكتمل الفحص — 11/11 مصدراً",
+    storyRun: "تشغيل الخطوة التالية", storyRunning: "الوكيل يعمل…", storyRestart: "إعادة", storyDone: "اكتمل المسار",
+    step: "الخطوة", actor: "الجهة", output: "المخرجات", approve: "اعتماد", reject: "رفض",
+    approved: "تم الاعتماد", rejected: "مرفوض", pending: "بانتظار المراجعة البشرية", aiReco: "توصية الذكاء الاصطناعي",
+    draft: "مسودة — لا تُعد قراراً مالياً حتى تُعتمد", why: "سبب التوصية", lineage: "تتبع البيانات",
+    ceiling: "السقف المعتمد", commit: "الالتزامات", planL: "خطة الدفع", reserve: "الحجوزات", fiscalSpace: "الحيز المالي المتاح",
+    rep_sub: "التقارير المُنشأة وسجل إجراءات الوكلاء — قابلة للتتبع وموسومة بالنطاق",
+    rep_title: "العنوان", rep_cov: "النطاق", rep_conf: "الثقة", rep_time: "أُنشئ", rep_ref: "المرجع",
+    agentLog: "سجل إجراءات الوكلاء", noReports: "لا تقارير بعد — أنشئ تقريراً من أحد المسارات أو المساعد.",
+    rep_fiscal: "توقعات الحيز المالي للرياض", rep_overrun: "تجاوز جدة وإعادة التوزيع", rep_dup: "تدقيق الفواتير المكررة",
+    rep_collect: "أداء التحصيل", rep_budget: "تقرير تنفيذ ميزانية الربع الثاني", rep_claims: "ملخص الصرف CL-77310", rep_uc06: "تقرير الأداء المالي والتحليل الإداري",
+    running: "جارٍ…", agentlog_h: "نشاط الوكلاء",
+    log_route: "وجّه المنسّق الاستعلام إلى الوكلاء", log_alert: "أصدرت المراقبة تنبيه انحراف",
+    log_scan: "فحص مراقب الجودة 11 مصدراً — 10 خضراء، 1 برتقالية",
+    log_report: "تم إنشاء تقرير · مرجع", log_approve: "اعتمد المسؤول المخوّل توصية",
+    log_idle: "فهرس وكيل المعرفة الاستعلام في قاعدة المعرفة", log_uc06: "جمّع وكيل تحليل الأداء تقريراً",
+    redline: "المنصة توصي فقط وللقراءة فقط — لا تعدّل بيانات المصدر، ولا تنفّذ المدفوعات، ولا تعتمد تلقائياً.",
+    uc_title: "تحليل الأداء المالي", uc_sub: "UC-06 · الأداء المالي والفجوات المكانية وتركّز الخدمات وبنية المبادرات.",
+    uc_dept_a: "الإدارة العامة للتخطيط والأداء المالي", uc_dept_b: "إدارة تحليل الأداء المالي",
+    uc_registry: "سجل تحليل الأداء المالي", uc_new: "إنشاء تقرير جديد",
+    uc_total: "إجمالي التقارير", uc_pub: "منشور رسمياً", uc_appr: "معتمد", uc_inrev: "قيد المراجعة", uc_back: "رجوع",
+    s1: "المعايير التشغيلية", s2: "إنشاء اللوحة", s3: "مراجعة التعليق", s4: "تفاصيل التقرير",
+    uc_cfg: "ضبط معايير التصفية", uc_cfg_sub: "حدّد نطاق التحليل ومعايير التصفية لإنشاء اللوحة.",
+    f_level: "مستوى التحليل", f_amana: "الأمانة", f_muni: "البلدية", f_fy: "السنة المالية", f_period: "نوع الفترة", f_specific: "فترة محددة",
+    opt_ministry: "الوزارة", opt_allAmanas: "كل الأمانات", opt_allMuni: "كل البلديات", opt_monthly: "شهري", opt_quarterly: "ربع سنوي",
+    uc_generate: "إنشاء اللوحة التحليلية",
+    reason_h: "محرك التحليل والاستدلال بالذكاء الاصطناعي", reason_sub: "يرجى الانتظار، يقوم الوكيل بالاستدلال المالي الديناميكي…",
+    rstep1: "بدء وكيل تحليل الأداء المالي واستيعاب مؤشرات أداء الإدارات…",
+    rstep2: "تنسيق مسار 'تحليل الأداء والانحراف' وحساب المؤشرات والانحرافات…",
+    rstep3: "تنسيق مسار 'توليد التعليق السردي' وتركيب تفسيرات فجوات الأداء…",
+    rstep4: "تنسيق مسار 'تجميع لوحة القرار' وبناء التخطيطات البصرية للأداء…",
+    scope_sum: "ملخص النطاق", obj_sum: "ملخص البيانات الموضوعية", balance_check: "فحص التوازن الحسابي: ناجح",
+    viewData: "عرض البيانات الداعمة", ai_brief: "موجز الذكاء الاصطناعي", goCommentary: "الانتقال إلى مراجعة التعليق",
+    kp_orig: "الميزانية الأصلية", kp_orig_s: "الميزانية قبل التعديلات.",
+    kp_rev: "الميزانية مقابل الإيرادات", kp_rev_s: "الميزانية المعتمدة مقابل الإيراد المحقق.",
+    kp_cur: "الميزانية الحالية", kp_cur_s: "الميزانية المعتمدة الحالية ضمن النطاق.",
+    kp_act: "الإنفاق الفعلي", kp_act_s: "الإنفاق الفعلي للفترة المحددة.",
+    kp_rem: "الرصيد المتبقي", kp_rem_s: "الرصيد غير المصروف من الميزانية الحالية.",
+    kp_rate: "نسبة الإنفاق", kp_rate_s: "الإنفاق الفعلي مقسوماً على الميزانية الحالية.",
+    kp_chg: "زيادات / تخفيضات", kp_chg_s: "الفرق بين الميزانية الحالية والأصلية.",
+    tag_up: "متحسّن", tag_flat: "مستقر", tag_down: "متراجع",
+    map_title: "خريطة الأداء المالي الإقليمي", map_sub: "تُلوَّن المناطق وفق نسبة الإنفاق المعدّلة بعد تسوية الديون المؤجّلة.",
+    lg_green: "أخضر · قوي ≥75٪", lg_yellow: "أصفر · مراقبة 50–74٪", lg_red: "أحمر · إنذار <50٪",
+    spend_title: "أداء الإنفاق", spend_budget: "الميزانية الحالية", spend_actual: "الإنفاق الفعلي", spend_trend: "اتجاه الإنفاق الفعلي",
+    fdetail: "تحليل التفاصيل المالية", door_title: "تحليل أبواب الميزانية", door_sub: "أبواب الميزانية ← الجهة المنفّذة ← الاستخدام النهائي", door_total: "إجمالي التدفق المعروض",
+    svc_title: "تحليل الخدمات الرئيسية", vision_title: "برامج الرؤية",
+    vp_init: "المبادرة / المشروع", vp_port: "المحفظة", vp_budget: "الميزانية الحالية", vp_actual: "الإنفاق الفعلي", vp_rem: "المتبقي", vp_rate: "نسبة التنفيذ",
+    rev_split: "تقسيم مصادر الإيراد", rs_collected: "المحصّل", rs_outstanding: "المتبقي", rs_weight: "وزن المصدر",
+    col_rate: "نسبة التحصيل حسب المصدر", cc_collected: "المحصّل", cc_net: "صافي الفوترة",
+    recv_prog: "تطوّر الذمم المدينة", rp_caption: "انتقال شرائح الذمم بناءً على الفوترة وأرصدة الذمم المفتوحة",
+    rp_unpaid: "ذمم غير مدفوعة", rp_exec: "ذمم قابلة للتنفيذ", rp_done: "تحصيلات منفّذة",
+    rp_matrix: "المبلغ المفوتر / انتقال الذمم عبر شرائح التقادم", rp_unit: "الوحدة: ٪ من قاعدة الذمم المعروضة", buck_current: "الحالي",
+    reg_ach: "إنجاز التحصيل الإقليمي", ra_target: "المستهدف", ra_gap: "الفجوة",
+    st_above: "فوق المستهدف", st_near: "قريب من المستهدف", st_below: "دون المستهدف",
+    mapNote: "العلامات إرشادية؛ مُلوّنة وفق نسبة الإنفاق المعدّلة.",
+    cw_title: "مساحة مراجعة التعليق التفسيري", cw_sub: "تُنشأ اللوحة أولاً كعرض موحّد للأداء، ثم يُحدَّد نوع التقرير النهائي هنا لتوجيه التعليق والمخرجات.",
+    finalType: "نوع التقرير النهائي", rt_exec: "تقرير تنفيذي", rt_init: "تقرير المبادرات", rt_detail: "تقرير تفصيلي",
+    slidePages: "صفحات الشرائح", dataTables: "جداول البيانات", addTables: "إضافة / ضبط الجداول",
+    narrComment: "التعليق السردي", aiConf: "درجة ثقة الذكاء الاصطناعي", dataSrcLink: "رابط مصدر البيانات", dataSrcVal: "البوابة الوطنية (مصروفات الميزانية)",
+    mathOk: "تم التحقق من الاتساق الحسابي مقابل أوراق العمل المصدرية", chartLabel: "المخطط", chart_map: "خريطة إقليمية", chart_kpi: "بطاقات المؤشرات", chart_spend: "أداء الإنفاق", chart_svc: "تحليل الخدمات", chart_vision: "برامج الرؤية", chart_none: "نص فقط",
+    copilot_h: "مساعد الدردشة المرافق", copilot_target: "البطاقة المستهدفة للمحادثة", copilot_hello: "مرحباً! اختر أي بطاقة تعليق من اليسار لبدء إعادة الصياغة.", copilot_ph: "اكتب تعليمات إعادة الصياغة (مثل: اجعله أكثر إيجازاً)…",
+    showDiff: "إظهار الفرق", discussAI: "مناقشة مع الذكاء الاصطناعي", prev: "رجوع", next: "التالي", assemble: "تجميع وتركيب المسودة النهائية",
+    backWs: "العودة إلى مساحة العمل", submitReview: "إرسال للمراجعة", exportPptx: "تصدير PPTX", exportPdf: "تصدير PDF",
+    st_draft: "مسودة", st_review: "قيد المراجعة", page: "صفحة", of: "من",
+    cover_country: "المملكة العربية السعودية", cover_min: "وزارة الشؤون البلدية والقروية والإسكان", cover_persp: "المنظور: التخطيط والأداء المالي", cover_scope: "النطاق", cover_agency: "وكالة الشؤون المالية والميزانية",
+    submitted: "تم إرسال التقرير للمراجعة", note_demo: "بيانات تجريبية · مسودات بانتظار الاعتماد البشري",
+  },
+  zh: {
+    appName: "财务与预算智能助手",
+    sso_title: "市政部统一登录", sso_sub: "统一的国家级入口,访问市政农村事务与住房部的数字服务。",
+    brandLine: "财务与预算智能助手", signInTitle: "登录", identity: "身份", password: "密码",
+    securityCode: "验证码", or_: "或", login_btn: "登录",
+    nic1: "国家统一登录", nic2: "国家身份卡", noAccount: "还没有账户?", createAccount: "创建新账户",
+    loginHint: "演示用密码已预填(无真实认证)。",
+    copyright: "© 2026 — 市政农村事务与住房部 · 财务事务与预算署", syntheticData: "合成演示数据 — 非真实记录",
+    logout: "退出登录", resetDemo: "重置演示",
+    coverage: "范围", cov_consolidated: "合并", cov_hq: "部本部", cov_amanas: "各阿玛纳",
+    analyst_full: "财务数据分析师", manager_full: "预算执行经理", leader_full: "高层领导",
+    analyst_desc: "向编排器提问、运行分析、处理告警、生成 UC-06 报告,并驱动预算与索赔流程。",
+    manager_desc: "复核预算执行,在上限内批准调拨,监控偏差。",
+    leader_desc: "查阅合并 / 部本部 / 各阿玛纳的执行级仪表盘与报告——仅只读。",
+    nav_hub: "主页", nav_chat: "对话分析", nav_monitor: "监控与告警",
+    nav_perf: "绩效分析", nav_budget: "预算执行", nav_claims: "索赔与支付", nav_reports: "报告",
+    eng_orch: "编排智能体", eng_consol: "数据汇聚与质量", eng_deviation: "偏差与预警",
+    eng_forecast: "预测与情景", eng_close: "对账与关账", eng_comply: "合规与审计",
+    engd_orch: "在各智能体间路由查询、组织输出、生成报告。",
+    engd_consol: "从核准系统汇聚并校验数据(UC-01)。",
+    engd_deviation: "检测偏差、异常与重复;发出告警(UC-02)。",
+    engd_forecast: "滚动预测、财政空间与情景模拟(UC-04/05/07)。",
+    engd_close: "关账前校验、余额对账与调整(UC-09)。",
+    engd_comply: "IPSAS 合规、会计备忘与审计轨迹(UC-11/10)。",
+    online: "在线", autonomous: "自主",
+    src_sap: "SAP / Asas", src_etimad: "Etimad", src_esnad: "Esnad", src_grp: "GRP", src_tahseel: "Tahseel",
+    src_makeen: "Makeen", src_efaa: "Efaa", src_sanad: "Sanad", src_balady: "Balady", src_gl: "总账", src_bi: "BI 看板",
+    hub_hello: "欢迎", hub_sub: "一个多智能体平台 · 互联的财务流程",
+    k_fiscal: "可用财政空间", k_alerts: "未处理偏差", k_util: "预算执行率", k_close: "关账就绪度",
+    engines_title: "智能体与编排器", sources_title: "11 个数据源 · 实时状态",
+    utilByAmana: "各阿玛纳预算执行率(%)", journeys_title: "互联流程", open: "打开",
+    j_chat_n: "对话分析", j_chat_b: "用自然语言提问 → 编排器在各智能体间路由,返回有数据来源支撑的答案。",
+    j_mon_n: "监控与预警", j_mon_b: "智能体按计划扫描 11 个数据源,检测偏差并附根因发出告警。",
+    j_bud_n: "预算执行(G-03)", j_bud_b: "偏差扫描 → 重算财政空间 → AI 调拨建议 → 人工审批 → 报告。",
+    j_clm_n: "索赔与支付(G-04)", j_clm_b: "重复检测 → IPSAS 合规 → AI 支付建议 → 人工审批 → 摘要。",
+    latest_alerts: "最新告警", view: "查看", live: "实时",
+    shock_banner: "预计吉达阿玛纳运营预算将于年底超支 9,600 万里亚尔。",
+    runAssessment: "运行评估", brief_urgent: "需要处理",
+    chat_sub: "编排智能体 · 多语言自然语言界面 · 只读",
+    chat_ph: "请输入分析问题…", send: "发送", presets: "试试:",
+    confidence: "置信度", sources: "来源",
+    think_intent: "理解意图", think_route: "从注册表选择智能体",
+    think_perm: "检查权限范围", think_run: "运行分析", think_compose: "组织输出",
+    draftNote: "AI 输出为草稿 — 经审批前不构成财务决策。",
+    escalated: "升级", esc_perm: "已触发权限 / 数据范围守卫",
+    crossNote: "跨智能体编排:已自动串联多个智能体。",
+    act_open_budget: "打开预算执行", act_open_claims: "打开索赔与支付",
+    q_fiscal: "利雅得阿玛纳的可用财政空间是多少?", q_overrun: "哪个阿玛纳有超支风险?",
+    q_duplicate: "显示本月疑似重复发票。", q_collection: "整体征收率是多少?",
+    q_vague: "显示所有供应商的敏感银行账户信息。",
+    mon_sub: "数据质量监控与偏差智能体 — 自动、按计划运行",
+    runScan: "立即扫描", scanning: "正在扫描 11 个数据源…", srcHealth: "数据源状态(11)", alerts: "告警",
+    noAlerts: "无未处理告警 — 所有指标均在阈值内。",
+    sev_red: "严重", sev_amber: "警告", sev_info: "信息",
+    rootCause: "根因", askOrch: "询问编排器", ack: "确认", acked: "已确认", scanDone: "扫描完成 — 已检查 11/11 个数据源",
+    storyRun: "运行下一步", storyRunning: "智能体处理中…", storyRestart: "重新开始", storyDone: "流程完成",
+    step: "步骤", actor: "执行方", output: "输出", approve: "批准", reject: "拒绝",
+    approved: "已批准", rejected: "已拒绝", pending: "待人工复核", aiReco: "AI 建议",
+    draft: "草稿 — 经审批前不构成财务决策", why: "建议理由", lineage: "数据血缘",
+    ceiling: "核定上限", commit: "承诺", planL: "付款计划", reserve: "预留", fiscalSpace: "可用财政空间",
+    rep_sub: "已生成的报告与智能体行动日志 — 可追溯、按范围标注",
+    rep_title: "标题", rep_cov: "范围", rep_conf: "置信度", rep_time: "生成时间", rep_ref: "编号",
+    agentLog: "智能体行动日志", noReports: "暂无报告 — 可从某个流程或助手生成。",
+    rep_fiscal: "利雅得财政空间展望", rep_overrun: "吉达超支与调拨", rep_dup: "重复发票审计",
+    rep_collect: "征收绩效", rep_budget: "二季度预算执行报告", rep_claims: "支付摘要 CL-77310", rep_uc06: "财务绩效与管理分析报告",
+    running: "运行中…", agentlog_h: "智能体活动",
+    log_route: "编排器已将查询路由至智能体", log_alert: "监控发出了偏差告警",
+    log_scan: "数据质量监控扫描了 11 个数据源 — 10 绿、1 橙",
+    log_report: "已生成报告 · 编号", log_approve: "授权官员批准了一项建议",
+    log_idle: "知识智能体已将查询编入知识库", log_uc06: "绩效分析智能体已组装一份报告",
+    redline: "平台仅提供建议且只读 — 绝不修改源数据、执行付款或自动审批。",
+    uc_title: "财务绩效分析", uc_sub: "UC-06 · 财务绩效、区域差距、服务集中度与举措结构。",
+    uc_dept_a: "财务规划与绩效总局", uc_dept_b: "财务绩效分析部",
+    uc_registry: "财务绩效分析记录", uc_new: "创建新报告",
+    uc_total: "报告总数", uc_pub: "正式发布", uc_appr: "已核准", uc_inrev: "审核中", uc_back: "返回",
+    s1: "运营参数", s2: "生成仪表盘", s3: "复核评述", s4: "报告详情",
+    uc_cfg: "配置筛选参数", uc_cfg_sub: "定义分析范围与维度筛选条件以生成仪表盘。",
+    f_level: "分析层级", f_amana: "阿玛纳", f_muni: "市政", f_fy: "财政年度", f_period: "周期类型", f_specific: "具体周期",
+    opt_ministry: "部级", opt_allAmanas: "全部阿玛纳", opt_allMuni: "全部市政", opt_monthly: "月度", opt_quarterly: "季度",
+    uc_generate: "生成分析仪表盘",
+    reason_h: "AI 分析与推理引擎", reason_sub: "请稍候,AI 智能体正在进行动态财务推理…",
+    rstep1: "财务绩效分析智能体启动,正在摄取部门绩效指标…",
+    rstep2: "编排「绩效与差异分析」工作流,计算 KPI 与偏差…",
+    rstep3: "编排「叙述性评述生成」工作流,综合解释绩效差距…",
+    rstep4: "编排「决策仪表盘装配」工作流,编排可视化绩效布局…",
+    scope_sum: "范围摘要", obj_sum: "客观数据摘要", balance_check: "数学平衡校验:通过",
+    viewData: "查看支撑数据", ai_brief: "AI 摘要", goCommentary: "前往评述复核",
+    kp_orig: "原始预算", kp_orig_s: "调整前的原始预算。",
+    kp_rev: "预算对比收入", kp_rev_s: "核定预算对比已实现收入。",
+    kp_cur: "现行预算", kp_cur_s: "所选范围内的现行核定预算。",
+    kp_act: "实际支出", kp_act_s: "所选周期的实际支出。",
+    kp_rem: "剩余余额", kp_rem_s: "现行预算的未支出余额。",
+    kp_rate: "支出率", kp_rate_s: "实际支出除以现行预算。",
+    kp_chg: "增加 / 减少", kp_chg_s: "现行与原始预算之差。",
+    tag_up: "改善中", tag_flat: "稳定", tag_down: "下滑中",
+    map_title: "区域财务绩效地图", map_sub: "区域按递延债务调整后的调整支出率着色。",
+    lg_green: "绿 · 良好 ≥75%", lg_yellow: "黄 · 关注 50–74%", lg_red: "红 · 预警 <50%",
+    spend_title: "支出绩效", spend_budget: "现行预算", spend_actual: "实际支出", spend_trend: "实际支出趋势",
+    fdetail: "财务明细分析", door_title: "预算门分析", door_sub: "预算门 → 执行主体 → 最终用途", door_total: "显示流量合计",
+    svc_title: "主要服务分析", vision_title: "愿景计划",
+    vp_init: "举措 / 项目", vp_port: "组合", vp_budget: "现行预算", vp_actual: "实际支出", vp_rem: "剩余", vp_rate: "执行率",
+    rev_split: "收入来源拆分", rs_collected: "已征收", rs_outstanding: "未征收", rs_weight: "来源权重",
+    col_rate: "各来源征收率", cc_collected: "已征收", cc_net: "净开票",
+    recv_prog: "应收账款演进", rp_caption: "基于开票与未结应收余额的账龄迁移",
+    rp_unpaid: "未付应收", rp_exec: "可执行应收", rp_done: "已执行征收",
+    rp_matrix: "开票金额 / 账龄分桶迁移", rp_unit: "单位:占所示应收基数的 %", buck_current: "当前",
+    reg_ach: "区域征收达成", ra_target: "目标", ra_gap: "缺口",
+    st_above: "高于目标", st_near: "接近目标", st_below: "低于目标",
+    mapNote: "标记为示意;按调整后支出率着色。",
+    cw_title: "解释性评述复核工作区", cw_sub: "先生成统一的绩效视图仪表盘,然后在此选择最终报告类型,以指导评述与报告输出。",
+    finalType: "最终报告类型", rt_exec: "执行报告", rt_init: "举措报告", rt_detail: "明细报告",
+    slidePages: "幻灯片页", dataTables: "数据表", addTables: "添加 / 配置数据表",
+    narrComment: "叙述性评述", aiConf: "AI 置信度", dataSrcLink: "数据源链接", dataSrcVal: "国家门户(预算支出)",
+    mathOk: "已对照源工作表校验数学一致性", chartLabel: "图表", chart_map: "区域地图", chart_kpi: "KPI 卡片", chart_spend: "支出绩效", chart_svc: "服务分析", chart_vision: "愿景计划", chart_none: "纯文本",
+    copilot_h: "AI 副驾驶聊天助手", copilot_target: "对话目标卡片", copilot_hello: "你好!从左侧选择任意评述卡片即可开始改写。", copilot_ph: "输入改写指令(例如:更简洁一些)…",
+    showDiff: "显示差异", discussAI: "与 AI 讨论", prev: "上一步", next: "下一步", assemble: "装配并编译最终草稿",
+    backWs: "返回报告工作区", submitReview: "提交审核", exportPptx: "导出 PPTX", exportPdf: "导出 PDF",
+    st_draft: "草稿", st_review: "审核中", page: "第", of: "/",
+    cover_country: "沙特阿拉伯王国", cover_min: "市政农村事务与住房部", cover_persp: "视角:规划与财务绩效", cover_scope: "范围", cover_agency: "财务事务与预算署",
+    submitted: "报告已提交审核", note_demo: "合成数据 · 草稿待人工审批",
+  },
+};
+
+/* =========================================================================
+   Store
+   ========================================================================= */
+const Store = createContext(null);
+function useStore() { return useContext(Store); }
+let logSeq = 0;
+
+function StoreProvider({ children }) {
+  const [lang, setLang] = useState(URL_LANG || "ar");
+  const [user, setUser] = useState(null);
+  const [route, setRoute] = useState("hub");
+  const [cov, setCov] = useState("consolidated");
+  const [alerts, setAlerts] = useState(ALERTS.map(a => ({ ...a, ack: false })));
+  const [log, setLog] = useState([]);
+  const [reports, setReports] = useState([
+    { name: "rep_uc06", cov: "consolidated", conf: "—", ts: "2026-06-01 10:24", ref: "FBC-2026-1042", status: "pub" },
+  ]);
+  const [pendingQ, setPendingQ] = useState(null);
+
+  const dir = lang === "ar" ? "rtl" : "ltr";
+  useEffect(() => { document.documentElement.lang = lang; document.documentElement.dir = dir; }, [lang, dir]);
+
+  const t = (k) => (I18N[lang] && I18N[lang][k] != null ? I18N[lang][k] : (I18N.en[k] != null ? I18N.en[k] : k));
+  const tr = (o) => (o && typeof o === "object" ? (o[lang] != null ? o[lang] : (o.en != null ? o.en : o.ar)) : o);
+
+  const pushLog = (textKeyOrObj, extra) => {
+    const ts = new Date().toLocaleTimeString(lang === "ar" ? "ar-SA" : lang === "zh" ? "zh-CN" : "en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const text = typeof textKeyOrObj === "object" ? tr(textKeyOrObj) : (t(textKeyOrObj) + (extra ? " " + extra : ""));
+    setLog((l) => [{ id: ++logSeq, ts, text }, ...l].slice(0, 40));
+  };
+  const addReport = (r) => setReports((rs) => {
+    const ref = "FBC-2026-" + String(1000 + Math.floor(Math.random() * 9000));
+    const ts = new Date().toLocaleString(lang === "ar" ? "ar-SA" : lang === "zh" ? "zh-CN" : "en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    pushLog("log_report", ref);
+    return [{ ref, ts, cov, status: "review", ...r }, ...rs];
+  });
+  const ackAlert = (id) => setAlerts((as) => as.map(a => a.id === id ? { ...a, ack: true } : a));
+  const askOrchestrator = (scn) => { setPendingQ(scn); setRoute("chat"); };
+  const reset = () => { setAlerts(ALERTS.map(a => ({ ...a, ack: false }))); setLog([]); setRoute("hub"); setPendingQ(null); };
+  const cycleLang = () => setLang(l => (l === "ar" ? "en" : "ar")); // UI toggle: AR/EN only (zh via ?ln=zh)
+
+  const value = { lang, setLang, cycleLang, dir, t, tr, user, setUser, route, setRoute, cov, setCov,
+    alerts, ackAlert, log, pushLog, reports, addReport, pendingQ, setPendingQ, askOrchestrator, reset };
+  return <Store.Provider value={value}>{children}</Store.Provider>;
+}
+
+/* =========================================================================
+   Icons & atoms
+   ========================================================================= */
+const GlobeIcon = (<svg className="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3z" /></svg>);
+const ArrowIcon = (<svg className="ic-svg ic-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>);
+const UserIcon = (<svg className="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7" /></svg>);
+const NEXT_LANG_LABEL = { ar: "العربية", en: "English", zh: "中文" };
+
+function KPI({ label, value, sub, tone }) {
+  const color = tone === "good" ? "var(--green)" : tone === "bad" ? "var(--danger)" : tone === "warn" ? "var(--amber)" : "var(--ink)";
+  return (<div className={"kpi" + (tone ? " kpi-" + tone : "")}><div className="label">{label}</div>
+    <div className="value" style={{ color }}>{value}</div>{sub && <div className="sub">{sub}</div>}</div>);
+}
+function Section({ title, sub, right, children, className }) {
+  return (<div className={"card pad acc" + (className ? " " + className : "")} style={{ marginBottom: 16 }}>
+    <div className="page-h" style={{ marginBottom: sub ? 12 : 8 }}>
+      <div><h2 style={{ fontSize: 16 }}>{title}</h2>{sub && <div className="sub muted">{sub}</div>}</div>{right}</div>
+    {children}</div>);
+}
+function PageHeader({ title, sub, right }) { return (<div className="page-h"><div><h1>{title}</h1>{sub && <div className="sub">{sub}</div>}</div>{right}</div>); }
+function Chip({ sev, children }) { const c = sev === "red" ? "danger" : sev === "amber" ? "amber" : sev === "info" ? "info" : "gray"; return <span className={"chip " + c}>{children}</span>; }
+
+function LineagePop() {
+  const { t, tr } = useStore(); const [open, setOpen] = useState(false);
+  return (<span style={{ position: "relative", display: "inline-block" }}>
+    <button className="btn ghost sm" onClick={() => setOpen(o => !o)}>⌥ {t("lineage")}</button>
+    {open && (<div className="card pad" style={{ position: "absolute", zIndex: 30, marginTop: 6, width: 300, insetInlineStart: 0, boxShadow: "var(--shadow)" }}>
+      <div className="timeline">{LINEAGE.map((c, i) => (<div className="ev" key={i} style={{ paddingBottom: 12 }}><div style={{ fontSize: 12.5 }}>{tr(c)}</div></div>))}</div>
+    </div>)}
+  </span>);
+}
+
+/* =========================================================================
+   Login
+   ========================================================================= */
+const ROLE_KEYS = ["analyst", "manager", "leader"];
+const Skyline = (
+  <svg viewBox="0 0 1440 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs><linearGradient id="bldsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#13796a" /><stop offset="0.55" stopColor="#0d5a4f" /><stop offset="1" stopColor="#093b35" /></linearGradient></defs>
+    <rect width="1440" height="700" fill="url(#bldsky)" />
+    <circle cx="1180" cy="150" r="60" fill="#1aa07f" opacity="0.25" />
+    <g fill="#0c4a40"><rect x="40" y="420" width="120" height="280" /><rect x="200" y="360" width="90" height="340" /><rect x="330" y="300" width="70" height="400" /><rect x="430" y="440" width="110" height="260" /><rect x="580" y="250" width="60" height="450" /><rect x="660" y="330" width="100" height="370" /><rect x="800" y="280" width="80" height="420" /><rect x="900" y="420" width="120" height="280" /><rect x="1060" y="320" width="80" height="380" /><rect x="1170" y="380" width="100" height="320" /><rect x="1300" y="300" width="90" height="400" /></g>
+  </svg>
+);
+function genCode() { const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 6; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
+function Login() {
+  const { t, setUser, cycleLang } = useStore();
+  const [role, setRole] = useState("analyst");
+  const [code, setCode] = useState(genCode);
+  const [showPwd, setShowPwd] = useState(false);
+  const fb = (e, base) => { const im = e.currentTarget, f = im.dataset.f || "0"; if (f === "0") { im.dataset.f = "1"; im.src = "public/assets/" + base; } else if (f === "1") { im.dataset.f = "2"; im.src = "assets/" + base; } else im.style.display = "none"; };
+  return (<div className="bld-login">
+    <div className="bld-bg">{Skyline}</div>
+    <img className="bld-photo" src="/assets/building.jpg" alt="" onError={e => fb(e, "building.jpg")} />
+    <div className="bld-overlay" />
+    <div className="bld-center"><div className="bld-wrap"><div className="bld-row2">
+      <div className="bld-brand-area">
+        <div className="bld-logo">
+          <img className="bld-logo-img" src="/assets/logo.png" alt="MoMRAH" onError={e => fb(e, "logo.png")} />
+          <span className="bld-logo-cap">{t("brandLine")}</span>
+        </div>
+        <h3 style={{ color: "#fff" }}>{t("sso_title")}</h3>
+        <p>{t("sso_sub")}</p>
+      </div>
+      <div className="bld-card-col"><div className="bld-card fade">
+        <h2>{t("signInTitle")}</h2>
+        <div className="bld-fg"><label>{t("identity")}</label>
+          <div className="bld-inp"><span className="ic">👤</span>
+            <select value={role} onChange={e => setRole(e.target.value)}>{ROLE_KEYS.map(rk => <option key={rk} value={rk}>{t(rk + "_full")}</option>)}</select>
+            <span className="caret">▾</span></div>
+        </div>
+        <div className="bld-fg"><label>{t("password")}</label>
+          <div className="bld-inp has-eye"><span className="ic">🔒</span>
+            <input type={showPwd ? "text" : "password"} value="********" readOnly />
+            <span className="eye" onClick={() => setShowPwd(s => !s)} title="Show/Hide">👁</span></div>
+        </div>
+        <div className="bld-hint">{t("loginHint")}</div>
+        <div className="bld-captcha"><div className="bld-code"><span>{code}</span></div>
+          <button className="bld-refresh" onClick={() => setCode(genCode())} title="Refresh">⟳</button>
+          <input placeholder={t("securityCode")} maxLength={6} /></div>
+        <button className="bld-btn" onClick={() => setUser(role)}>{t("login_btn")}</button>
+        <div className="bld-or">{t("or_")}</div>
+        <button className="bld-nic" onClick={() => setUser(role)}>
+          <div className="bld-nic-grid"><i className="g" /><i className="k" /><i className="o" /><i className="k" /><i className="g" /><i className="k" /><i className="o" /><i className="k" /><i className="g" /></div>
+          <div><div className="l1">{t("nic1")}</div><div className="l2">{t("nic2")}</div></div></button>
+        <div className="bld-create">{t("noAccount")} <button>{t("createAccount")}</button></div>
+        <div className="bld-langrow"><button className="bld-lang2" onClick={cycleLang}>{GlobeIcon} العربية / English</button></div>
+      </div></div>
+    </div></div></div>
+    <div className="bld-copy">{t("copyright")} · {t("syntheticData")}</div>
+  </div>);
+}
+
+/* =========================================================================
+   Shell
+   ========================================================================= */
+function CoverageSwitch() {
+  const { t, cov, setCov } = useStore();
+  return (<span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+    <span className="muted" style={{ fontSize: 12, fontWeight: 600 }}>{t("coverage")}:</span>
+    <span className="cov">{["consolidated", "hq", "amanas"].map(c => (<button key={c} className={cov === c ? "on" : ""} onClick={() => setCov(c)}>{t("cov_" + c)}</button>))}</span>
+  </span>);
+}
+function TopBar() {
+  const { t, lang, cycleLang, user, setUser, reset } = useStore();
+  const [open, setOpen] = useState(false);
+  const fb = (e, base) => { const im = e.currentTarget, f = im.dataset.f || "0"; if (f === "0") { im.dataset.f = "1"; im.src = "public/assets/" + base; } else if (f === "1") { im.dataset.f = "2"; im.src = "assets/" + base; } else im.style.display = "none"; };
+  const nextLang = lang === "ar" ? "en" : "ar";
+  return (<div className="topbar">
+    <div className="brand">
+      <img className="topbar-logo" src="/assets/logo.png" alt="MoMRAH" onError={e => fb(e, "logo.png")} />
+      <span className="topbar-sep" /><span className="topbar-app">{t("appName")}</span>
+    </div>
+    <div className="right">
+      <CoverageSwitch />
+      <button className="tbtn" onClick={cycleLang}>{GlobeIcon} {NEXT_LANG_LABEL[nextLang]}</button>
+      <div className="usermenu">
+        <button className="tbtn" onClick={() => setOpen(o => !o)}>{UserIcon} {t(user + "_full")} ▾</button>
+        {open && <div className="panel" onMouseLeave={() => setOpen(false)}>
+          <div style={{ padding: "6px 8px", fontWeight: 700 }}>{t(user + "_full")}</div>
+          <div style={{ padding: "2px 8px 10px", fontSize: 12 }} className="muted">{t(user + "_desc")}</div>
+          <div className="divider" style={{ margin: "6px 0" }} />
+          <button className="btn ghost sm" style={{ width: "100%", marginBottom: 6 }} onClick={() => { reset(); setOpen(false); }}>↺ {t("resetDemo")}</button>
+          <button className="btn danger sm" style={{ width: "100%" }} onClick={() => setUser(null)}>⎋ {t("logout")}</button>
+        </div>}
+      </div>
+    </div>
+  </div>);
+}
+const NAV = {
+  analyst: [["nav_hub", "◧", "hub"], ["nav_perf", "▣", "perf"], ["nav_chat", "✦", "chat"], ["nav_monitor", "◉", "monitor"], ["nav_budget", "▦", "budget"], ["nav_claims", "🧾", "claims"], ["nav_reports", "📄", "reports"]],
+  manager: [["nav_hub", "◧", "hub"], ["nav_perf", "▣", "perf"], ["nav_budget", "▦", "budget"], ["nav_monitor", "◉", "monitor"], ["nav_reports", "📄", "reports"]],
+  leader: [["nav_hub", "◧", "hub"], ["nav_perf", "▣", "perf"], ["nav_reports", "📄", "reports"]],
+};
+function Sidebar() {
+  const { t, user, route, setRoute, alerts } = useStore();
+  const openAlerts = alerts.filter(a => !a.ack).length;
+  return (<div className="sidebar">
+    <div className="role"><div className="nm">{t(user + "_full")}</div><div className="rl">{t(user + "_desc").slice(0, 44)}…</div></div>
+    {NAV[user].map(([k, ic, r]) => {
+      const badge = k === "nav_monitor" && openAlerts;
+      return (<div key={k} className={"navitem" + (route === r ? " active" : "")} onClick={() => setRoute(r)}>
+        <span className="ico">{ic}</span><span style={{ flex: 1 }}>{t(k)}</span>{badge ? <span className="badge-count">{badge}</span> : null}</div>);
+    })}
+    <div className="banner" style={{ marginTop: 14 }}>🛈 {t("redline")}</div>
+  </div>);
+}
+function AgentLog() {
+  const { t, log } = useStore(); const last = log[0];
+  return (<div className="agentlog"><span className="alh"><span className="live-dot" />{t("agentlog_h")}</span>
+    <span className="alline">{last ? (<><b>{last.ts}</b> · {last.text}</>) : "—"}</span></div>);
+}
+
+/* =========================================================================
+   Hub
+   ========================================================================= */
+function EngineGrid() {
+  const { t } = useStore();
+  return (<div className="eng-grid">{ENGINES.map(e => (<div key={e.key} className={"eng" + (e.key === "orch" ? " orch" : "")}>
+    <div className="et">{e.icon} {t("eng_" + e.key)}</div><div className="ed">{t("engd_" + e.key)}</div>
+    <div className="es"><span className="pulse" />{t("online")} · {e.lvl} · {t("autonomous")}</div></div>))}</div>);
+}
+function SourceStrip() {
+  const { t } = useStore();
+  return (<div className="src11">{SOURCES11.map(s => { const col = s.status === "ok" ? "var(--green)" : s.status === "amber" ? "var(--amber)" : "var(--danger)";
+    return (<div key={s.key} className="s" title={s.sla + " · " + s.fresh + "%"}><div className="sk">{t("src_" + s.key)}</div><div className="sd" style={{ background: col }} /></div>); })}</div>);
+}
+function UtilChart() {
+  const C = RC; if (!C || !C.ResponsiveContainer) return null;
+  return (<div style={{ width: "100%", height: 220 }}><C.ResponsiveContainer>
+    <C.BarChart data={UTIL_BY_AMANA} margin={{ top: 6, right: 10, left: -16, bottom: 0 }}>
+      <C.CartesianGrid strokeDasharray="3 3" stroke="#eef2ef" vertical={false} />
+      <C.XAxis dataKey="k" tick={{ fontSize: 11 }} /><C.YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+      <C.Tooltip formatter={(v) => v + "%"} contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2eae5" }} />
+      <C.Bar dataKey="v" radius={[6, 6, 0, 0]} fill="#1B8354" /></C.BarChart></C.ResponsiveContainer></div>);
+}
+function Hub() {
+  const { t, user, setRoute, cov, alerts, askOrchestrator } = useStore();
+  const journeys = [
+    { ic: "✦", col: "#2563eb", name: "j_chat_n", body: "j_chat_b", route: "chat" },
+    { ic: "◉", col: "#e29700", name: "j_mon_n", body: "j_mon_b", route: "monitor" },
+    { ic: "▦", col: "#1B8354", name: "j_bud_n", body: "j_bud_b", route: "budget" },
+    { ic: "🧾", col: "#6d5ae6", name: "j_clm_n", body: "j_clm_b", route: "claims" },
+  ];
+  const open = alerts.filter(a => !a.ack);
+  return (<div className="fade">
+    <PageHeader title={t("hub_hello") + " · " + t(user + "_full")} sub={t("hub_sub")} />
+    <div className="shock"><span className="si">⚡</span><span className="stxt">{t("shock_banner")}</span>
+      <button className="btn" onClick={() => askOrchestrator("q_overrun")}>✦ {t("runAssessment")}</button><span className="spill">{t("brief_urgent")}</span></div>
+    <div className="cols-4" style={{ marginBottom: 16 }}>
+      <KPI label={t("k_fiscal")} value="SAR 4.82B" sub={t("cov_" + cov)} tone="good" />
+      <KPI label={t("k_alerts")} value={open.length} tone={open.length ? "bad" : "good"} />
+      <KPI label={t("k_util")} value="71.4%" tone="warn" /><KPI label={t("k_close")} value="92%" tone="good" />
+    </div>
+    <Section title={t("engines_title")}><EngineGrid /></Section>
+    <Section title={t("sources_title")} right={<span className="chip">● 11 {t("live")}</span>}><SourceStrip /></Section>
+    <div className="cols-2">
+      <Section title={t("journeys_title")}><div className="cols-2">
+        {journeys.map(j => (<div key={j.route} className="card pad jcard" onClick={() => setRoute(j.route)}>
+          <div className="jh"><span className="jn" style={{ background: j.col }}>{j.ic}</span><strong>{t(j.name)}</strong></div>
+          <div className="jbody">{t(j.body)}</div><div className="jgo">{t("open")} {ArrowIcon}</div></div>))}
+      </div></Section>
+      <Section title={t("utilByAmana")}><UtilChart /></Section>
+    </div>
+    <Section title={t("latest_alerts")} right={<button className="btn secondary sm" onClick={() => setRoute("monitor")}>{t("view")} {ArrowIcon}</button>}>
+      {open.length === 0 ? <div className="muted">{t("noAlerts")}</div> : open.slice(0, 3).map(a => (<AlertRow key={a.id} a={a} compact />))}
+    </Section>
+  </div>);
+}
+
+/* =========================================================================
+   Assistant (chat)
+   ========================================================================= */
+function Viz({ kind }) { if (kind === "util") return <UtilChart />; return null; }
+function ThinkBlock({ scnKey, idx }) {
+  const { t } = useStore(); const steps = SCN[scnKey].steps;
+  return (<div className="msg bot"><div className="av">✦</div><div className="bubble" style={{ minWidth: 260 }}>
+    <div className="ai-scan"><span /></div>
+    <div className="think">{steps.map((s, i) => { const state = i < idx ? "ok" : i === idx ? "act" : "";
+      return (<div key={i} className={"tl " + state}><span className="ti">{i < idx ? "✓" : i === idx ? "◐" : "○"}</span><span>{t(s[1])} · <b>{t("eng_" + s[0])}</b></span></div>); })}</div>
+  </div></div>);
+}
+function BotMsg({ scnKey, onAction }) {
+  const { t, tr } = useStore(); const scn = SCN[scnKey];
+  return (<div className="msg bot"><div className="av">✦</div><div className="bubble">
+    {scn.type === "escalate" && <div style={{ marginBottom: 6 }}><span className="chip danger">⚠ {t("escalated")}</span> <span className="muted" style={{ fontSize: 12 }}>{t("esc_perm")}</span></div>}
+    {scn.type === "cross" && <div className="banner" style={{ marginBottom: 8 }}>↪ {t("crossNote")}</div>}
+    <div style={{ fontSize: 13.5, lineHeight: 1.65 }}>{tr(scn.a)}</div>
+    {scn.viz && <Viz kind={scn.viz} />}
+    <div className="meta">{scn.conf != null && <span className="chip">{t("confidence")}: {scn.conf}%</span>}{(scn.srcs || []).map(s => <span key={s} className="chip gray">{t(s)}</span>)}</div>
+    {(scn.actions || []).length > 0 && <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>{scn.actions.map((a, i) => <button key={i} className="btn secondary sm" onClick={() => onAction(a.to)}>{t(a.lk)} {ArrowIcon}</button>)}</div>}
+    <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>🛈 {t("draftNote")}</div>
+  </div></div>);
+}
+function ChatAnalysis() {
+  const { t, pushLog, addReport, pendingQ, setPendingQ, setRoute } = useStore();
+  const [msgs, setMsgs] = useState([]); const [input, setInput] = useState(""); const [busy, setBusy] = useState(false); const [think, setThink] = useState(null);
+  const endRef = useRef(null);
+  useEffect(() => { endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, think]);
+  const run = (key, userText) => {
+    const scn = SCN[key]; if (!scn || busy) return;
+    setMsgs(m => [...m, { role: "user", text: userText || t(key) }]); setBusy(true); setThink({ scn: key, idx: 0 }); pushLog("log_route");
+    let i = 0; const steps = scn.steps;
+    const tick = () => { i++; if (i < steps.length) { setThink({ scn: key, idx: i }); setTimeout(tick, 600); } else { setThink(null); setBusy(false); setMsgs(m => [...m, { role: "bot", scn: key }]); if (scn.report) addReport({ name: scn.report, conf: scn.conf || "—" }); } };
+    setTimeout(tick, 600);
+  };
+  useEffect(() => { if (pendingQ) { const q = pendingQ; setPendingQ(null); setTimeout(() => run(q), 250); } }, [pendingQ]);
+  const submit = () => { const v = input.trim(); if (!v) return; setInput(""); const q = v.toLowerCase(); let key = "q_fiscal";
+    if (/(dupl|مكرر|فاتورة|invoice|重复|发票)/.test(q)) key = "q_duplicate";
+    else if (/(overrun|risk|تجاوز|خطر|超支|风险)/.test(q)) key = "q_overrun";
+    else if (/(collect|تحصيل|征收)/.test(q)) key = "q_collection";
+    else if (/(bank|sensitive|حساب|حساس|银行|敏感)/.test(q)) key = "q_vague";
+    run(key, v); };
+  return (<div className="fade">
+    <PageHeader title={t("nav_chat")} sub={t("chat_sub")} />
+    <div className="card pad acc">
+      <div className="preset-row"><span className="muted" style={{ fontSize: 12, fontWeight: 700, alignSelf: "center" }}>{t("presets")}</span>
+        {PRESETS.map(p => (<button key={p} className={"preset" + (p === "q_vague" ? " alt" : "")} disabled={busy} onClick={() => run(p)}>{t(p)}</button>))}</div>
+      <div className="chat-wrap"><div className="chat-scroll">
+        {msgs.length === 0 && <div className="muted" style={{ textAlign: "center", padding: "30px 0" }}>{t("draftNote")}</div>}
+        {msgs.map((m, i) => m.role === "user" ? (<div key={i} className="msg user"><div className="av">{UserIcon}</div><div className="bubble">{m.text}</div></div>) : (<BotMsg key={i} scnKey={m.scn} onAction={(to) => setRoute(to)} />))}
+        {think && <ThinkBlock scnKey={think.scn} idx={think.idx} />}<div ref={endRef} />
+      </div>
+        <div className="chat-input"><input className="input" placeholder={t("chat_ph")} value={input} disabled={busy} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} />
+          <button className="btn" disabled={busy || !input.trim()} onClick={submit}>{t("send")}</button></div>
+      </div>
+    </div>
+  </div>);
+}
+
+/* =========================================================================
+   Monitoring
+   ========================================================================= */
+function AlertRow({ a, compact }) {
+  const { t, tr, ackAlert, askOrchestrator } = useStore();
+  return (<div className={"mon " + (a.sev === "red" ? "red" : a.sev === "amber" ? "amber" : "")} style={{ marginBottom: 10 }}>
+    <div className="mh"><span className="mname"><Chip sev={a.sev}>{t("sev_" + a.sev)}</Chip> <span className="wo">{a.id}</span></span><span className="muted" style={{ fontSize: 11.5 }}>{a.src}</span></div>
+    <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{tr(a.t)}</div>
+    {!compact && <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}><b>{t("rootCause")}:</b> {tr(a.rc)}</div>}
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {a.scn && <button className="btn sm" onClick={() => askOrchestrator(a.scn)}>✦ {t("askOrch")}</button>}
+      {!compact && (a.ack ? <span className="chip">✓ {t("acked")}</span> : <button className="btn secondary sm" onClick={() => ackAlert(a.id)}>{t("ack")}</button>)}
+    </div>
+  </div>);
+}
+function Monitoring() {
+  const { t, pushLog, alerts } = useStore(); const [scanning, setScanning] = useState(false);
+  const open = alerts.filter(a => !a.ack);
+  const runScan = () => { if (scanning) return; setScanning(true); pushLog("log_scan"); setTimeout(() => { setScanning(false); pushLog("scanDone"); }, 1600); };
+  return (<div className="fade">
+    <PageHeader title={t("nav_monitor")} sub={t("mon_sub")} right={<button className="btn" disabled={scanning} onClick={runScan}>{scanning ? t("scanning") : "◉ " + t("runScan")}</button>} />
+    {scanning && <div className="scan-bar" style={{ marginBottom: 14 }}><span /></div>}
+    <Section title={t("srcHealth")}><SourceStrip /></Section>
+    <Section title={t("alerts")} right={<span className="chip danger">{open.length}</span>}>{alerts.length === 0 ? <div className="muted">{t("noAlerts")}</div> : alerts.map(a => <AlertRow key={a.id} a={a} />)}</Section>
+  </div>);
+}
+
+/* =========================================================================
+   Storyline
+   ========================================================================= */
+function StoryChain({ nodes, ran, runningIdx, view, setView }) {
+  const { t, tr } = useStore();
+  return (<div className="chain">{nodes.map((nd, i) => { const s = i === runningIdx ? "run" : i < ran ? "done" : "idle"; const col = s === "done" ? "var(--green)" : s === "run" ? "#6d5ae6" : null;
+    return (<div key={i} className={"node " + (s === "run" ? "run" : s === "done" ? "done" : "")} onClick={() => i < ran && setView(i)} style={{ cursor: i < ran ? "pointer" : "default", outline: i === view ? "2px solid var(--green-100)" : "none" }}>
+      <span className="node-dot" style={{ background: col || "#cbd5d0" }} />
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: col || "inherit" }}>{nd.icon} {tr(nd.title)} <span className="tag" style={{ marginInlineStart: 6 }}>{nd.uc}</span></span>
+      <span className="chain-metric">{s === "run" ? t("running") : i < ran ? tr(nd.metric) : "—"}</span></div>); })}</div>);
+}
+function FiscalBox({ f }) {
+  const { t } = useStore(); const rows = [["ceiling", f.ceiling, ""], ["commit", f.commit, "−"], ["planL", f.plan, "−"], ["reserve", f.reserve, "−"]];
+  return (<div className="card pad" style={{ background: "#f8fbf9" }}>{rows.map(([k, v, sg]) => (<div className="report-row" key={k}><span>{t(k)}</span><span className="mono">{sg} {v.toFixed(2)}</span></div>))}
+    <div className="report-row" style={{ borderTop: "1px dashed var(--line)", marginTop: 4, paddingTop: 8 }}><strong style={{ color: "var(--green-dark)" }}>{t("fiscalSpace")}</strong><strong className="mono" style={{ color: "var(--green)", fontSize: 17 }}>{f.space.toFixed(2)} B</strong></div></div>);
+}
+function ReviewCard({ node, decision, onApprove, onReject }) {
+  const { t, tr } = useStore(); const r = node.review; const decided = decision === "approved" || decision === "rejected";
+  return (<div className="ai-eval" style={{ borderInlineStartColor: "#6d5ae6" }}>
+    <div className="banner" style={{ marginBottom: 8 }}>🛈 {t("draft")}</div>
+    <div className="ai-eval-top"><span className="ai-eval-ic">✦</span><span className="ai-eval-h">{t("aiReco")} · {node.uc}</span></div>
+    <div className="ai-eval-t" style={{ color: "var(--ink)", fontWeight: 700 }}>{tr(r.headline)}</div>
+    <div style={{ margin: "8px 0" }}><div className="report-row" style={{ borderBottom: "none", padding: 0 }}><span className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{t("confidence")}</span><span className="mono" style={{ color: "var(--green-dark)", fontWeight: 800 }}>{r.conf}%</span></div><div className="progress" style={{ marginTop: 4 }}><span style={{ width: r.conf + "%" }} /></div></div>
+    <div className="card pad" style={{ background: "#fff", fontSize: 12.5 }}><b>{t("why")}:</b> {tr(r.why)}</div>
+    <div className="meta" style={{ marginTop: 8 }}><span className="muted" style={{ fontSize: 11.5, fontWeight: 700 }}>{t("sources")}:</span>{r.srcs.map(s => <span key={s} className="chip gray">{s}</span>)}<LineagePop /></div>
+    <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
+      {!decided && <><button className="btn" onClick={onApprove}>✓ {t("approve")}</button><button className="btn danger" onClick={onReject}>✕ {t("reject")}</button><span className="muted" style={{ fontSize: 11.5, marginInlineStart: "auto", fontWeight: 700, color: "var(--amber)" }}>{t("pending")}</span></>}
+      {decision === "approved" && <span className="chip">✓ {t("approved")}</span>}{decision === "rejected" && <span className="chip danger">✕ {t("rejected")}</span>}
+    </div>
+  </div>);
+}
+function ReportCard({ rep }) {
+  const { tr } = useStore();
+  return (<div className="report-card"><div className="rch"><span className="rt">📄 {tr(rep.title)}</span><LineagePop /></div>
+    <div className="rcb"><div style={{ fontSize: 13, lineHeight: 1.7, marginBottom: 10 }}>{tr(rep.narrative)}</div>{rep.rows.map((r, i) => (<div className="report-row" key={i}><span>{tr(r.l)}</span><strong className="mono">{r.v}</strong></div>))}</div></div>);
+}
+function NodeDetail({ node, decision, onApprove, onReject }) {
+  const { t, tr } = useStore();
+  return (<div className="card pad acc fade">
+    <div className="page-h" style={{ marginBottom: 8 }}><div><span className="tag">{node.uc}</span> <h2 style={{ fontSize: 16, display: "inline-block", marginInlineStart: 8 }}>{tr(node.title)}</h2><div className="sub muted" style={{ marginTop: 4 }}><b>{t("actor")}:</b> {tr(node.actor)}</div></div></div>
+    <div style={{ fontSize: 13, marginBottom: 12 }}>{tr(node.desc)}</div>
+    {node.kind === "agent" && node.table && (<table className="tbl" style={{ marginBottom: 12 }}><thead><tr>{tr(node.table.cols).map(c => <th key={c}>{c}</th>)}</tr></thead>
+      <tbody>{node.table.rows.map((r, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{typeof r.a === "object" ? tr(r.a) : r.a}</td><td>{typeof r.v === "object" ? tr(r.v) : r.v}</td>{r.f !== undefined && <td><Chip sev={r.f}>{t("sev_" + r.f)}</Chip></td>}</tr>))}</tbody></table>)}
+    {node.kind === "fiscal" && <div style={{ marginBottom: 12 }}><FiscalBox f={node.fiscal} /></div>}
+    {node.kind === "review" && <ReviewCard node={node} decision={decision} onApprove={onApprove} onReject={onReject} />}
+    {node.kind === "report" && <ReportCard rep={node.report} />}
+    <div className="banner" style={{ marginTop: 12, background: "var(--green-50)", border: "1px solid var(--green-100)", color: "var(--green-dark)" }}>✓ <b>{t("output")}:</b> {tr(node.out)}</div>
+  </div>);
+}
+function Storyline({ story, title, sub }) {
+  const { t, tr, pushLog, addReport } = useStore(); const nodes = story.nodes;
+  const [ran, setRan] = useState(0); const [runningIdx, setRunningIdx] = useState(-1); const [view, setView] = useState(0); const [decision, setDecision] = useState(null); const [busy, setBusy] = useState(false);
+  const cur = ran > 0 ? nodes[Math.min(view, ran - 1)] : null;
+  const reviewIdx = nodes.findIndex(n => n.kind === "review");
+  const awaitingDecision = reviewIdx >= 0 && decision === null && ran - 1 === reviewIdx;
+  const finished = ran === nodes.length;
+  const runNext = () => { if (busy || awaitingDecision || finished) return; const i = ran; setBusy(true); setRunningIdx(i);
+    setTimeout(() => { setRunningIdx(-1); setRan(i + 1); setView(i); setBusy(false); const nd = nodes[i]; pushLog({ en: tr(nd.title) + " — " + nd.uc, ar: tr(nd.title) + " — " + nd.uc, zh: tr(nd.title) + " — " + nd.uc }); if (nd.kind === "report") addReport({ name: story.key === "budget" ? "rep_budget" : "rep_claims", conf: "—" }); }, 850); };
+  const decide = (d) => { setDecision(d); if (d === "approved") { pushLog("log_approve"); pushLog(nodes[reviewIdx].review.approveLog); } };
+  const restart = () => { setRan(0); setRunningIdx(-1); setView(0); setDecision(null); setBusy(false); };
+  return (<div className="fade">
+    <PageHeader title={title} sub={sub} right={<button className="btn ghost sm" onClick={restart}>↺ {t("storyRestart")}</button>} />
+    <Section title={story.key === "budget" ? "G-03" : "G-04"}>
+      <StoryChain nodes={nodes} ran={ran} runningIdx={runningIdx} view={view} setView={setView} />
+      <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
+        {!finished && !awaitingDecision && <button className="btn" disabled={busy} onClick={runNext}>{busy ? t("storyRunning") : "▶ " + t("storyRun") + " (" + (ran + 1) + "/" + nodes.length + ")"}</button>}
+        {awaitingDecision && <span className="chip amber">⏳ {t("pending")}</span>}{finished && <span className="chip">✓ {t("storyDone")}</span>}
+      </div>
+    </Section>
+    {cur && <NodeDetail node={cur} decision={cur.kind === "review" ? decision : null} onApprove={() => decide("approved")} onReject={() => decide("rejected")} />}
+  </div>);
+}
+
+/* =========================================================================
+   UC-06 — Financial Performance Analysis (4-step report builder)
+   ========================================================================= */
+function Robot() {
+  return (<div className="robot"><span className="robot-ring" />
+    <svg width="96" height="96" viewBox="0 0 96 96" fill="none">
+      {/* antenna */}
+      <line x1="48" y1="10" x2="48" y2="20" stroke="#7fe0b3" strokeWidth="2.5" strokeLinecap="round" />
+      <circle className="r-ant" cx="48" cy="8" r="4" fill="#46d39a" />
+      {/* head */}
+      <rect x="20" y="20" width="56" height="46" rx="13" fill="#0d5a4f" stroke="#46d39a" strokeWidth="2" />
+      <rect x="26" y="26" width="44" height="34" rx="9" fill="#06302b" />
+      {/* eyes */}
+      <g className="r-eye" style={{ transformOrigin: "38px 41px" }}><circle cx="38" cy="41" r="6.5" fill="#46d39a" /><circle cx="38" cy="41" r="2.5" fill="#eafff6" /></g>
+      <g className="r-eye" style={{ transformOrigin: "58px 41px" }}><circle cx="58" cy="41" r="6.5" fill="#46d39a" /><circle cx="58" cy="41" r="2.5" fill="#eafff6" /></g>
+      {/* mouth */}
+      <rect x="40" y="52" width="16" height="3" rx="1.5" fill="#2fae84" />
+      {/* scan line */}
+      <rect className="r-scan" x="28" y="30" width="40" height="2" rx="1" fill="#7fe0b3" opacity="0.5" />
+      {/* ears */}
+      <rect x="14" y="36" width="6" height="14" rx="3" fill="#13796a" /><rect x="76" y="36" width="6" height="14" rx="3" fill="#13796a" />
+      {/* body hint */}
+      <rect x="32" y="68" width="32" height="14" rx="6" fill="#0d5a4f" stroke="#46d39a" strokeWidth="1.5" />
+    </svg></div>);
+}
+function mapColor(rate) { return rate >= 75 ? "#1B8354" : rate >= 50 ? "#e29700" : "#e32700"; }
+/* Real Saudi Arabia silhouette — sampled from a true country outline, normalized to viewBox 0 0 420 300 (bbox x48..372 / y12..288). */
+const KSA_PATH = "M116.7 12 L108.8 15.3 L100.4 17.8 L92 20.3 L85.1 23.5 L90.8 30.1 L96.5 36.7 L95.7 42.6 L90.7 49.4 L82.2 51.4 L76.4 57.4 L70.1 63.5 L61.5 62.3 L52.8 60.9 L50.5 69 L49 77.7 L47.7 84.2 L55.1 83.8 L60.3 90.7 L65 98 L69.6 105.3 L74.2 112.7 L79.4 119.5 L83.3 125.9 L87.8 133.3 L87.7 140.7 L92.1 148.2 L99.9 151.5 L106.5 156.9 L110.5 164.6 L114 172 L116.4 178.1 L114.9 186.4 L117.6 194.6 L118.8 202.8 L123.6 209.5 L129.8 215.1 L137.4 219.1 L143 224.8 L146.3 232.2 L149.7 239.4 L153.6 246.8 L157.9 254.4 L164.6 259.9 L168.6 266.8 L172.9 274.1 L178.1 275.9 L179.4 268.9 L182 261.1 L189.9 262.7 L198.4 261.5 L206.7 264.3 L214.8 267.6 L222.9 270.9 L229 275.6 L229 284.4 L231.3 288 L237.1 281.5 L242.9 274.9 L248.8 268.4 L254.6 261.8 L260.4 255.3 L266.3 248.7 L274.4 246.1 L283 244.1 L291.5 242.1 L300.1 240.1 L308.6 238 L317.1 235.9 L325.4 233 L333.7 230.1 L341.9 227.2 L350.2 224.3 L358.5 221.4 L364.7 216.5 L367.2 208.1 L369.8 199.7 L372.3 191.3 L371.7 183.2 L367 175.8 L358.8 175.3 L350.1 174.1 L341.4 172.9 L332.7 171.7 L324.7 169 L319.2 162.2 L313.7 155.3 L309 148.2 L308.6 143.2 L300.9 142.7 L295.8 136.3 L292.4 128.6 L289.8 124.4 L285.9 116.8 L288.2 111.9 L287.4 106.7 L280.8 101.6 L275 96.3 L272.1 92.4 L268 89 L264.3 82.8 L261 75.3 L252.2 75.1 L247.3 69.2 L239.7 66.3 L231.1 65.7 L222.3 65.2 L213.6 64.3 L204.9 63.4 L197.9 58.3 L191.1 52.8 L184.3 47.2 L177.6 41.6 L170.8 36 L164.1 30.4 L156.3 26.5 L148.7 22.2 L141.4 17.2 L133.6 13.6 L124.9 12 Z";
+function KsaMap({ small }) {
+  const { tr } = useStore();
+  return (<svg viewBox="0 0 420 300" className="ksa-map-svg" style={{ width: "100%", height: small ? 220 : "auto" }}>
+    <defs><linearGradient id="ksaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f3fbf6" /><stop offset="1" stopColor="#e3f3ea" /></linearGradient></defs>
+    <path d={KSA_PATH} fill="url(#ksaFill)" stroke="#1B8354" strokeWidth="1.6" strokeLinejoin="round" />
+    {UC_MAP.map(m => (<g key={m.id} className="map-mk"><circle cx={m.x} cy={m.y} r={small ? 4.5 : 5.5} fill={mapColor(m.rate)} stroke="#fff" strokeWidth="1.5" />
+      {!small && <text x={m.x + 8} y={m.y + 3} className="map-mk-l">{tr(m.name)}</text>}</g>))}
+  </svg>);
+}
+function GMap() {
+  const { t, tr } = useStore();
+  return (<div>
+    <div className="gmap-wrap">
+      <iframe title="Saudi Arabia" loading="lazy" referrerPolicy="no-referrer-when-downgrade"
+        src="https://maps.google.com/maps?q=Saudi%20Arabia&t=&z=5&ie=UTF8&iwloc=&output=embed" />
+      <div className="gmap-overlay">{UC_MAP.map(m => (<span key={m.id} className="gmap-pin" title={tr(m.name) + " · " + m.rate + "%"}
+        style={{ left: (m.x / 420 * 100) + "%", top: (m.y / 300 * 100) + "%", background: mapColor(m.rate) }} />))}</div>
+    </div>
+    <div className="map-legend"><span className="lg"><i style={{ background: "#1B8354" }} />{t("lg_green")}</span><span className="lg"><i style={{ background: "#e29700" }} />{t("lg_yellow")}</span><span className="lg"><i style={{ background: "#e32700" }} />{t("lg_red")}</span></div>
+    <div className="gmap-cap">{t("mapNote")}</div>
+  </div>);
+}
+function SpendChart({ small }) {
+  const { t } = useStore(); const C = RC; if (!C || !C.ResponsiveContainer) return null;
+  return (<div style={{ width: "100%", height: small ? 200 : 250 }}><C.ResponsiveContainer>
+    <C.ComposedChart data={UC_SPEND} margin={{ top: 8, right: 10, left: -12, bottom: 0 }}>
+      <C.CartesianGrid strokeDasharray="3 3" stroke="#eef2ef" vertical={false} /><C.XAxis dataKey="m" tick={{ fontSize: 11 }} /><C.YAxis tick={{ fontSize: 11 }} />
+      <C.Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2eae5" }} /><C.Legend wrapperStyle={{ fontSize: 11 }} />
+      <C.Bar dataKey="budget" name={t("spend_budget")} fill="#F8C630" radius={[5, 5, 0, 0]} /><C.Bar dataKey="actual" name={t("spend_actual")} fill="#1B8354" radius={[5, 5, 0, 0]} />
+      <C.Line dataKey="actual" name={t("spend_trend")} stroke="#085D3A" strokeWidth={2} dot={{ r: 3 }} />
+    </C.ComposedChart></C.ResponsiveContainer></div>);
+}
+function ServiceBars() {
+  const { tr } = useStore();
+  return (<div>{UC_SERVICES.map((s, i) => (<div className="svc-row" key={i}>
+    <div className="sh"><span>{tr(s.name)}</span><span className="mono" style={{ color: "var(--green-dark)" }}>{s.pct}%</span></div>
+    <div className="progress"><span style={{ width: s.pct + "%" }} /></div>
+    <div className="ss">{tr({ en: "Actual", ar: "فعلي", zh: "实际" })}: {s.actual} M / {tr({ en: "Budget", ar: "ميزانية", zh: "预算" })}: {s.budget} M</div></div>))}</div>);
+}
+function VisionTable() {
+  const { t, tr } = useStore();
+  return (<table className="tbl"><thead><tr><th>{t("vp_init")}</th><th>{t("vp_port")}</th><th className="right-num">{t("vp_budget")}</th><th className="right-num">{t("vp_actual")}</th><th className="right-num">{t("vp_rem")}</th><th className="right-num">{t("vp_rate")}</th></tr></thead>
+    <tbody>{UC_VISION.map((v, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{v.name}</td><td className="muted">{tr(v.port)}</td><td className="right-num mono">{v.b}</td><td className="right-num mono">{v.a}</td><td className="right-num mono">{v.r}</td><td className="right-num mono" style={{ fontWeight: 700, color: parseFloat(v.rate) < 90 ? "var(--amber)" : "var(--green-dark)" }}>{v.rate}</td></tr>))}</tbody></table>);
+}
+function DoorFlow() {
+  const { t, tr } = useStore();
+  const left = [{ l: { en: "Door 4 · Projects", ar: "الباب 4 · المشاريع", zh: "门4·项目" }, h: 70 }, { l: { en: "Door 2 · Goods", ar: "الباب 2 · سلع", zh: "门2·货物" }, h: 30 }, { l: { en: "Door 1 · Salaries", ar: "الباب 1 · رواتب", zh: "门1·薪酬" }, h: 24 }, { l: { en: "Door 3 · Programs", ar: "الباب 3 · برامج", zh: "门3·计划" }, h: 40 }];
+  const mid = [{ l: { en: "Ministry HQ", ar: "مقر الوزارة", zh: "部本部" } }, { l: { en: "Eastern Amana", ar: "أمانة الشرقية", zh: "东部阿玛纳" } }, { l: { en: "Riyadh Amana", ar: "أمانة الرياض", zh: "利雅得阿玛纳" } }, { l: { en: "Other Amana", ar: "أمانات أخرى", zh: "其他阿玛纳" } }];
+  const right = ["Housing", "Administration", "Roads", "Stormwater", "Other Services", "Parks"];
+  return (<div>
+    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}><span className="muted" style={{ fontSize: 12.5 }}>{t("door_sub")}</span><span style={{ fontSize: 12.5 }}>{t("door_total")}: <b>470.0B SAR</b></span></div>
+    <svg viewBox="0 0 700 240" className="flow">
+      {[0, 1, 2, 3].map(i => { const y = 16 + i * 56; return (<g key={"L" + i}><rect x="8" y={y} width="150" height="40" rx="6" fill="#1B8354" opacity={0.85 - i * 0.12} /><text x="16" y={y + 24} fontSize="11" fill="#fff" fontWeight="700">{tr(left[i].l)}</text></g>); })}
+      {[0, 1, 2, 3].map(i => { const y = 16 + i * 56; return (<g key={"M" + i}><rect x="300" y={y} width="120" height="40" rx="6" fill="#2E9E6B" opacity="0.85" /><text x="308" y={y + 24} fontSize="10.5" fill="#fff" fontWeight="700">{tr(mid[i].l)}</text></g>); })}
+      {right.map((r, i) => { const y = 8 + i * 38; return (<g key={"R" + i}><rect x="560" y={y} width="132" height="26" rx="5" fill="#F8C630" opacity="0.55" /><text x="568" y={y + 17} fontSize="10" fill="#3a4a42" fontWeight="700">{r}</text></g>); })}
+      {[0, 1, 2, 3].map(i => [0, 1, 2, 3].map(j => { const y1 = 36 + i * 56, y2 = 36 + j * 56;
+        return (<path key={i + "-" + j} d={"M158," + y1 + " C230," + y1 + " 230," + y2 + " 300," + y2} fill="none" stroke="#1B8354" strokeOpacity="0.12" strokeWidth="6" />); }))}
+      {[0, 1, 2, 3].map(i => right.map((r, j) => { const y1 = 36 + i * 56, y2 = 21 + j * 38;
+        return (<path key={"r" + i + "-" + j} d={"M420," + y1 + " C490," + y1 + " 490," + y2 + " 560," + y2} fill="none" stroke="#F8C630" strokeOpacity="0.18" strokeWidth="4" />); }))}
+    </svg>
+  </div>);
+}
+function RevenueSplit() {
+  const { t, tr } = useStore(); const C = RC; if (!C || !C.ResponsiveContainer) return null;
+  const data = REVENUE_SOURCES.map(s => ({ name: tr(s.name), collected: s.collected, outstanding: s.net - s.collected, weight: s.weight, color: s.color }));
+  return (<div style={{ width: "100%", height: 280 }}><C.ResponsiveContainer>
+    <C.ComposedChart data={data} margin={{ top: 22, right: 8, left: -14, bottom: 0 }}>
+      <C.CartesianGrid strokeDasharray="3 3" stroke="#eef2ef" vertical={false} />
+      <C.XAxis dataKey="name" tick={{ fontSize: 9.5 }} interval={0} /><C.YAxis yAxisId="l" tick={{ fontSize: 10 }} />
+      <C.YAxis yAxisId="r" orientation="right" domain={[0, 40]} tickFormatter={v => v + "%"} tick={{ fontSize: 10 }} />
+      <C.Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2eae5" }} /><C.Legend wrapperStyle={{ fontSize: 11 }} />
+      <C.Bar yAxisId="l" dataKey="collected" name={t("rs_collected")} stackId="s">{data.map((d, i) => <C.Cell key={i} fill={d.color} />)}</C.Bar>
+      <C.Bar yAxisId="l" dataKey="outstanding" name={t("rs_outstanding")} stackId="s" fill="#d0d5dd" radius={[5, 5, 0, 0]} />
+      <C.Line yAxisId="r" dataKey="weight" name={t("rs_weight")} stroke="#e32700" strokeWidth={2} dot={{ r: 3, fill: "#e32700" }}>
+        <C.LabelList dataKey="weight" position="top" formatter={v => v + "%"} style={{ fontSize: 10, fill: "#e32700", fontWeight: 700 }} /></C.Line>
+    </C.ComposedChart></C.ResponsiveContainer></div>);
+}
+function CollectionRate() {
+  const { t, tr } = useStore();
+  return (<div className="fd-scroll">{REVENUE_SOURCES.map(s => { const rate = s.collected / s.net * 100;
+    return (<div className="col-card" key={s.key}>
+      <div className="cch"><span className="ccname">{tr(s.name)}</span><span className="ccpct">{rate.toFixed(1)}%</span></div>
+      <div className="progress"><span style={{ width: rate + "%" }} /></div>
+      <div className="ccgrid"><div><div className="ccl">{t("cc_collected")}</div><div className="ccv">{s.collected} M</div></div><div><div className="ccl">{t("cc_net")}</div><div className="ccv">{s.net} M</div></div></div>
+    </div>); })}</div>);
+}
+function ReceivableProg() {
+  const { t } = useStore();
+  return (<div>
+    <div className="muted" style={{ fontSize: 12.5, marginBottom: 10 }}>{t("rp_caption")}</div>
+    <div className="ar-leg">{AR_LEGEND.map(l => (<span className="lgc" key={l.k}><span className="d" style={{ background: l.c }} />{t(l.k)} <span className="v">{l.v}</span></span>))}</div>
+    <div className="card pad" style={{ background: "#fff" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 6 }}><strong style={{ fontSize: 13 }}>{t("rp_matrix")}</strong><span className="muted" style={{ fontSize: 11 }}>{t("rp_unit")}</span></div>
+      <div className="scrollx"><table className="heat"><thead><tr><th></th>{AR_BUCKETS.map(b => <th key={b}>{b === "buck_current" ? t("buck_current") : b}</th>)}</tr></thead>
+        <tbody>{AR_MATRIX.map(r => (<tr key={r.m}><td className="rh">{r.m}</td>{r.v.map((v, i) => { const c = arHeat(v); return <td key={i} className="cell" style={{ background: c[0], color: c[1] }}>{v.toFixed(1)}%</td>; })}</tr>))}</tbody></table></div>
+    </div>
+  </div>);
+}
+function RegionalAchieve() {
+  const { t, tr } = useStore();
+  return (<div className="fd-scroll">{REGIONAL_ACHIEVE.map((r, i) => { const gap = +(r.target - r.pct).toFixed(1); const status = gap <= 0 ? "above" : gap <= 3 ? "near" : "below";
+    return (<div className="ach-card" key={i}>
+      <div className="ach-head"><span className="ach-name">{tr(r.name)}</span><span className="ach-pct" style={{ color: status === "below" ? "var(--danger)" : "var(--green-dark)" }}>{r.pct}%</span></div>
+      <div className="ach-track"><div className="ach-fill" style={{ width: r.pct + "%", background: status === "below" ? "var(--amber)" : "var(--green)" }} /><div className="ach-target" style={{ insetInlineStart: r.target + "%" }} /></div>
+      <div className="ach-meta"><span>{t("ra_target")}: <b>{r.target}%</b></span><span>{t("ra_gap")}: <b>{gap}%</b></span><span className={"ach-status " + status}>{t("st_" + status)}</span></div>
+    </div>); })}</div>);
+}
+function UcSteps({ step, setStep, reached }) {
+  const { t } = useStore(); const labels = ["s1", "s2", "s3", "s4"];
+  return (<div className="uc-steps">{labels.map((lb, i) => { const n = i + 1; const cls = step === n ? "on" : reached >= n ? "done" : "";
+    return (<React.Fragment key={lb}>{i > 0 && <span className="uc-sep">›</span>}
+      <button className={"uc-step " + cls} onClick={() => reached >= n && setStep(n)}><span className="n">{reached > n ? "✓" : n}</span>{t(lb)}</button></React.Fragment>); })}</div>);
+}
+function UcDashboard({ onCommentary }) {
+  const { t } = useStore();
+  const tagCls = { up: "up", flat: "flat", down: "down" };
+  return (<div className="fade">
+    <div className="cols-2" style={{ marginBottom: 16, alignItems: "start" }}>
+      <div className="scope"><div className="sl">{t("scope_sum")}</div>
+        <div style={{ margin: "6px 0", fontWeight: 700 }}>Ministry / All Amanas / All Municipalities / Apr 2026</div>
+        <div className="objbar"><b>[{t("obj_sum")}]</b> Original 16,532M · Current 17,370M · Actual 11,117M · Remaining 6,253M · Rate 64.0% · Δ 838M · <b>{t("balance_check")}</b></div></div>
+      <div style={{ textAlign: "end" }}><button className="btn secondary">{t("viewData")} 📊</button></div>
+    </div>
+    <div className="aibrief" style={{ marginBottom: 16 }}><div style={{ flex: 1 }}><div className="abh">✦ {t("ai_brief")}</div><div className="abx"><UcBriefText /></div></div><button className="btn" onClick={onCommentary}>{t("goCommentary")} {ArrowIcon}</button></div>
+    <div className="cols-3" style={{ marginBottom: 14 }}>{UC_KPIS.slice(0, 3).map(k => (<div className="kpi k6" key={k.key}><span className={"ktag " + tagCls[k.tag]}>{t("tag_" + k.tag)}</span><div className="label">{t(k.key)}</div><div className="value">{k.value} <span style={{ fontSize: 16 }}>{k.unit === "%" ? "%" : k.unit + " SAR"}</span></div><div className="sub muted">{t(k.sub)}</div></div>))}</div>
+    <div className="cols-4" style={{ marginBottom: 16 }}>{UC_KPIS.slice(3).map(k => (<div className="kpi k6" key={k.key}><span className={"ktag " + tagCls[k.tag]}>{t("tag_" + k.tag)}</span><div className="label">{t(k.key)}</div><div className="value" style={{ fontSize: 24 }}>{k.value}<span style={{ fontSize: 13 }}>{k.unit === "%" ? "%" : " " + k.unit}</span></div><div className="sub muted">{t(k.sub)}</div></div>))}</div>
+    <div className="cols-2">
+      <Section title={t("map_title")} sub={t("map_sub")}><GMap /></Section>
+      <Section title={t("spend_title")}><SpendChart /></Section>
+    </div>
+    <h2 style={{ fontSize: 16, margin: "6px 0 12px" }}>{t("fdetail")}</h2>
+    <div className="cols-2">
+      <Section title={t("rev_split")}><RevenueSplit /></Section>
+      <Section title={t("col_rate")}><CollectionRate /></Section>
+    </div>
+    <div className="cols-2">
+      <Section title={t("recv_prog")}><ReceivableProg /></Section>
+      <Section title={t("reg_ach")}><RegionalAchieve /></Section>
+    </div>
+    <div className="cols-2"><Section title={t("svc_title")}><ServiceBars /></Section><Section title={t("vision_title")}><div className="scrollx"><VisionTable /></div></Section></div>
+  </div>);
+}
+function UcBriefText() { const { tr } = useStore(); return <>{tr({ en: "Asir Amana performs best at the moment, Al Baha Amana needs closer follow-up, and Developmental Housing plus Housing Program 2.0 remain the largest concentrations in the sample.", ar: "أمانة عسير هي الأفضل أداءً حالياً، وأمانة الباحة تحتاج متابعة أدق، ويظل الإسكان التنموي وبرنامج الإسكان 2.0 أكبر التركزات في العينة.", zh: "阿西尔阿玛纳目前表现最佳,巴哈阿玛纳需更密切跟进,发展性住房与住房计划 2.0 仍是样本中最大的集中点。" })}</>; }
+function MiniChart({ kind }) {
+  if (kind === "map") return <div className="ksa-map"><KsaMap small /></div>;
+  if (kind === "spend") return <SpendChart small />;
+  if (kind === "svc") return <ServiceBars />;
+  if (kind === "vision") return <div className="scrollx"><VisionTable /></div>;
+  if (kind === "kpi") { const { t } = useStore(); return (<div className="cols-2">{UC_KPIS.slice(0, 4).map(k => (<div className="kpi k6" key={k.key}><div className="label" style={{ fontSize: 12 }}>{t(k.key)}</div><div className="value" style={{ fontSize: 20 }}>{k.value}</div></div>))}</div>); }
+  return <div className="muted" style={{ padding: 20, textAlign: "center" }}>—</div>;
+}
+function UcCommentary({ onAssemble }) {
+  const { t, tr } = useStore();
+  const [sel, setSel] = useState(0); const [rt, setRt] = useState("rt_exec");
+  const slide = UC_SLIDES[sel];
+  const [texts, setTexts] = useState(UC_SLIDES.map(s => tr(s.narr)));
+  const setText = (v) => setTexts(ts => ts.map((x, i) => i === sel ? v : x));
+  return (<div className="fade">
+    <PageHeader title={t("cw_title")} sub={t("cw_sub")} right={<span className="sect-right"><span className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{t("finalType")}:</span><select className="input" style={{ width: "auto" }} value={rt} onChange={e => setRt(e.target.value)}><option value="rt_exec">{t("rt_exec")}</option><option value="rt_init">{t("rt_init")}</option><option value="rt_detail">{t("rt_detail")}</option></select></span>} />
+    <div className="cw-shell">
+      <div className="cw-main">
+        <div className="cw-main-grid">
+          <div><div className="flow-col-h" style={{ marginBottom: 8 }}>{t("slidePages")}</div><div className="slide-list">
+            {UC_SLIDES.map((s, i) => (<div key={s.id} className={"slide-thumb" + (i === sel ? " sel" : "")} onClick={() => setSel(i)}><div className="stt"><span>✓</span> {tr(s.title)}</div><div className="sk" /></div>))}
+            <div className="slide-thumb" style={{ opacity: 0.7 }}><div className="stt">＋ {t("addTables")}</div></div>
+          </div></div>
+          <div className="slide-card"><div className="sch"><span style={{ fontWeight: 700 }}>{tr(slide.title)}</span><span className="chip" style={{ background: "rgba(255,255,255,.2)", color: "#fff" }}>{t("aiConf")}: 94%</span></div>
+            <div className="scb"><div><div className="flow-col-h" style={{ marginBottom: 6 }}>{t("narrComment")}</div>
+              <textarea className="narr-edit" value={texts[sel]} onChange={e => setText(e.target.value)} />
+              <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}><b>{t("dataSrcLink")}:</b> {t("dataSrcVal")}</div>
+              <div className="chip" style={{ marginTop: 6 }}>✓ {t("mathOk")}</div></div>
+              <div><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}><span className="flow-col-h">{t("chartLabel")}</span><span className="tag">{t("chart_" + slide.chart)}</span></div><MiniChart kind={slide.chart} /></div></div>
+          </div>
+        </div>
+        <div className="cw-actions">
+          <span style={{ display: "flex", gap: 8 }}><button className="btn ghost sm">⇄ {t("showDiff")}</button><button className="btn secondary sm">💬 {t("discussAI")}</button></span>
+          <button className="btn" onClick={onAssemble}>{t("assemble")} {ArrowIcon}</button>
+        </div>
+      </div>
+      <div className="copilot"><div className="cph">💬 {t("copilot_h")}</div>
+        <div className="muted" style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 4 }}>{t("copilot_target")}</div>
+        <select className="input" style={{ marginBottom: 10 }} value={sel} onChange={e => setSel(+e.target.value)}>{UC_SLIDES.map((s, i) => <option key={s.id} value={i}>{tr(s.title)}</option>)}</select>
+        <div className="cpmsg">{t("copilot_hello")}</div>
+        <div style={{ marginTop: "auto" }}><div className="chat-input"><input className="input" placeholder={t("copilot_ph")} /><button className="btn-ai btn">✦</button></div></div>
+      </div>
+    </div>
+  </div>);
+}
+function UcReport({ onBack }) {
+  const { t, tr, cov, addReport, pushLog } = useStore();
+  const slides = [{ id: "cover", cover: true }].concat(UC_SLIDES);
+  const [pg, setPg] = useState(0); const [submitted, setSubmitted] = useState(false);
+  const total = slides.length; const s = slides[pg];
+  const submit = () => { if (submitted) return; setSubmitted(true); addReport({ name: "rep_uc06", conf: "94" }); pushLog("log_uc06"); };
+  return (<div className="fade">
+    <div className="page-h"><button className="btn ghost sm" onClick={onBack}>↩ {t("backWs")}</button>
+      <span className="sect-right"><span className={"status-pill " + (submitted ? "review" : "draft")}>{submitted ? t("st_review") : t("st_draft")}</span>
+        <button className="btn" disabled={submitted} onClick={submit}>{submitted ? "✓ " + t("submitted") : t("submitReview") + " ✈"}</button>
+        <button className="btn secondary sm" disabled>{t("exportPptx")}</button><button className="btn ghost sm" disabled>{t("exportPdf")}</button></span></div>
+    <div className="deck-grid">
+      <div><div className="flow-col-h" style={{ marginBottom: 8 }}>{t("slidePages")}</div><div className="slide-list">
+        {slides.map((sl, i) => (<div key={i} className={"slide-thumb" + (i === pg ? " sel" : "")} onClick={() => setPg(i)}><div className="stt">{sl.cover ? "🏛 " + t("rt_exec") : tr(sl.title)}</div><div className="sk" /></div>))}
+      </div></div>
+      <div className="deck-card">
+        <div className="deck-head"><strong>{s.cover ? "COVER" : tr(s.title)}</strong><span className="muted" style={{ fontSize: 12 }}>{t("cover_min")} · {t("page")} {pg + 1} {t("of")} {total}</span></div>
+        {s.cover ? (<div className="deck-cover"><div className="dc-sub">{t("cover_country")}</div><div className="dc-sub">{t("cover_min")}</div>
+          <div className="dc-title">{t("rt_exec")}</div>
+          <div className="dc-meta">{t("cover_persp")} | {t("cover_scope")}: Ministry / All Amanas / Apr 2026</div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 22, fontSize: 12, opacity: 0.85 }}><span>{t("cover_agency")}</span><span>2026-06-19</span></div></div>)
+          : (<div className="deck-body deck-watermark"><div style={{ fontSize: 13.5, lineHeight: 1.8 }}>"{tr(s.narr)}"</div><div>{s.chart !== "none" ? <MiniChart kind={s.chart} /> : <div className="muted" style={{ padding: 20 }}>—</div>}</div></div>)}
+        <div className="deck-head" style={{ borderTop: "1px solid var(--line)", borderBottom: "none" }}>
+          <span className="muted" style={{ fontSize: 12 }}>{t("page")} {pg + 1} {t("of")} {total}</span>
+          <span style={{ display: "flex", gap: 8 }}><button className="btn ghost sm" disabled={pg === 0} onClick={() => setPg(p => p - 1)}>{t("prev")}</button><button className="btn sm" disabled={pg === total - 1} onClick={() => setPg(p => p + 1)}>{t("next")}</button></span>
+        </div>
+      </div>
+    </div>
+  </div>);
+}
+function PerfAnalysis() {
+  const { t, tr, reports } = useStore();
+  const [mode, setMode] = useState("registry"); // registry | wizard
+  const [step, setStep] = useState(1); const [reached, setReached] = useState(1); const [loading, setLoading] = useState(false); const [ridx, setRidx] = useState(0);
+  const goStep = (n) => { setStep(n); setReached(r => Math.max(r, n)); };
+  const generate = () => { setStep(2); setReached(2); setLoading(true); setRidx(0);
+    [1, 2, 3].forEach(k => setTimeout(() => setRidx(k), k * 850));
+    setTimeout(() => setLoading(false), 3400); };
+  const ucReports = reports.filter(r => r.name === "rep_uc06");
+  const counts = { total: ucReports.length, pub: ucReports.filter(r => r.status === "pub").length, appr: ucReports.filter(r => r.status === "appr").length, rev: ucReports.filter(r => r.status === "review").length };
+
+  if (mode === "registry") {
+    return (<div className="fade">
+      <div className="muted" style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>{t("uc_dept_a")} / {t("uc_dept_b")}</div>
+      <PageHeader title={t("uc_title")} sub={t("uc_sub")} />
+      <div className="cols-4" style={{ marginBottom: 16 }}>
+        <KPI label={t("uc_total")} value={counts.total} /><KPI label={t("uc_pub")} value={counts.pub} tone="good" />
+        <KPI label={t("uc_appr")} value={counts.appr} /><KPI label={t("uc_inrev")} value={counts.rev} tone="warn" />
+      </div>
+      <Section title={t("uc_registry")} right={<button className="btn" onClick={() => { setMode("wizard"); setStep(1); setReached(1); }}>{t("uc_new")} +</button>}>
+        {ucReports.length === 0 ? <div className="muted">{t("noReports")}</div> :
+          (<table className="tbl"><thead><tr><th>{t("rep_title")}</th><th>{t("rep_cov")}</th><th>{t("rep_time")}</th><th>{t("rep_conf")}</th><th>{t("rep_ref")}</th></tr></thead>
+            <tbody>{ucReports.map((r, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{t(r.name)}</td><td>{t("cov_" + r.cov)}</td><td className="muted">{r.ts}</td><td>{r.conf === "—" ? "—" : r.conf + "%"}</td><td className="wo">{r.ref}</td></tr>))}</tbody></table>)}
+      </Section>
+    </div>);
+  }
+  return (<div className="fade">
+    <div className="page-h" style={{ alignItems: "center" }}>
+      <button className="btn ghost sm" onClick={() => setMode("registry")}>↩ {t("uc_back")}</button>
+      <UcSteps step={step} setStep={goStep} reached={reached} />
+    </div>
+    {step === 1 && (<div className="card pad acc" style={{ maxWidth: 880, margin: "0 auto" }}>
+      <h2 style={{ fontSize: 17 }}>⚙ {t("uc_cfg")}</h2><div className="sub muted" style={{ marginBottom: 16 }}>{t("uc_cfg_sub")}</div>
+      <div className="uc-filter">
+        <div className="field"><label>1. {t("f_level")}</label><select className="input"><option>{t("opt_ministry")}</option></select></div>
+        <div className="field"><label>2. {t("f_amana")}</label><select className="input"><option>{t("opt_allAmanas")}</option></select></div>
+        <div className="field"><label>3. {t("f_muni")}</label><select className="input"><option>{t("opt_allMuni")}</option></select></div>
+        <div className="field"><label>4. {t("f_fy")}</label><select className="input"><option>FY2026</option></select></div>
+        <div className="field"><label>5. {t("f_period")}</label><select className="input"><option>{t("opt_monthly")}</option><option>{t("opt_quarterly")}</option></select></div>
+        <div className="field"><label>6. {t("f_specific")}</label><select className="input"><option>Apr 2026</option></select></div>
+      </div>
+      <div style={{ textAlign: "end", marginTop: 8 }}><button className="btn" onClick={generate}>{t("uc_generate")} ⚡</button></div>
+    </div>)}
+    {step === 2 && (loading
+      ? (<div className="reason"><Robot /><h3>{t("reason_h")}</h3><div className="rsub">{t("reason_sub")}</div>
+        <div className="reason-steps">{["rstep1", "rstep2", "rstep3", "rstep4"].map((rs, i) => (<div key={rs} className={"rs " + (i < ridx ? "ok" : i === ridx ? "act" : "")}><span className="ri">{i < ridx ? "✓" : i === ridx ? "◐" : "○"}</span>{t(rs)}</div>))}</div></div>)
+      : <UcDashboard onCommentary={() => goStep(3)} />)}
+    {step === 3 && <UcCommentary onAssemble={() => goStep(4)} />}
+    {step === 4 && <UcReport onBack={() => goStep(3)} />}
+  </div>);
+}
+
+/* =========================================================================
+   Reports
+   ========================================================================= */
+function Reports() {
+  const { t, reports, log } = useStore();
+  const stMap = { pub: t("uc_pub"), appr: t("uc_appr"), review: t("uc_inrev") };
+  return (<div className="fade">
+    <PageHeader title={t("nav_reports")} sub={t("rep_sub")} />
+    <Section title={t("nav_reports")}>
+      {reports.length === 0 ? <div className="muted">{t("noReports")}</div>
+        : (<table className="tbl"><thead><tr><th>{t("rep_title")}</th><th>{t("rep_cov")}</th><th>{t("rep_conf")}</th><th>{t("rep_time")}</th><th>{t("rep_ref")}</th></tr></thead>
+          <tbody>{reports.map((r, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{t(r.name)} {r.status && <span className="tag" style={{ marginInlineStart: 6 }}>{stMap[r.status] || ""}</span>}</td><td>{t("cov_" + r.cov)}</td><td>{r.conf === "—" ? "—" : r.conf + "%"}</td><td className="muted">{r.ts}</td><td className="wo">{r.ref}</td></tr>))}</tbody></table>)}
+    </Section>
+    <Section title={t("agentLog")}>{log.length === 0 ? <div className="muted">—</div>
+      : (<div className="timeline">{log.slice(0, 12).map(e => (<div className="ev" key={e.id}><div style={{ fontSize: 12.5 }}><b className="mono" style={{ color: "var(--green-dark)" }}>{e.ts}</b> · {e.text}</div></div>))}</div>)}</Section>
+  </div>);
+}
+
+/* =========================================================================
+   App root
+   ========================================================================= */
+function Shell() {
+  const { t, route, log, pushLog } = useStore();
+  useEffect(() => { const msgs = ["log_idle", "log_scan", "log_route"]; const id = setInterval(() => pushLog(msgs[Math.floor(Math.random() * msgs.length)]), 9000); return () => clearInterval(id); }, []);
+  useEffect(() => { if (log.length === 0) pushLog("log_scan"); }, []);
+  let page = null;
+  if (route === "hub") page = <Hub />;
+  else if (route === "perf") page = <PerfAnalysis />;
+  else if (route === "chat") page = <ChatAnalysis />;
+  else if (route === "monitor") page = <Monitoring />;
+  else if (route === "budget") page = <Storyline story={STORY_BUDGET} title={t("j_bud_n")} sub={t("j_bud_b")} />;
+  else if (route === "claims") page = <Storyline story={STORY_CLAIMS} title={t("j_clm_n")} sub={t("j_clm_b")} />;
+  else if (route === "reports") page = <Reports />;
+  else page = <Hub />;
+  return (<><TopBar /><div className="shell"><Sidebar /><div className="content">{page}</div></div><AgentLog /><div className="buildstamp">build {BUILD_TIME}</div></>);
+}
+function Root() { const { user } = useStore(); return user ? <Shell /> : <Login />; }
+function App() { return (<StoreProvider><Root /></StoreProvider>); }
+export default App;
