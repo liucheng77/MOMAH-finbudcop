@@ -28,7 +28,7 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MoMRAH · Financial & Budgeting Copilot</title>
+<title>MoMAH · Financial & Budgeting Copilot</title>
 <link rel="icon" href="https://www.balady.gov.sa/themes/custom/balady_new/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
