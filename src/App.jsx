@@ -2104,8 +2104,8 @@ function RcDataFlow() {
         {/* top layer: human feedback (from Ask) -> Aggregator, drawn above cards */}
         <svg className="mf-svg-top" width="1640" height="760" viewBox="0 0 1640 760" fill="none">
           <defs><marker id="mfap" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#7c5cff" strokeWidth="1.8" /></marker></defs>
-          <path d="M1072,672 C1000,752 800,624 837,486" stroke="#7c5cff" strokeWidth="1.8" strokeDasharray="6 6" markerEnd="url(#mfap)" />
-          <circle r="3.2" fill="#7c5cff"><animateMotion dur="2.6s" repeatCount="indefinite" path="M1072,672 C1000,752 800,624 837,486" /></circle>
+          <path d="M1078,500 C1008,526 876,524 828,508" stroke="#7c5cff" strokeWidth="1.8" strokeDasharray="6 6" markerEnd="url(#mfap)" />
+          <circle r="3.2" fill="#7c5cff"><animateMotion dur="2.4s" repeatCount="indefinite" path="M1078,500 C1008,526 876,524 828,508" /></circle>
         </svg>
 
         {/* column headers */}
@@ -2139,19 +2139,15 @@ function RcDataFlow() {
           <div className="sct">{tr({ en: "OUTPUTS", ar: "المخرجات", zh: "输出" })}</div>
           <div className="mf-outs">{MF.outputs.map((o, i) => (<div className="mf-out" key={i}><div className="t">{tr(o.t)} <span className="od" style={{ background: o.c }} /></div><div className="s">{tr(o.s)}</div></div>))}</div>
           <div className="mf-narr"><b>{tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}</b><div>{tr({ en: "Natural-language explanations of collection performance, gap drivers, and conversational follow-ups.", ar: "تفسيرات بلغة طبيعية لأداء التحصيل ومسبّبات الفجوة ومتابعات حوارية.", zh: "用自然语言解释征收表现、缺口成因及对话式追问。" })}</div></div>
-          <div className="sct">{tr({ en: "SAMPLE QUESTIONS", ar: "أسئلة نموذجية", zh: "示例问题" })}</div>
-          {MF.questions.map((q, i) => (<div className="mf-q" key={i}>{tr(q)}</div>))}
-          <div className="sct">{tr({ en: "HUMAN-IN-THE-LOOP", ar: "مراجعة بشرية", zh: "人工审批" })}</div>
-          <div className="mf-hl"><button className="btn sm" onClick={() => pushLog({ en: "Approved revenue collection draft", ar: "تم اعتماد مسودة التحصيل", zh: "已批准征收草稿" })}>{tr({ en: "Approve", ar: "اعتماد", zh: "批准" })}</button><button className="btn secondary sm" onClick={() => setRoute("chat")}>{tr({ en: "Ask", ar: "اسأل", zh: "提问" })}</button><button className="btn secondary sm" onClick={() => setRoute("rcbench")}>{tr({ en: "Deep dive", ar: "تعمّق", zh: "深入" })}</button></div>
         </div>
 
         {/* COL 5 — downstream */}
-        {MF.down.map((d, i) => (<div className={"node mf-down " + d.cls} style={{ left: 1440, top: [108, 228, 318, 408][i], width: 185 }} key={i}><div className="t">{colh(d.code, tr(d.n))}{d.cls === "gold" || d.cls === "green" ? <span className="od" /> : null}</div><div className="s">{tr(d.s)}</div></div>))}
+        {MF.down.map((d, i) => (<div className={"node mf-down " + d.cls} style={{ left: 1440, top: [108, 228, 318, 408][i], width: 185 }} key={i}><div className="t">{d.cls === "green" && <span className="od" />}{colh(d.code, tr(d.n))}{d.cls === "gold" ? <span className="od" /> : null}</div><div className="s">{tr(d.s)}</div></div>))}
         <div className="node mf-legend" style={{ left: 1440, top: 500, width: 195 }}>{tr({ en: "solid = primary · dashed = related", ar: "متصل = أساسي · متقطّع = ذو صلة", zh: "实线 = 主要 · 虚线 = 相关" })}</div>
 
         {/* labels */}
         <div className="node mf-edgelab" style={{ left: 480, top: 210 }}>{tr({ en: "unified data", ar: "بيانات موحّدة", zh: "统一数据" })}</div>
-        <div className="node mf-feedback" style={{ left: 820, top: 712, width: 360, zIndex: 3 }}>{tr({ en: "human feedback → re-plan", ar: "تغذية راجعة بشرية ← إعادة التخطيط", zh: "人工反馈 → 重新规划" })}</div>
+        <div className="node mf-feedback" style={{ left: 966, top: 460, width: 290, zIndex: 3, textAlign: "center" }}>{tr({ en: "human feedback → re-plan", ar: "تغذية راجعة بشرية ← إعادة التخطيط", zh: "人工反馈 → 重新规划" })}</div>
       </div></div>
     </div>
   </div>);

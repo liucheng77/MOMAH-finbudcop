@@ -1130,7 +1130,10 @@ table.tbl tbody tr:hover{background:#f8fbf9}
 .mf-src .d{font-size:11px;color:var(--muted);margin-top:1px}
 /* generic flow card */
 .mf-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:13px;box-shadow:0 3px 12px rgba(16,33,28,.06)}
-.mf-card.u01{border-inline-start:4px solid #2563eb}
+.mf-card.u01{border:1.5px solid #2563eb}
+.mf-card.u01 .hd{background:#2563eb;color:#fff;border-radius:9px;padding:9px 12px;margin:-2px -2px 12px}
+.mf-card.u01 .hd b{font-size:14px;color:#fff}
+.mf-card.u01 .hd .chip{background:#fff;color:#2563eb;font-weight:800;font-size:10px;padding:2px 8px;border-radius:6px}
 .mf-card .hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
 .mf-card .hd b{font-size:14px}
 .mf-card .row{margin-bottom:8px}
@@ -1180,7 +1183,10 @@ table.tbl tbody tr:hover{background:#f8fbf9}
 .mf-down .t{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px}
 .mf-down .t .od{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.7}
 .mf-down .s{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
-.mf-down.green{background:#e9f7ef;border-color:#bfe6cf;color:var(--green-dark)}
+.mf-down.green{background:#fff;border:1.5px solid #2563eb;padding:0;overflow:hidden;color:var(--ink)}
+.mf-down.green .t{background:#2563eb;color:#fff;padding:8px 11px;font-size:13px;font-weight:800;gap:7px}
+.mf-down.green .t .od{background:#fff;opacity:1}
+.mf-down.green .s{padding:8px 11px;margin-top:0;color:var(--muted)}
 .mf-down.gold{background:#fdf4d9;border-color:#f0dca6;color:#8a6a06}
 .mf-down.dash{border-style:dashed;border-color:#c7d0da;color:#64748b;background:#fbfcfd}
 .mf-legend{font-size:10.5px;color:var(--muted);margin-top:6px}
@@ -1238,7 +1244,7 @@ const RC = window.Recharts || {};
    Every AI output is a DRAFT — nothing is a financial decision until approved.
    All figures are synthetic demo data (BRD V0.1).
    ========================================================================= */
-const BUILD_TIME = (typeof BUILD_STAMP !== "undefined" && BUILD_STAMP) ? BUILD_STAMP : "2026-06-22 15:05 AST";
+const BUILD_TIME = (typeof BUILD_STAMP !== "undefined" && BUILD_STAMP) ? BUILD_STAMP : "2026-06-22 15:33 AST";
 const LANGS = ["ar", "en", "zh"];
 const URL_LANG = (() => { try { const p = new URLSearchParams(window.location.search).get("ln"); return LANGS.indexOf(p) >= 0 ? p : null; } catch (e) { return null; } })();
 // ?uc=true reveals UC-xx / G-x annotations in the UI; hidden by default for client demos.
@@ -3332,8 +3338,8 @@ function RcDataFlow() {
         {/* top layer: human feedback (from Ask) -> Aggregator, drawn above cards */}
         <svg className="mf-svg-top" width="1640" height="760" viewBox="0 0 1640 760" fill="none">
           <defs><marker id="mfap" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#7c5cff" strokeWidth="1.8" /></marker></defs>
-          <path d="M1072,672 C1000,752 800,624 837,486" stroke="#7c5cff" strokeWidth="1.8" strokeDasharray="6 6" markerEnd="url(#mfap)" />
-          <circle r="3.2" fill="#7c5cff"><animateMotion dur="2.6s" repeatCount="indefinite" path="M1072,672 C1000,752 800,624 837,486" /></circle>
+          <path d="M1078,500 C1008,526 876,524 828,508" stroke="#7c5cff" strokeWidth="1.8" strokeDasharray="6 6" markerEnd="url(#mfap)" />
+          <circle r="3.2" fill="#7c5cff"><animateMotion dur="2.4s" repeatCount="indefinite" path="M1078,500 C1008,526 876,524 828,508" /></circle>
         </svg>
 
         {/* column headers */}
@@ -3367,19 +3373,15 @@ function RcDataFlow() {
           <div className="sct">{tr({ en: "OUTPUTS", ar: "المخرجات", zh: "输出" })}</div>
           <div className="mf-outs">{MF.outputs.map((o, i) => (<div className="mf-out" key={i}><div className="t">{tr(o.t)} <span className="od" style={{ background: o.c }} /></div><div className="s">{tr(o.s)}</div></div>))}</div>
           <div className="mf-narr"><b>{tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}</b><div>{tr({ en: "Natural-language explanations of collection performance, gap drivers, and conversational follow-ups.", ar: "تفسيرات بلغة طبيعية لأداء التحصيل ومسبّبات الفجوة ومتابعات حوارية.", zh: "用自然语言解释征收表现、缺口成因及对话式追问。" })}</div></div>
-          <div className="sct">{tr({ en: "SAMPLE QUESTIONS", ar: "أسئلة نموذجية", zh: "示例问题" })}</div>
-          {MF.questions.map((q, i) => (<div className="mf-q" key={i}>{tr(q)}</div>))}
-          <div className="sct">{tr({ en: "HUMAN-IN-THE-LOOP", ar: "مراجعة بشرية", zh: "人工审批" })}</div>
-          <div className="mf-hl"><button className="btn sm" onClick={() => pushLog({ en: "Approved revenue collection draft", ar: "تم اعتماد مسودة التحصيل", zh: "已批准征收草稿" })}>{tr({ en: "Approve", ar: "اعتماد", zh: "批准" })}</button><button className="btn secondary sm" onClick={() => setRoute("chat")}>{tr({ en: "Ask", ar: "اسأل", zh: "提问" })}</button><button className="btn secondary sm" onClick={() => setRoute("rcbench")}>{tr({ en: "Deep dive", ar: "تعمّق", zh: "深入" })}</button></div>
         </div>
 
         {/* COL 5 — downstream */}
-        {MF.down.map((d, i) => (<div className={"node mf-down " + d.cls} style={{ left: 1440, top: [108, 228, 318, 408][i], width: 185 }} key={i}><div className="t">{colh(d.code, tr(d.n))}{d.cls === "gold" || d.cls === "green" ? <span className="od" /> : null}</div><div className="s">{tr(d.s)}</div></div>))}
+        {MF.down.map((d, i) => (<div className={"node mf-down " + d.cls} style={{ left: 1440, top: [108, 228, 318, 408][i], width: 185 }} key={i}><div className="t">{d.cls === "green" && <span className="od" />}{colh(d.code, tr(d.n))}{d.cls === "gold" ? <span className="od" /> : null}</div><div className="s">{tr(d.s)}</div></div>))}
         <div className="node mf-legend" style={{ left: 1440, top: 500, width: 195 }}>{tr({ en: "solid = primary · dashed = related", ar: "متصل = أساسي · متقطّع = ذو صلة", zh: "实线 = 主要 · 虚线 = 相关" })}</div>
 
         {/* labels */}
         <div className="node mf-edgelab" style={{ left: 480, top: 210 }}>{tr({ en: "unified data", ar: "بيانات موحّدة", zh: "统一数据" })}</div>
-        <div className="node mf-feedback" style={{ left: 820, top: 712, width: 360, zIndex: 3 }}>{tr({ en: "human feedback → re-plan", ar: "تغذية راجعة بشرية ← إعادة التخطيط", zh: "人工反馈 → 重新规划" })}</div>
+        <div className="node mf-feedback" style={{ left: 966, top: 460, width: 290, zIndex: 3, textAlign: "center" }}>{tr({ en: "human feedback → re-plan", ar: "تغذية راجعة بشرية ← إعادة التخطيط", zh: "人工反馈 → 重新规划" })}</div>
       </div></div>
     </div>
   </div>);
