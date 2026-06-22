@@ -2419,7 +2419,7 @@ function RcWorkspace() {
         <div className="ws-flowcap">{ucl("UC-13", tr({ en: "Revenue Collection Exclusions — Multi-Agent Flow", ar: "التحصيل والاستبعادات — تدفّق متعدد الوكلاء", zh: "收入征收与排除项 — 多智能体流程" }))}</div>
       </div>
       <div className="orch-cell"><div className="orch orch-chat">
-        <div className="orch-h">{tr({ en: "Orchestrator Agent", ar: "وكيل المنسّق", zh: "编排器智能体" })} {phase === "running" && <span className="pulse" style={{ marginInlineStart: 2 }} />} <span style={{ fontSize: 12, color: PH[phase].c, fontWeight: 600, marginInlineStart: 4 }}>{tr(PH[phase].t)}</span></div>
+        <div className="orch-h">{tr({ en: "Smart query", ar: "استعلام ذكي", zh: "智能查询" })} {phase === "running" && <span className="pulse" style={{ marginInlineStart: 2 }} />} <span style={{ fontSize: 12, color: PH[phase].c, fontWeight: 600, marginInlineStart: 4 }}>{tr(PH[phase].t)}</span></div>
         <div className="orch-sub">{SHOW_UC ? "UC-13 · " : ""}run #2041 · {tr({ en: "Revenue Collection agent", ar: "وكيل التحصيل", zh: "收入征收智能体" })}</div>
         <div className="ctx-chips" style={{ marginBottom: 4 }}><span className="chip gray">scope: Q3/2026</span><span className="chip gray">dept: RC only</span><span className="chip gray">policy: BRD WL</span></div>
         <div className="orch-body" ref={bodyRef}>
