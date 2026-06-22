@@ -1237,7 +1237,7 @@ const RC = window.Recharts || {};
    Every AI output is a DRAFT — nothing is a financial decision until approved.
    All figures are synthetic demo data (BRD V0.1).
    ========================================================================= */
-const BUILD_TIME = (typeof BUILD_STAMP !== "undefined" && BUILD_STAMP) ? BUILD_STAMP : "2026-06-22 09:37 AST";
+const BUILD_TIME = (typeof BUILD_STAMP !== "undefined" && BUILD_STAMP) ? BUILD_STAMP : "2026-06-22 09:47 AST";
 const LANGS = ["ar", "en", "zh"];
 const URL_LANG = (() => { try { const p = new URLSearchParams(window.location.search).get("ln"); return LANGS.indexOf(p) >= 0 ? p : null; } catch (e) { return null; } })();
 // ?uc=true reveals UC-xx / G-x annotations in the UI; hidden by default for client demos.
@@ -2308,13 +2308,8 @@ function RiyalGlyph() {
   return (<svg className="riyal" viewBox="0 0 24 24" aria-label="SAR" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
     <path d="M8 4.5 V13.5 Q8 17 11.5 17" /><path d="M14 4.5 V13.5 Q14 17 17.5 17" /><path d="M5.5 8.6 L18.5 6.4" /><path d="M5.5 12.2 L18.5 10" /></svg>);
 }
-// Renders a currency string; in riyal mode "SAR" becomes the glyph, else plain "SAR" text.
-function Money({ v }) {
-  const { curMode } = useStore();
-  if (typeof v !== "string" || curMode !== "riyal" || v.indexOf("SAR") < 0) return <React.Fragment>{v}</React.Fragment>;
-  const parts = v.split("SAR");
-  return (<React.Fragment>{parts.map((p, i) => (<React.Fragment key={i}>{i > 0 && <RiyalGlyph />}{p}</React.Fragment>))}</React.Fragment>);
-}
+// Currency renders as plain "SAR" text.
+function Money({ v }) { return <React.Fragment>{v}</React.Fragment>; }
 function Chip({ sev, children }) { const c = sev === "red" ? "danger" : sev === "amber" ? "amber" : sev === "info" ? "info" : "gray"; return <span className={"chip " + c}>{children}</span>; }
 
 function LineagePop() {
@@ -2398,7 +2393,7 @@ const NOTIFS = [
   { sev: "info", t: { en: "Forecast variance: Q3 spend projected 8% above plan", ar: "انحراف التنبؤ: إنفاق الربع 3 أعلى من الخطة بـ 8٪", zh: "预测偏差:Q3 支出预计高于计划 8%" }, time: { en: "3h ago", ar: "قبل 3 س", zh: "3 小时前" } },
 ];
 function TopBar() {
-  const { t, tr, lang, cycleLang, user, setUser, reset, setRoute, route, alerts, curMode, setCurMode } = useStore();
+  const { t, tr, lang, cycleLang, user, setUser, reset, setRoute, route, alerts } = useStore();
   const [open, setOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifRead, setNotifRead] = useState(false);
@@ -2417,7 +2412,6 @@ function TopBar() {
         <span>{ic}</span><span className="tbtn-lbl">{t(k)}</span>{r === "monitor" && openAlerts ? <span className="badge-count">{openAlerts}</span> : null}</button>))}
       {URL_LANG === "zh" && <span className="topbar-sep" />}
       <button className="tbtn lang-pill" onClick={cycleLang}>{GlobeIcon} <span>{NEXT_LANG_LABEL[nextLang]}</span></button>
-      <button className="tbtn cur-pill" onClick={() => setCurMode(c => c === "riyal" ? "sar" : "riyal")} title={tr({ en: "Toggle currency (Riyal / SAR)", ar: "تبديل العملة", zh: "切换货币" })}>{curMode === "riyal" ? <RiyalGlyph /> : "SAR"}</button>
       <div className="notifmenu">
         <button className="tbtn notif-btn" onClick={() => setNotifOpen(o => !o)} title={tr({ en: "Notifications", ar: "الإشعارات", zh: "通知" })}>🔔{notifCount > 0 ? <span className="badge-count">{notifCount}</span> : null}</button>
         {notifOpen && <div className="panel notif-panel" onMouseLeave={() => setNotifOpen(false)}>
