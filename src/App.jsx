@@ -1026,6 +1026,7 @@ function StoreProvider({ children }) {
   ]);
   const [pendingQ, setPendingQ] = useState(null);
   const [perfJump, setPerfJump] = useState(null);
+  const [backRoute, setBackRoute] = useState(null);
   const [curMode, setCurMode] = useState("riyal");   // riyal (⃁) default | sar
 
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -1052,7 +1053,7 @@ function StoreProvider({ children }) {
   const cycleLang = () => setLang(l => (l === "ar" ? "en" : "ar")); // UI toggle: AR/EN only (zh via ?ln=zh)
 
   const value = { lang, setLang, cycleLang, dir, t, tr, clean, user, setUser, route, setRoute, deptSub, setDeptSub, cov, setCov,
-    alerts, ackAlert, log, pushLog, reports, addReport, pendingQ, setPendingQ, perfJump, setPerfJump, curMode, setCurMode, askOrchestrator, reset };
+    alerts, ackAlert, log, pushLog, reports, addReport, pendingQ, setPendingQ, perfJump, setPerfJump, backRoute, setBackRoute, curMode, setCurMode, askOrchestrator, reset };
   return <Store.Provider value={value}>{children}</Store.Provider>;
 }
 
@@ -1211,7 +1212,7 @@ const DEPARTMENTS = [
     { id: "fpa", route: "perf", name: { en: "Financial Performance Analysis Department", ar: "إدارة تحليل الأداء المالي", zh: "财务绩效分析部" } },
     { id: "plan", route: "planning", name: { en: "Planning Department", ar: "إدارة التخطيط", zh: "规划部" } } ] },
   { key: "g03", name: { en: "General Budget Department", ar: "الإدارة العامة للميزانية", zh: "预算总局" }, subs: [
-    { id: "budexec", route: "budget", name: { en: "Budget Execution Department", ar: "إدارة تنفيذ الميزانية", zh: "预算执行部" } } ] },
+    { id: "budexec", route: "budexec", name: { en: "Budget Execution Department", ar: "إدارة تنفيذ الميزانية", zh: "预算执行部" } } ] },
   { key: "g04", name: { en: "General Administration of Affairs Finance", ar: "الإدارة العامة للشؤون المالية", zh: "财务事务总局" }, subs: [
     { id: "entitle", route: "claims", name: { en: "Financial Entitlements Department", ar: "إدارة الاستحقاقات المالية", zh: "财务权益部" } },
     { id: "audit", route: "claims", name: { en: "Audit Department", ar: "إدارة التدقيق", zh: "审计部" } } ] },
@@ -1225,8 +1226,8 @@ const DEPARTMENTS = [
     { id: "assets", route: "revassets", name: { en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" } } ] },
 ];
 function Sidebar() {
-  const { t, tr, route, setRoute, deptSub, setDeptSub } = useStore();
-  const [openG, setOpenG] = useState("g02");
+  const { t, tr, route, setRoute, deptSub, setDeptSub, setBackRoute } = useStore();
+  const [openG, setOpenG] = useState("g06");
   return (<div className="sidebar">
     <div className="sidebar-sub">{t("appName")}</div>
     {DEPARTMENTS.map(g => {
@@ -1235,8 +1236,8 @@ function Sidebar() {
         <div className={"dept-head" + (open ? " open" : "")} onClick={() => setOpenG(open ? "" : g.key)}>
           <span style={{ flex: 1 }}>{tr(g.name)}</span><span className="chev">{open ? "▾" : "▸"}</span>
         </div>
-        {open && <div className="dept-subs">{g.subs.map(s => { const on = s.id === "fpa" || s.id === "revcol";
-          return <div key={s.id} className={"dept-sub" + (deptSub === s.id ? " active" : "") + (on ? "" : " locked")} onClick={on ? () => { setDeptSub(s.id); setRoute(s.route); } : undefined}>{tr(s.name)}{on ? null : <span className="lockic">🔒</span>}</div>;
+        {open && <div className="dept-subs">{g.subs.map(s => { const on = s.id === "fpa" || s.id === "revcol" || s.id === "budexec";
+          return <div key={s.id} className={"dept-sub" + (deptSub === s.id ? " active" : "") + (on ? "" : " locked")} onClick={on ? () => { setBackRoute(null); setDeptSub(s.id); setRoute(s.route); } : undefined}>{tr(s.name)}{on ? null : <span className="lockic">🔒</span>}</div>;
         })}</div>}
       </div>);
     })}
@@ -1924,7 +1925,7 @@ const RC_AGENTS = [
     chips: [{ t: { en: "Enabled", ar: "مفعّل", zh: "已启用" }, cls: "" }, { t: { en: "Base", ar: "أساس", zh: "基础" }, cls: "gray" }],
     title: { en: "Agent · Financial Data Consolidation and Data Quality", ar: "وكيل · توحيد البيانات المالية وجودتها", zh: "智能体 · 财务数据整合与数据质量" },
     desc: { en: "Master-data layer. Reconciles ERP / CRM / Bank / Tax records, resolves duplicates and exposes a clean revenue dataset.", ar: "طبقة البيانات الرئيسية. توفّق سجلات ERP/CRM/البنك/الضريبة، وتعالج التكرار، وتوفّر مجموعة بيانات إيرادات نظيفة.", zh: "主数据层。对账 ERP/CRM/银行/税务记录,消除重复,输出干净的收入数据集。" },
-    meta: [{ en: "Last sync · 12 min ago", ar: "آخر مزامنة · قبل 12 د", zh: "上次同步 · 12 分钟前" }, { en: "Quality score · 96.2%", ar: "الجودة · 96.2٪", zh: "质量分 · 96.2%" }, { en: "Feeds → UC-13", ar: "يغذّي → UC-13", zh: "馈入 → UC-13" }] },
+    meta: [{ en: "Last sync · 12 min ago", ar: "آخر مزامنة · قبل 12 د", zh: "上次同步 · 12 分钟前" }, { en: "Quality score · 96.2%", ar: "الجودة · 96.2٪", zh: "质量分 · 96.2%" }, { en: "Feeds → Revenue & Collections (UC-13)", ar: "يغذّي → الإيرادات والتحصيل (UC-13)", zh: "馈入 → 收入与征收 (UC-13)" }] },
   { id: "a13", code: "UC-13", kind: "focus", icon: "★", route: null,
     chips: [{ t: { en: "NEW", ar: "جديد", zh: "新增" }, cls: "info" }, { t: { en: "Primary focus", ar: "التركيز الأساسي", zh: "主焦点" }, cls: "gray" }],
     title: { en: "Agent · Revenue, Collections & Exclusions", ar: "وكيل · الإيرادات والتحصيل والاستبعادات", zh: "智能体 · 收入、征收与排除项" },
@@ -1933,7 +1934,7 @@ const RC_AGENTS = [
       { l: { en: "billing gap detected", ar: "فجوة فوترة", zh: "检出开票缺口" }, v: "SAR 12.4M", s: "▲ 8.2%", sTone: "danger" },
       { l: { en: "overdue risk · medium", ar: "مخاطر التأخر · متوسط", zh: "逾期风险 · 中" }, v: "42 cases", s: { en: "7 high", ar: "7 مرتفعة", zh: "7 高" }, sTone: "amber" },
       { l: { en: "recommended actions", ar: "إجراءات موصى بها", zh: "建议措施" }, v: { en: "14 corrections", ar: "14 تصحيحاً", zh: "14 项更正" }, s: { en: "5 escalations", ar: "5 تصعيدات", zh: "5 项升级" }, sTone: "strong" }],
-    foot: { en: "Inputs · UC-01 dataset   ·   Outputs · corrections, draft for UC-06", ar: "مدخلات · UC-01   ·   مخرجات · تصحيحات ومسودة لـ UC-06", zh: "输入 · UC-01 数据集   ·   输出 · 更正、UC-06 草稿" },
+    foot: { en: "Inputs · Data Quality (UC-01)   ·   Outputs · corrections, draft for Performance Analysis (UC-06)", ar: "مدخلات · جودة البيانات (UC-01)   ·   مخرجات · تصحيحات، مسودة لتحليل الأداء (UC-06)", zh: "输入 · 数据质量 (UC-01)   ·   输出 · 更正、绩效分析草稿 (UC-06)" },
     btn: { en: "Start analysis", ar: "بدء التحليل", zh: "开始分析" } },
   { id: "a6", code: "UC-06", kind: "existing", icon: "▦", route: "perf",
     chips: [{ t: { en: "Existing", ar: "قائم", zh: "现有" }, cls: "gray" }, { t: { en: "Draft generated by UC-13", ar: "مسودة من UC-13", zh: "由 UC-13 起草" }, cls: "amber" }],
@@ -2103,8 +2104,8 @@ function RcDataFlow() {
         {/* top layer: human feedback (from Ask) -> Aggregator, drawn above cards */}
         <svg className="mf-svg-top" width="1640" height="880" viewBox="0 0 1640 880" fill="none">
           <defs><marker id="mfap" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#7c5cff" strokeWidth="1.8" /></marker></defs>
-          <path d="M1184,446 C1135,505 952,512 814,490" stroke="#7c5cff" strokeWidth="1.8" strokeDasharray="6 6" markerEnd="url(#mfap)" />
-          <circle r="3.2" fill="#7c5cff"><animateMotion dur="2.6s" repeatCount="indefinite" path="M1184,446 C1135,505 952,512 814,490" /></circle>
+          <path d="M1150,492 C1040,524 920,514 830,492" stroke="#7c5cff" strokeWidth="1.8" strokeDasharray="6 6" markerEnd="url(#mfap)" />
+          <circle r="3.2" fill="#7c5cff"><animateMotion dur="2.6s" repeatCount="indefinite" path="M1150,492 C1040,524 920,514 830,492" /></circle>
         </svg>
 
         {/* column headers */}
@@ -2166,13 +2167,13 @@ function RcDataFlow() {
 
         {/* labels */}
         <div className="node mf-edgelab" style={{ left: 480, top: 210 }}>{tr({ en: "unified data", ar: "بيانات موحّدة", zh: "统一数据" })}</div>
-        <div className="node mf-feedback" style={{ left: 700, top: 516, width: 250, zIndex: 3, textAlign: "center" }}>{tr({ en: "human feedback → re-plan", ar: "تغذية راجعة بشرية ← إعادة التخطيط", zh: "人工反馈 → 重新规划" })}</div>
+        <div className="node mf-feedback" style={{ left: 712, top: 516, width: 250, zIndex: 3, textAlign: "center" }}>{tr({ en: "human feedback → re-plan", ar: "تغذية راجعة بشرية ← إعادة التخطيط", zh: "人工反馈 → 重新规划" })}</div>
       </div></div>
     </div>
   </div>);
 }
 function RcWorkbench() {
-  const { t, tr, setRoute, pushLog } = useStore();
+  const { t, tr, setRoute, pushLog, setPerfJump, setBackRoute, setDeptSub } = useStore();
   const [ask, setAsk] = useState("");
   const [feed, setFeed] = useState(WB.logs);
   const logRef = useRef(null);
@@ -2180,7 +2181,7 @@ function RcWorkbench() {
   const [thinking, setThinking] = useState(false);
   const [showSugs, setShowSugs] = useState(false);
   const qaRef = useRef(null);
-  const [fsel, setFsel] = useState([0, 0, 0, 0]);
+  const [fsel, setFsel] = useState([2, 0, 0, 0]);
   const DEFAULT_SUMMARY = { en: "For FY 2025 Q2, overall collection rate is 87%, with SAR 120M billing gap concentrated in 3 high-risk Amanat. Lease contracts drive ~62% of overdue.", ar: "للربع الثاني 2025، معدل التحصيل الإجمالي 87%، مع فجوة فوترة 120 مليون ريال مركّزة في 3 أمانات عالية الخطورة. عقود الإيجار تقود ~62% من التأخر.", zh: "FY2025 Q2,整体征收率 87%,SAR 120M 开票缺口集中于 3 个高风险阿玛纳。租约合同造成约 62% 的逾期。" };
   const [summary, setSummary] = useState(DEFAULT_SUMMARY);
   const cyc = (i) => setFsel(s => s.map((v, j) => j === i ? (v + 1) % WB.filters[i].opts.length : v));
@@ -2300,7 +2301,7 @@ function RcWorkbench() {
       <div className="wb-next3">
         <div className="wb-nlist">{WB.next.map((n, i) => (<div className="wb-nrow" key={i}><span className="wb-dot violet" /> {tr(n)}</div>))}</div>
         <div className="wb-down"><div className="wb-dh">{tr({ en: "DOWNSTREAM ACTIONS", ar: "إجراءات لاحقة", zh: "下游行动" })}</div>
-          <button className="btn wb-downb" onClick={() => setRoute("perf")}>{ucl("UC-06", tr({ en: "Generate Executive Summary", ar: "إنشاء الملخص التنفيذي", zh: "生成执行摘要" }))} →</button>
+          <button className="btn wb-downb" onClick={() => { setPerfJump({ tab: "dash", generate: true }); setBackRoute("rcbench"); setDeptSub("revcol"); setRoute("perf"); }}>{ucl("UC-06", tr({ en: "Generate Executive Summary", ar: "إنشاء الملخص التنفيذي", zh: "生成执行摘要" }))} →</button>
           <button className="btn secondary wb-downb" onClick={() => setRoute("monitor")}>{ucl("UC-02", tr({ en: "Create Alert / Case", ar: "إنشاء تنبيه / حالة", zh: "创建告警 / 案例" }))} →</button>
         </div>
         <div className="wb-storyc"><div className="wb-dh">{tr({ en: "G-06 STORYLINE", ar: "مسار ج-06", zh: "G-06 故事线" })}</div>
@@ -2313,7 +2314,7 @@ function RcWorkbench() {
   </div>);
 }
 function RcWorkspace() {
-  const { t, tr, setRoute, pushLog, lang, setPerfJump, setDeptSub } = useStore();
+  const { t, tr, setRoute, pushLog, lang, setPerfJump, setDeptSub, setBackRoute } = useStore();
   const [seg, setSeg] = useState("all");
   const DEFAULT_PROMPT = { en: "Analyze billing gap for Q3 across all BU, flag overdue contracts > 60 days, and draft a collection note for executive review.", ar: "حلّل فجوة الفوترة للربع الثالث عبر كل الوحدات، وحدّد العقود المتأخرة > 60 يوماً، وصُغ مذكرة تحصيل للمراجعة التنفيذية.", zh: "分析第三季度各业务单元的开票缺口,标记逾期 > 60 天的合同,并起草供高管复核的征收说明。" };
   const [phase, setPhase] = useState("idle");            // idle | running | review | approved | returned
@@ -2396,7 +2397,7 @@ function RcWorkspace() {
             {a.kind !== "focus" && <div className="arow">
               {a.meta && <div className="ameta">{a.meta.map((m, i) => (<span className="mi" key={i}>{tr(m)}</span>))}</div>}
               {a.btn && <button className="btn secondary sm" onClick={() => {
-                if (a.id === "a6") { setPerfJump({ note: { en: "Opened from Revenue Collection · UC-06 draft · scope: FY2026 Q3 · all Amanat", ar: "فُتح من التحصيل · مسودة UC-06 · النطاق: FY2026 Q3 · كل الأمانات", zh: "来自收入征收 · UC-06 草稿 · 范围:FY2026 Q3 · 全部阿玛纳" } }); setDeptSub("fpa"); setRoute("perf"); }
+                if (a.id === "a6") { setPerfJump({ tab: "params" }); setBackRoute("rcwork"); setDeptSub("revcol"); setRoute("rcreports"); }
                 else if (a.route) setRoute(a.route);
               }}>{tr(a.btn)} {ArrowIcon}</button>}
             </div>}
@@ -2486,13 +2487,37 @@ function Reports() {
 /* =========================================================================
    App root
    ========================================================================= */
+const Uc06App = React.lazy(() => import("./uc06/Uc06App.jsx"));
 function Shell() {
-  const { t, route, log, pushLog } = useStore();
+  const { t, tr, route, log, pushLog, lang, setRoute, setDeptSub, perfJump, setPerfJump, backRoute, setBackRoute } = useStore();
   useEffect(() => { const msgs = ["log_idle", "log_scan", "log_route"]; const id = setInterval(() => pushLog(msgs[Math.floor(Math.random() * msgs.length)]), 9000); return () => clearInterval(id); }, []);
   useEffect(() => { if (log.length === 0) pushLog("log_scan"); }, []);
+  // The embedded UC-06 module no longer mutates the global document direction,
+  // but keep our own direction asserted whenever we leave the embedded routes.
+  useEffect(() => { if (route !== "perf" && route !== "rcreports" && route !== "budexec") { document.documentElement.lang = lang; document.documentElement.dir = lang === "ar" ? "rtl" : "ltr"; } }, [route, lang]);
+  // Ported colleague pages, driven by OUR sidebar (their own left menu hidden):
+  //   perf      -> Financial Performance Analysis Department
+  //   rcreports -> Revenue Collection Department (report registry)
+  if (route === "perf" || route === "rcreports" || route === "budexec") {
+    const sub = route === "rcreports" ? "revenueCollection" : route === "budexec" ? "budgetExecution" : "performanceAnalysis";
+    const initTab = perfJump && perfJump.tab ? perfJump.tab : undefined;
+    // When opened via a host deep-link (Open draft / Generate Executive Summary),
+    // the embedded page's Back exits to the route the host recorded.
+    const onBack = backRoute ? () => { const b = backRoute; setBackRoute(null); setDeptSub("revcol"); setRoute(b); } : undefined;
+    return (<>
+      <TopBar />
+      <div className="shell" style={{ height: "calc(100vh - var(--topbar-h))", minHeight: 0, overflow: "hidden" }}>
+        <Sidebar />
+        <div className="uc06-root" style={{ flex: "1 1 auto", minWidth: 0, height: "100%", overflow: "hidden" }}>
+          <React.Suspense fallback={<div style={{ padding: 40, fontSize: 15, color: "#4b5563" }}>Loading…</div>}>
+            <Uc06App embedded subDept={sub} appLang={lang} initialTab={initTab} autoGenerate={!!(perfJump && perfJump.generate)} onBack={onBack} onConsumeJump={() => setPerfJump(null)} key={sub} />
+          </React.Suspense>
+        </div>
+      </div>
+    </>);
+  }
   let page = null;
   if (route === "hub") page = <Hub />;
-  else if (route === "perf") page = <PerfAnalysis />;
   else if (route === "chat") page = <ChatAnalysis />;
   else if (route === "monitor") page = <Monitoring />;
   else if (route === "budget") page = <Storyline story={STORY_BUDGET} title={t("j_bud_n")} sub={t("j_bud_b")} />;
