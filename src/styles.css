@@ -43,6 +43,8 @@ h1,h2,h3,h4{margin:0;font-weight:600;color:var(--ink)}
 .chip.gray{background:#eef2ef;color:var(--muted)}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 .badge-count{background:var(--danger);color:#fff;border-radius:999px;min-width:18px;height:18px;padding:0 5px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.riyal{display:inline-block;width:.86em;height:.86em;vertical-align:-.11em;margin-inline-end:1px;flex:0 0 auto}
+.cur-pill .riyal{width:1.05em;height:1.05em;vertical-align:-.18em}
 
 /* ---------- cards ---------- */
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}

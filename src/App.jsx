@@ -1031,9 +1031,8 @@ function StoreProvider({ children }) {
   const dir = lang === "ar" ? "rtl" : "ltr";
   useEffect(() => { document.documentElement.lang = lang; document.documentElement.dir = dir; }, [lang, dir]);
 
-  const money = (s) => (typeof s === "string" && curMode === "riyal") ? s.replace(/SAR/g, "⃁") : s;
-  const t = (k) => { const v = (I18N[lang] && I18N[lang][k] != null ? I18N[lang][k] : (I18N.en[k] != null ? I18N.en[k] : k)); return money(SHOW_UC ? v : sanitizeUc(v)); };
-  const tr = (o) => { const v = (o && typeof o === "object" ? (o[lang] != null ? o[lang] : (o.en != null ? o.en : o.ar)) : o); return money(SHOW_UC ? v : sanitizeUc(v)); };
+  const t = (k) => { const v = (I18N[lang] && I18N[lang][k] != null ? I18N[lang][k] : (I18N.en[k] != null ? I18N.en[k] : k)); return SHOW_UC ? v : sanitizeUc(v); };
+  const tr = (o) => { const v = (o && typeof o === "object" ? (o[lang] != null ? o[lang] : (o.en != null ? o.en : o.ar)) : o); return SHOW_UC ? v : sanitizeUc(v); };
   const clean = (s) => (SHOW_UC ? s : sanitizeUc(s));
 
   const pushLog = (textKeyOrObj, extra) => {
@@ -1053,7 +1052,7 @@ function StoreProvider({ children }) {
   const cycleLang = () => setLang(l => (l === "ar" ? "en" : "ar")); // UI toggle: AR/EN only (zh via ?ln=zh)
 
   const value = { lang, setLang, cycleLang, dir, t, tr, clean, user, setUser, route, setRoute, deptSub, setDeptSub, cov, setCov,
-    alerts, ackAlert, log, pushLog, reports, addReport, pendingQ, setPendingQ, perfJump, setPerfJump, curMode, setCurMode, money, askOrchestrator, reset };
+    alerts, ackAlert, log, pushLog, reports, addReport, pendingQ, setPendingQ, perfJump, setPerfJump, curMode, setCurMode, askOrchestrator, reset };
   return <Store.Provider value={value}>{children}</Store.Provider>;
 }
 
@@ -1077,6 +1076,18 @@ function Section({ title, sub, right, children, className }) {
     {children}</div>);
 }
 function PageHeader({ title, sub, right }) { return (<div className="page-h"><div><h1>{title}</h1>{sub && <div className="sub">{sub}</div>}</div>{right}</div>); }
+// Inline SVG Saudi Riyal glyph — renders identically on every browser/font (no U+20C1 charset issue).
+function RiyalGlyph() {
+  return (<svg className="riyal" viewBox="0 0 24 24" aria-label="SAR" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 4.5 V13.5 Q8 17 11.5 17" /><path d="M14 4.5 V13.5 Q14 17 17.5 17" /><path d="M5.5 8.6 L18.5 6.4" /><path d="M5.5 12.2 L18.5 10" /></svg>);
+}
+// Renders a currency string; in riyal mode "SAR" becomes the glyph, else plain "SAR" text.
+function Money({ v }) {
+  const { curMode } = useStore();
+  if (typeof v !== "string" || curMode !== "riyal" || v.indexOf("SAR") < 0) return <React.Fragment>{v}</React.Fragment>;
+  const parts = v.split("SAR");
+  return (<React.Fragment>{parts.map((p, i) => (<React.Fragment key={i}>{i > 0 && <RiyalGlyph />}{p}</React.Fragment>))}</React.Fragment>);
+}
 function Chip({ sev, children }) { const c = sev === "red" ? "danger" : sev === "amber" ? "amber" : sev === "info" ? "info" : "gray"; return <span className={"chip " + c}>{children}</span>; }
 
 function LineagePop() {
@@ -1179,12 +1190,12 @@ function TopBar() {
         <span>{ic}</span><span className="tbtn-lbl">{t(k)}</span>{r === "monitor" && openAlerts ? <span className="badge-count">{openAlerts}</span> : null}</button>))}
       {URL_LANG === "zh" && <span className="topbar-sep" />}
       <button className="tbtn lang-pill" onClick={cycleLang}>{GlobeIcon} <span>{NEXT_LANG_LABEL[nextLang]}</span></button>
-      <button className="tbtn cur-pill" onClick={() => setCurMode(c => c === "riyal" ? "sar" : "riyal")} title={tr({ en: "Toggle currency (Riyal / SAR)", ar: "تبديل العملة", zh: "切换货币" })}>{curMode === "riyal" ? "⃁" : "SAR"}</button>
+      <button className="tbtn cur-pill" onClick={() => setCurMode(c => c === "riyal" ? "sar" : "riyal")} title={tr({ en: "Toggle currency (Riyal / SAR)", ar: "تبديل العملة", zh: "切换货币" })}>{curMode === "riyal" ? <RiyalGlyph /> : "SAR"}</button>
       <div className="notifmenu">
         <button className="tbtn notif-btn" onClick={() => setNotifOpen(o => !o)} title={tr({ en: "Notifications", ar: "الإشعارات", zh: "通知" })}>🔔{notifCount > 0 ? <span className="badge-count">{notifCount}</span> : null}</button>
         {notifOpen && <div className="panel notif-panel" onMouseLeave={() => setNotifOpen(false)}>
           <div className="notif-h"><b>{tr({ en: "Notifications", ar: "الإشعارات", zh: "通知" })}</b><button className="notif-clear" onClick={() => setNotifRead(true)}>{tr({ en: "Mark all read", ar: "تعليم الكل كمقروء", zh: "全部标为已读" })}</button></div>
-          {NOTIFS.map((n, i) => (<div className={"notif-row " + n.sev + (notifRead ? " read" : "")} key={i}><span className="ni" /><div className="nx"><div className="nt">{tr(n.t)}</div><div className="ntime">{tr(n.time)}</div></div></div>))}
+          {NOTIFS.map((n, i) => (<div className={"notif-row " + n.sev + (notifRead ? " read" : "")} key={i}><span className="ni" /><div className="nx"><div className="nt"><Money v={tr(n.t)} /></div><div className="ntime">{tr(n.time)}</div></div></div>))}
         </div>}
       </div>
       <div className="usermenu">
@@ -1910,7 +1921,7 @@ const RC_AGENTS = [
     btn: { en: "Start analysis", ar: "بدء التحليل", zh: "开始分析" } },
   { id: "a6", code: "UC-06", kind: "existing", icon: "▦", route: "perf",
     chips: [{ t: { en: "Existing", ar: "قائم", zh: "现有" }, cls: "gray" }, { t: { en: "Draft generated by UC-13", ar: "مسودة من UC-13", zh: "由 UC-13 起草" }, cls: "amber" }],
-    title: { en: "Revenue Executive & Statistics", ar: "الإيرادات التنفيذية والإحصاءات", zh: "收入执行与统计" },
+    title: { en: "Financial Performance Analysis, Expenditure and Executive Reports", ar: "تحليل الأداء المالي والإنفاق والتقارير التنفيذية", zh: "财务绩效分析、支出与执行报告" },
     desc: { en: "Compiles weekly & monthly executive briefs. Consumes UC-13 corrections to refresh KPI commentary automatically.", ar: "يجمّع موجزات تنفيذية أسبوعية وشهرية. ويستهلك تصحيحات UC-13 لتحديث تعليق المؤشرات تلقائياً.", zh: "编制周/月度执行简报。消费 UC-13 的更正以自动刷新 KPI 评述。" },
     meta: [{ en: "Brief draft · pending review", ar: "مسودة · بانتظار المراجعة", zh: "简报草稿 · 待复核" }, { en: "Schedule · every Monday 09:00", ar: "الجدول · كل إثنين 09:00", zh: "计划 · 每周一 09:00" }],
     btn: { en: "Open draft", ar: "فتح المسودة", zh: "打开草稿" } },
@@ -2129,7 +2140,7 @@ function RcDataFlow() {
   </div>);
 }
 function RcWorkbench() {
-  const { t, tr, setRoute, pushLog, money } = useStore();
+  const { t, tr, setRoute, pushLog } = useStore();
   const [ask, setAsk] = useState("");
   const [feed, setFeed] = useState(WB.logs);
   const logRef = useRef(null);
@@ -2189,7 +2200,7 @@ function RcWorkbench() {
       <div className="wb-frow">
         {WB.filters.map((f, i) => (<div className="wb-field clickable" key={i} onClick={() => cyc(i)} title={tr({ en: "click to change", ar: "انقر للتغيير", zh: "点击切换" })}><div className="fl">{tr(f.lab)}</div><div className="fv">{f.opts[fsel[i]]} <span className="cyc">▾</span></div></div>))}
         <button className="btn sm wb-apply" onClick={applyFilters}>{tr({ en: "Apply", ar: "تطبيق", zh: "应用" })}</button>
-        <div className="wb-ai1"><div className="h"><span className="wb-dot violet" /> {tr({ en: "AI ONE-LINER SUMMARY", ar: "ملخص ذكي بسطر واحد", zh: "AI 一句话摘要" })}</div><div className="b">{tr(summary)}</div></div>
+        <div className="wb-ai1"><div className="h"><span className="wb-dot violet" /> {tr({ en: "AI ONE-LINER SUMMARY", ar: "ملخص ذكي بسطر واحد", zh: "AI 一句话摘要" })}</div><div className="b"><Money v={tr(summary)} /></div></div>
       </div>
     </div>
     {/* RESULTS */}
@@ -2200,9 +2211,9 @@ function RcWorkbench() {
           <div className="wb-kl">{tr({ en: "OVERALL COLLECTION RATE", ar: "معدل التحصيل الإجمالي", zh: "整体征收率" })}</div>
           <div className="wb-krow"><span className="wb-big">87%</span><span className="chip">+2.1% QoQ</span></div>
           <div className="wb-bars">
-            <div className="wb-bar"><div className="bl">{tr({ en: "Planned", ar: "مخطط", zh: "计划" })}</div><div className="bt"><span className="bf plan" style={{ width: "100%" }} /></div><div className="bv">{money("SAR 920M")}</div></div>
-            <div className="wb-bar"><div className="bl">{tr({ en: "Collected", ar: "محصّل", zh: "已收" })}</div><div className="bt"><span className="bf coll" style={{ width: "87%" }} /></div><div className="bv">{money("SAR 800M")}</div></div>
-            <div className="wb-bar"><div className="bl">{tr({ en: "Outstanding", ar: "مستحق", zh: "未收" })}</div><div className="bt"><span className="bf out" style={{ width: "13%" }} /></div><div className="bv">{money("SAR 120M")}</div></div>
+            <div className="wb-bar"><div className="bl">{tr({ en: "Planned", ar: "مخطط", zh: "计划" })}</div><div className="bt"><span className="bf plan" style={{ width: "100%" }} /></div><div className="bv"><Money v="SAR 920M" /></div></div>
+            <div className="wb-bar"><div className="bl">{tr({ en: "Collected", ar: "محصّل", zh: "已收" })}</div><div className="bt"><span className="bf coll" style={{ width: "87%" }} /></div><div className="bv"><Money v="SAR 800M" /></div></div>
+            <div className="wb-bar"><div className="bl">{tr({ en: "Outstanding", ar: "مستحق", zh: "未收" })}</div><div className="bt"><span className="bf out" style={{ width: "13%" }} /></div><div className="bv"><Money v="SAR 120M" /></div></div>
           </div>
           <div className="wb-kk"><span>{tr({ en: "Overdue share (>60d)", ar: "نسبة التأخر (>60 يوماً)", zh: "逾期占比 (>60天)" })}</span><b className="red">62%</b></div>
           <div className="wb-kk"><span>{tr({ en: "Avg DSO", ar: "متوسط أيام التحصيل", zh: "平均回款天数" })}</span><b>74 {tr({ en: "days", ar: "يوم", zh: "天" })}</b></div>
@@ -2210,14 +2221,14 @@ function RcWorkbench() {
       <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Billing Gap · Focus List", ar: "فجوة الفوترة · قائمة التركيز", zh: "开票缺口 · 重点清单" })}</b><span className="wb-pm">{tr({ en: "top 5 overdue", ar: "أعلى 5 متأخرة", zh: "前 5 逾期" })}</span></div>
         <div className="wb-pb">
           <table className="wb-table"><thead><tr><th>{tr({ en: "CONTRACT ID", ar: "رقم العقد", zh: "合同编号" })}</th><th>{tr({ en: "AMANAH", ar: "الأمانة", zh: "阿玛纳" })}</th><th>{tr({ en: "OVERDUE", ar: "متأخر", zh: "逾期" })}</th><th>{tr({ en: "RISK", ar: "الخطر", zh: "风险" })}</th><th>{tr({ en: "ASK", ar: "اسأل", zh: "提问" })}</th></tr></thead>
-            <tbody>{WB.focus.map((r, i) => (<tr key={i} onClick={() => fAsk(r)}><td className="mono">{r.id}</td><td>{tr(r.am)}</td><td>{money(r.od)}</td><td>{risk(r.risk)}</td><td><span className="wb-q" title={tr({ en: "Ask the agent", ar: "اسأل الوكيل", zh: "向智能体提问" })}>?</span></td></tr>))}</tbody></table>
+            <tbody>{WB.focus.map((r, i) => (<tr key={i} onClick={() => fAsk(r)}><td className="mono">{r.id}</td><td>{tr(r.am)}</td><td><Money v={r.od} /></td><td>{risk(r.risk)}</td><td><span className="wb-q" title={tr({ en: "Ask the agent", ar: "اسأل الوكيل", zh: "向智能体提问" })}>?</span></td></tr>))}</tbody></table>
           <div className="wb-tfoot"><span>{tr({ en: "Showing 5 of 47 · click any row to ask the agent", ar: "عرض 5 من 47 · انقر أي صف لسؤال الوكيل", zh: "显示 47 中的 5 条 · 点击任意行向智能体提问" })}</span><a onClick={() => askQ(2)}>{tr({ en: "View all →", ar: "عرض الكل →", zh: "查看全部 →" })}</a></div>
         </div></div>
       <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Amanah Distribution", ar: "توزيع الأمانات", zh: "阿玛纳分布" })}</b></div>
         <div className="wb-pb">
           <div className="wb-kl2">{tr({ en: "Top Amanat by billing gap", ar: "أعلى الأمانات حسب فجوة الفوترة", zh: "按开票缺口排序的阿玛纳" })}</div>
-          {WB.dist.map((d, i) => (<div className="wb-dist" key={i}><div className="dn">{tr(d.am)}</div><div className="dt"><span className={"df " + d.cls} style={{ width: d.pct + "%" }} /></div><div className="dv">{money(d.v)}</div></div>))}
-          <div className="wb-other"><span>{tr({ en: "Other 42 Amanat", ar: "42 أمانة أخرى", zh: "其余 42 个阿玛纳" })}</span><b>{money("SAR 19M")}</b></div>
+          {WB.dist.map((d, i) => (<div className="wb-dist" key={i}><div className="dn">{tr(d.am)}</div><div className="dt"><span className={"df " + d.cls} style={{ width: d.pct + "%" }} /></div><div className="dv"><Money v={d.v} /></div></div>))}
+          <div className="wb-other"><span>{tr({ en: "Other 42 Amanat", ar: "42 أمانة أخرى", zh: "其余 42 个阿玛纳" })}</span><b><Money v="SAR 19M" /></b></div>
         </div></div>
     </div>
     {/* MULTI-AGENT WORKSPACE */}
@@ -2242,7 +2253,7 @@ function RcWorkbench() {
             <div className="wb-src">{ucl("UC-01", tr({ en: "Source: unified data · Numeric Query Agent", ar: "المصدر: بيانات موحّدة · وكيل الاستعلام الرقمي", zh: "来源:统一数据 · 数值查询智能体" }))}</div>
           </div></div>}
           {(qa.length > 0 || thinking) && <div className="wb-qa" ref={qaRef}>
-            {qa.map((m, i) => (<div className={"wb-qm " + m.role} key={i}><div className="bb">{m.text}</div></div>))}
+            {qa.map((m, i) => (<div className={"wb-qm " + m.role} key={i}><div className="bb"><Money v={m.text} /></div></div>))}
             {thinking && <div className="wb-qm a"><div className="bb think"><span className="wb-typing"><i /><i /><i /></span></div></div>}
           </div>}
           <div className={"wb-sqh" + (qa.length > 0 ? " tog" : "")} onClick={() => { if (qa.length > 0) setShowSugs(v => !v); }}>{tr({ en: "SUGGESTED QUESTIONS", ar: "أسئلة مقترحة", zh: "建议问题" })}{qa.length > 0 && <span className="sqtg">{showSugs ? "▾" : "▸"}</span>}</div>
@@ -2270,7 +2281,7 @@ function RcWorkbench() {
   </div>);
 }
 function RcWorkspace() {
-  const { t, tr, setRoute, pushLog, lang, setPerfJump, setDeptSub, money } = useStore();
+  const { t, tr, setRoute, pushLog, lang, setPerfJump, setDeptSub } = useStore();
   const [seg, setSeg] = useState("all");
   const DEFAULT_PROMPT = { en: "Analyze billing gap for Q3 across all BU, flag overdue contracts > 60 days, and draft a collection note for executive review.", ar: "حلّل فجوة الفوترة للربع الثالث عبر كل الوحدات، وحدّد العقود المتأخرة > 60 يوماً، وصُغ مذكرة تحصيل للمراجعة التنفيذية.", zh: "分析第三季度各业务单元的开票缺口,标记逾期 > 60 天的合同,并起草供高管复核的征收说明。" };
   const [phase, setPhase] = useState("idle");            // idle | running | review | approved | returned
@@ -2328,7 +2339,7 @@ function RcWorkspace() {
       </div>
     </div>
     {/* top KPI metrics */}
-    <div className="ws-kpirow">{RC_KPIS.map((k, i) => (<div className="ws-kpi2" key={i}><div className="lab"><span className="dot" style={{ background: k.dot }} />{tr(k.k)}</div><div className="v">{money(k.v)} <span className="d">{tr(k.d)}</span></div></div>))}</div>
+    <div className="ws-kpirow">{RC_KPIS.map((k, i) => (<div className="ws-kpi2" key={i}><div className="lab"><span className="dot" style={{ background: k.dot }} />{tr(k.k)}</div><div className="v"><Money v={k.v} /> <span className="d">{tr(k.d)}</span></div></div>))}</div>
     <div className="ws-grid2">
       {/* LEFT — Agent Plaza (65%) */}
       <div className="ws-plaza">
@@ -2348,7 +2359,7 @@ function RcWorkspace() {
               {a.kind === "focus" && a.btn && <button className="btn ws-start" onClick={() => setRoute("rcbench")}>▶ {tr(a.btn)}</button>}
             </div>
             <div className="ad">{tr(a.desc)}</div>
-            {a.mini && <div className="agent-mini">{a.mini.map((m, i) => (<div className="am" key={i}><div className="l">{tr(m.l)}</div><div className="vs"><span className="v">{tr(m.v)}</span><span className={"s " + (m.sTone || "")}>{m.sTone === "strong" ? "· " : ""}{tr(m.s)}</span></div></div>))}</div>}
+            {a.mini && <div className="agent-mini">{a.mini.map((m, i) => (<div className="am" key={i}><div className="l">{tr(m.l)}</div><div className="vs"><span className="v"><Money v={tr(m.v)} /></span><span className={"s " + (m.sTone || "")}>{m.sTone === "strong" ? "· " : ""}{tr(m.s)}</span></div></div>))}</div>}
             {a.foot && <div className="afoot">{tr(a.foot)}</div>}
             {a.kind !== "focus" && <div className="arow">
               {a.meta && <div className="ameta">{a.meta.map((m, i) => (<span className="mi" key={i}>{tr(m)}</span>))}</div>}
