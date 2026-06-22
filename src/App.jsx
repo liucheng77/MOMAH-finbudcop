@@ -1847,9 +1847,9 @@ function UcReport({ onBack }) {
   </div>);
 }
 function PerfAnalysis() {
-  const { t, tr, reports, perfJump, setPerfJump } = useStore();
+  const { t, tr, reports, perfJump, setPerfJump, setRoute, setDeptSub } = useStore();
   const [mode, setMode] = useState(perfJump ? "wizard" : "registry"); // registry | wizard
-  const [step, setStep] = useState(perfJump ? 3 : 1); const [reached, setReached] = useState(perfJump ? 4 : 1); const [loading, setLoading] = useState(false); const [ridx, setRidx] = useState(0);
+  const [step, setStep] = useState(1); const [reached, setReached] = useState(1); const [loading, setLoading] = useState(false); const [ridx, setRidx] = useState(0);
   const [jumpNote] = useState(perfJump ? perfJump.note : null);
   useEffect(() => { if (perfJump) setPerfJump(null); }, []);   // consume the deep-link once
   const goStep = (n) => { setStep(n); setReached(r => Math.max(r, n)); };
@@ -1876,7 +1876,7 @@ function PerfAnalysis() {
   }
   return (<div className="fade">
     <div className="page-h" style={{ alignItems: "center" }}>
-      <button className="btn ghost sm" onClick={() => setMode("registry")}>↩ {t("uc_back")}</button>
+      <button className="btn ghost sm" onClick={() => { if (jumpNote) { setDeptSub("revcol"); setRoute("rcwork"); } else setMode("registry"); }}>↩ {jumpNote ? tr({ en: "Revenue Collection Department", ar: "إدارة التحصيل", zh: "收入征收部" }) : t("uc_back")}</button>
       <UcSteps step={step} setStep={goStep} reached={reached} />
     </div>
     {jumpNote && <div className="jump-note">↪ {tr(jumpNote)}</div>}
