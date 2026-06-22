@@ -1238,7 +1238,7 @@ const RC = window.Recharts || {};
    Every AI output is a DRAFT — nothing is a financial decision until approved.
    All figures are synthetic demo data (BRD V0.1).
    ========================================================================= */
-const BUILD_TIME = (typeof BUILD_STAMP !== "undefined" && BUILD_STAMP) ? BUILD_STAMP : "2026-06-22 11:29 AST";
+const BUILD_TIME = (typeof BUILD_STAMP !== "undefined" && BUILD_STAMP) ? BUILD_STAMP : "2026-06-22 15:05 AST";
 const LANGS = ["ar", "en", "zh"];
 const URL_LANG = (() => { try { const p = new URLSearchParams(window.location.search).get("ln"); return LANGS.indexOf(p) >= 0 ? p : null; } catch (e) { return null; } })();
 // ?uc=true reveals UC-xx / G-x annotations in the UI; hidden by default for client demos.
@@ -3266,7 +3266,7 @@ const MF = {
     { en: "“Why did collection rate drop this week?”", ar: "«لماذا انخفضت نسبة التحصيل هذا الأسبوع؟»", zh: "「本周征收率为何下降?」" },
   ],
   down: [
-    { code: "UC-06", n: { en: "Lens", ar: "العدسة", zh: "透视" }, s: { en: "Executive · Doors & Services · Contracts", ar: "تنفيذي · الأبواب والخدمات · العقود", zh: "执行 · 门类与服务 · 合同" }, cls: "green" },
+    { code: "UC-06", n: { en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "前瞻洞察智能体" }, s: { en: "Executive · Doors & Services · Contracts", ar: "تنفيذي · الأبواب والخدمات · العقود", zh: "执行 · 门类与服务 · 合同" }, cls: "green" },
     { code: "UC-02", n: "", s: { en: "alerts & notifications", ar: "تنبيهات وإشعارات", zh: "告警与通知" }, cls: "gold" },
     { code: "UC-14 / UC-12", n: "", s: { en: "Assets / Cost · related context", ar: "الأصول / التكلفة · سياق ذو صلة", zh: "资产 / 成本 · 相关上下文" }, cls: "dash" },
     { code: "UC-10 / UC-03", n: "", s: { en: "Audit · traceability", ar: "تدقيق · إمكانية التتبّع", zh: "审计 · 可追溯" }, cls: "dash" },
@@ -3348,7 +3348,7 @@ function RcDataFlow() {
 
         {/* COL 2 — UC-01 */}
         <div className="node mf-card u01" style={{ left: 240, top: 110, width: 235 }}>
-          <div className="hd"><b>{colh("UC-01", tr({ en: "Agent", ar: "وكيل", zh: "智能体" }))}</b><span className="chip">{tr({ en: "Data Foundation", ar: "أساس البيانات", zh: "数据基础" })}</span></div>
+          <div className="hd"><b>{colh("UC-01", tr({ en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" }))}</b><span className="chip">{tr({ en: "Data Foundation", ar: "أساس البيانات", zh: "数据基础" })}</span></div>
           <div className="row"><div className="k">{tr({ en: "Unification", ar: "التوحيد", zh: "统一" })}</div><div className="v">{tr({ en: "Cross-source entity resolution", ar: "حلّ الكيانات عبر المصادر", zh: "跨源实体解析" })}</div></div>
           <div className="row"><div className="k">{tr({ en: "Deduplication", ar: "إزالة التكرار", zh: "去重" })}</div><div className="v">{tr({ en: "Remove duplicate invoices/receipts", ar: "إزالة الفواتير/الإيصالات المكرّرة", zh: "去除重复发票/回款" })}</div></div>
           <div className="row"><div className="k">{tr({ en: "Mapping", ar: "المطابقة", zh: "映射" })}</div><div className="v">{tr({ en: "Furas Contract ID ↔ SAP AR/Revenue ↔ Doors / Services", ar: "معرّف عقد فرص ↔ SAP AR ↔ الأبواب / الخدمات", zh: "Furas 合同ID ↔ SAP AR ↔ 门类/服务" })}</div></div>
@@ -3363,7 +3363,7 @@ function RcDataFlow() {
 
         {/* COL 4 — UC-13 */}
         <div className="node mf-uc13" style={{ left: 946, top: 95, width: 330 }}>
-          <div className="hd"><b>{colh("UC-13", tr({ en: "Agent · Revenue Collection Exclusions", ar: "وكيل · التحصيل والاستبعادات", zh: "智能体 · 收入征收与排除项" }))}</b><span className="core">CORE</span></div>
+          <div className="hd"><b>{colh("UC-13", tr({ en: "Revenue Analytics Agent", ar: "وكيل تحليلات الإيرادات", zh: "收入分析智能体" }))}</b><span className="core">CORE</span></div>
           <div className="sct">{tr({ en: "OUTPUTS", ar: "المخرجات", zh: "输出" })}</div>
           <div className="mf-outs">{MF.outputs.map((o, i) => (<div className="mf-out" key={i}><div className="t">{tr(o.t)} <span className="od" style={{ background: o.c }} /></div><div className="s">{tr(o.s)}</div></div>))}</div>
           <div className="mf-narr"><b>{tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}</b><div>{tr({ en: "Natural-language explanations of collection performance, gap drivers, and conversational follow-ups.", ar: "تفسيرات بلغة طبيعية لأداء التحصيل ومسبّبات الفجوة ومتابعات حوارية.", zh: "用自然语言解释征收表现、缺口成因及对话式追问。" })}</div></div>
