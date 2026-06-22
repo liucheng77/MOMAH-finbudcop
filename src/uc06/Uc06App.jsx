@@ -3333,9 +3333,18 @@ export default function Uc06App({ embedded = false, subDept = 'performanceAnalys
         }, 2500);
     };
 
-    // Host deep-link (Generate Executive Summary): land on the dashboard step and
-    // run the generation animation immediately on mount.
-    useEffect(() => { if (autoGenerate) startGeneratingDashboard(); }, []);
+    // Lock the embedded page to the sub-department the host requested (and, if a
+    // deep-link asked for it, run the dashboard-generation animation). Keyed on
+    // subDept so it self-corrects even if React reuses this instance.
+    useEffect(() => {
+        if (!embedded) return;
+        if (subDept && subDept !== activeSubDeptId) {
+            const obj = DEPARTMENTS_TREE.flatMap(d => d.subDepartments || []).find(s => s.id === subDept);
+            if (obj) handleSubDepartmentSwitch(obj);
+        }
+        if (autoGenerate) startGeneratingDashboard();
+        else if (initialTab) setActiveTab(initialTab);
+    }, [subDept]);
 
     const submitQueryChat = (text) => {
         if (!text.trim()) return;

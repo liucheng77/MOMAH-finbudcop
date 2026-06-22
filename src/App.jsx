@@ -2301,7 +2301,7 @@ function RcWorkbench() {
       <div className="wb-next3">
         <div className="wb-nlist">{WB.next.map((n, i) => (<div className="wb-nrow" key={i}><span className="wb-dot violet" /> {tr(n)}</div>))}</div>
         <div className="wb-down"><div className="wb-dh">{tr({ en: "DOWNSTREAM ACTIONS", ar: "إجراءات لاحقة", zh: "下游行动" })}</div>
-          <button className="btn wb-downb" onClick={() => { setPerfJump({ tab: "dash", generate: true }); setBackRoute("rcbench"); setDeptSub("revcol"); setRoute("perf"); }}>{ucl("UC-06", tr({ en: "Generate Executive Summary", ar: "إنشاء الملخص التنفيذي", zh: "生成执行摘要" }))} →</button>
+          <button className="btn wb-downb" onClick={() => { setPerfJump({ tab: "dash", generate: true }); setBackRoute("rcbench"); setDeptSub("revcol"); setRoute("rcreports"); }}>{ucl("UC-06", tr({ en: "Generate Executive Summary", ar: "إنشاء الملخص التنفيذي", zh: "生成执行摘要" }))} →</button>
           <button className="btn secondary wb-downb" onClick={() => setRoute("monitor")}>{ucl("UC-02", tr({ en: "Create Alert / Case", ar: "إنشاء تنبيه / حالة", zh: "创建告警 / 案例" }))} →</button>
         </div>
         <div className="wb-storyc"><div className="wb-dh">{tr({ en: "G-06 STORYLINE", ar: "مسار ج-06", zh: "G-06 故事线" })}</div>
