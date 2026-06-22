@@ -608,6 +608,7 @@ table.tbl tbody tr:hover{background:#f8fbf9}
 .aibrief .abh{font-size:11px;font-weight:800;color:#6d5ae6;letter-spacing:.05em}
 
 /* regional map */
+.spend-center{display:flex;flex-direction:column;justify-content:center;min-height:296px}
 .ksa-map{position:relative;width:100%;border:1px solid var(--line);border-radius:12px;background:#f8fbf9;padding:8px}
 .ksa-map svg{width:100%;height:auto;display:block}
 .map-mk{cursor:default}
@@ -1115,7 +1116,7 @@ table.tbl tbody tr:hover{background:#f8fbf9}
    ========================================================================= */
 .mf-frame{box-shadow:0 12px 40px rgba(16,33,28,.13)}
 .mf-canvas-wrap{position:relative;overflow:hidden;margin-top:10px}
-.mf-canvas{position:relative;width:1500px;height:760px}
+.mf-canvas{position:relative;width:1640px;height:760px}
 .mf-svg{position:absolute;inset:0;z-index:0;pointer-events:none}
 .mf-svg-top{position:absolute;inset:0;z-index:2;pointer-events:none}
 .mf-canvas .node{position:absolute;z-index:1;box-sizing:border-box}
@@ -1237,7 +1238,7 @@ const RC = window.Recharts || {};
    Every AI output is a DRAFT — nothing is a financial decision until approved.
    All figures are synthetic demo data (BRD V0.1).
    ========================================================================= */
-const BUILD_TIME = (typeof BUILD_STAMP !== "undefined" && BUILD_STAMP) ? BUILD_STAMP : "2026-06-22 09:47 AST";
+const BUILD_TIME = (typeof BUILD_STAMP !== "undefined" && BUILD_STAMP) ? BUILD_STAMP : "2026-06-22 11:29 AST";
 const LANGS = ["ar", "en", "zh"];
 const URL_LANG = (() => { try { const p = new URLSearchParams(window.location.search).get("ln"); return LANGS.indexOf(p) >= 0 ? p : null; } catch (e) { return null; } })();
 // ?uc=true reveals UC-xx / G-x annotations in the UI; hidden by default for client demos.
@@ -2835,13 +2836,36 @@ function mapColor(rate) { return rate >= 75 ? "#1B8354" : rate >= 50 ? "#e29700"
 /* Real Saudi Arabia silhouette — sampled from a true country outline, normalized to viewBox 0 0 420 300 (bbox x48..372 / y12..288). */
 const KSA_PATH = "M116.7 12 L108.8 15.3 L100.4 17.8 L92 20.3 L85.1 23.5 L90.8 30.1 L96.5 36.7 L95.7 42.6 L90.7 49.4 L82.2 51.4 L76.4 57.4 L70.1 63.5 L61.5 62.3 L52.8 60.9 L50.5 69 L49 77.7 L47.7 84.2 L55.1 83.8 L60.3 90.7 L65 98 L69.6 105.3 L74.2 112.7 L79.4 119.5 L83.3 125.9 L87.8 133.3 L87.7 140.7 L92.1 148.2 L99.9 151.5 L106.5 156.9 L110.5 164.6 L114 172 L116.4 178.1 L114.9 186.4 L117.6 194.6 L118.8 202.8 L123.6 209.5 L129.8 215.1 L137.4 219.1 L143 224.8 L146.3 232.2 L149.7 239.4 L153.6 246.8 L157.9 254.4 L164.6 259.9 L168.6 266.8 L172.9 274.1 L178.1 275.9 L179.4 268.9 L182 261.1 L189.9 262.7 L198.4 261.5 L206.7 264.3 L214.8 267.6 L222.9 270.9 L229 275.6 L229 284.4 L231.3 288 L237.1 281.5 L242.9 274.9 L248.8 268.4 L254.6 261.8 L260.4 255.3 L266.3 248.7 L274.4 246.1 L283 244.1 L291.5 242.1 L300.1 240.1 L308.6 238 L317.1 235.9 L325.4 233 L333.7 230.1 L341.9 227.2 L350.2 224.3 L358.5 221.4 L364.7 216.5 L367.2 208.1 L369.8 199.7 L372.3 191.3 L371.7 183.2 L367 175.8 L358.8 175.3 L350.1 174.1 L341.4 172.9 L332.7 171.7 L324.7 169 L319.2 162.2 L313.7 155.3 L309 148.2 L308.6 143.2 L300.9 142.7 L295.8 136.3 L292.4 128.6 L289.8 124.4 L285.9 116.8 L288.2 111.9 L287.4 106.7 L280.8 101.6 L275 96.3 L272.1 92.4 L268 89 L264.3 82.8 L261 75.3 L252.2 75.1 L247.3 69.2 L239.7 66.3 L231.1 65.7 L222.3 65.2 L213.6 64.3 L204.9 63.4 L197.9 58.3 L191.1 52.8 L184.3 47.2 L177.6 41.6 L170.8 36 L164.1 30.4 L156.3 26.5 L148.7 22.2 L141.4 17.2 L133.6 13.6 L124.9 12 Z";
 function KsaMap({ small }) {
-  const { tr } = useStore();
-  return (<svg viewBox="0 0 420 300" className="ksa-map-svg" style={{ width: "100%", height: small ? 220 : "auto" }}>
-    <defs><linearGradient id="ksaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f3fbf6" /><stop offset="1" stopColor="#e3f3ea" /></linearGradient></defs>
-    <path d={KSA_PATH} fill="url(#ksaFill)" stroke="#1B8354" strokeWidth="1.6" strokeLinejoin="round" />
-    {UC_MAP.map(m => (<g key={m.id} className="map-mk"><circle cx={m.x} cy={m.y} r={small ? 4.5 : 5.5} fill={mapColor(m.rate)} stroke="#fff" strokeWidth="1.5" />
-      {!small && <text x={m.x + 8} y={m.y + 3} className="map-mk-l">{tr(m.name)}</text>}</g>))}
-  </svg>);
+  const { t, tr } = useStore();
+  const [hov, setHov] = useState(null);
+  const stObj = (r) => r >= 75 ? { en: "Strong", ar: "قوي", zh: "强" } : r >= 50 ? { en: "Watch", ar: "مراقبة", zh: "关注" } : { en: "Alert", ar: "تنبيه", zh: "预警" };
+  return (<div>
+    <svg viewBox="0 0 420 300" className="ksa-map-svg" style={small ? { width: "100%", height: 220 } : { width: "100%", maxWidth: 392, height: "auto", display: "block", margin: "0 auto" }}>
+      <defs><clipPath id="ksaClip"><path d={KSA_PATH} /></clipPath></defs>
+      {/* base land (soft yellow) */}
+      <path d={KSA_PATH} fill="#fdf3d6" stroke="#1B8354" strokeWidth="1.6" strokeLinejoin="round" />
+      {/* pastel administrative regions, clipped to the country outline */}
+      <g clipPath="url(#ksaClip)">
+        <ellipse cx="152" cy="46" rx="150" ry="52" fill="#fbe0e6" />
+        <ellipse cx="100" cy="142" rx="74" ry="88" fill="#fbe0e6" />
+        <ellipse cx="206" cy="277" rx="72" ry="30" fill="#fbe0e6" />
+        <ellipse cx="198" cy="250" rx="42" ry="34" fill="#d6f0e0" />
+      </g>
+      {/* faint region dividers */}
+      <g clipPath="url(#ksaClip)" stroke="#c8b696" strokeWidth="0.8" opacity="0.45" fill="none">
+        <path d="M150 28 L182 120 L212 205" /><path d="M252 58 L242 160 L232 252" /><path d="M118 92 L210 132 L312 150" />
+      </g>
+      <path d={KSA_PATH} fill="none" stroke="#1B8354" strokeWidth="1.6" strokeLinejoin="round" />
+      {UC_MAP.map(m => (<g key={m.id} className="map-mk" style={{ cursor: "pointer" }} onMouseEnter={() => setHov(m)} onMouseLeave={() => setHov(null)}>
+        <circle cx={m.x} cy={m.y} r={hov === m ? (small ? 6.5 : 7.5) : (small ? 4.5 : 5.5)} fill={mapColor(m.rate)} stroke="#fff" strokeWidth="1.5" />
+        {!small && <text x={m.x + 8} y={m.y + 3} className="map-mk-l">{tr(m.name)}</text>}</g>))}
+      {hov && (() => { const lab = tr(hov.name) + " · " + hov.rate + "% · " + tr(stObj(hov.rate)); const w = Math.max(64, lab.length * 4.4 + 14);
+        const tx = Math.min(Math.max(hov.x - w / 2, 4), 416 - w); const ty = hov.y - 24 < 4 ? hov.y + 12 : hov.y - 24;
+        return (<g pointerEvents="none"><rect x={tx} y={ty} width={w} height="17" rx="4" fill="#16211c" opacity="0.94" />
+          <text x={tx + 7} y={ty + 11.5} fill="#fff" fontSize="8.5" fontWeight="700">{lab}</text></g>); })()}
+    </svg>
+    {!small && <div className="map-legend"><span className="lg"><i style={{ background: "#1B8354" }} />{t("lg_green")}</span><span className="lg"><i style={{ background: "#e29700" }} />{t("lg_yellow")}</span><span className="lg"><i style={{ background: "#e32700" }} />{t("lg_red")}</span></div>}
+  </div>);
 }
 function GMap() {
   const { t, tr } = useStore();
@@ -2942,9 +2966,9 @@ function UcDashboard({ onCommentary }) {
     <div className="aibrief" style={{ marginBottom: 16 }}><div style={{ flex: 1 }}><div className="abh">✦ {t("ai_brief")}</div><div className="abx"><UcBriefText /></div></div><button className="btn" onClick={onCommentary}>{t("goCommentary")} {ArrowIcon}</button></div>
     <div className="cols-3" style={{ marginBottom: 14 }}>{UC_KPIS.slice(0, 3).map(k => (<div className="kpi k6" key={k.key}><span className={"ktag " + tagCls[k.tag]}>{t("tag_" + k.tag)}</span><div className="label">{t(k.key)}</div><div className="value">{k.value} <span style={{ fontSize: 16 }}>{k.unit === "%" ? "%" : k.unit + " SAR"}</span></div><div className="sub muted">{t(k.sub)}</div></div>))}</div>
     <div className="cols-4" style={{ marginBottom: 16 }}>{UC_KPIS.slice(3).map(k => (<div className="kpi k6" key={k.key}><span className={"ktag " + tagCls[k.tag]}>{t("tag_" + k.tag)}</span><div className="label">{t(k.key)}</div><div className="value" style={{ fontSize: 24 }}>{k.value}<span style={{ fontSize: 13 }}>{k.unit === "%" ? "%" : " " + k.unit}</span></div><div className="sub muted">{t(k.sub)}</div></div>))}</div>
-    <div className="cols-2">
-      <Section title={t("map_title")} sub={t("map_sub")}><GMap /></Section>
-      <Section title={t("spend_title")}><SpendChart /></Section>
+    <div className="cols-2" style={{ alignItems: "start" }}>
+      <Section title={t("map_title")} sub={t("map_sub")}><div className="ksa-map"><KsaMap /></div></Section>
+      <Section title={t("spend_title")}><div className="spend-center"><SpendChart /></div></Section>
     </div>
     <h2 style={{ fontSize: 16, margin: "6px 0 12px" }}>{t("fdetail")}</h2>
     <div className="cols-2">
@@ -3254,17 +3278,17 @@ function RcDataFlow() {
   const wrapRef = useRef(null);
   const [scale, setScale] = useState(1);
   useEffect(() => {
-    const calc = () => { const w = wrapRef.current ? wrapRef.current.clientWidth : 1500; setScale(Math.min(1, w / 1500)); };
+    const calc = () => { const w = wrapRef.current ? wrapRef.current.clientWidth : 1640; setScale(Math.min(1, w / 1640)); };
     calc(); window.addEventListener("resize", calc); return () => window.removeEventListener("resize", calc);
   }, []);
   return (<div className="fade mf">
     <div className="ws-back" onClick={() => setRoute("rcwork")}>← {tr({ en: "Back to Revenue Collection workspace", ar: "العودة إلى مساحة عمل التحصيل", zh: "返回收入征收工作区" })}</div>
     <div className="card pad mf-frame">
-      <h1 style={{ fontSize: 21 }}>{colh("UC-13", tr({ en: "Revenue Collection — Multi-Agent Flow", ar: "التحصيل — تدفّق متعدد الوكلاء", zh: "收入征收 — 多智能体流程" }))}</h1>
+      <h1 style={{ fontSize: 21 }}>{colh("UC-13", tr({ en: "Revenue Collection Exclusions — Multi-Agent Flow", ar: "التحصيل والاستبعادات — تدفّق متعدد الوكلاء", zh: "收入征收与排除项 — 多智能体流程" }))}</h1>
       <div className="sub muted" style={{ marginTop: 3 }}>{tr({ en: "G-06 Storyline · Orchestrated agents with human-in-the-loop · Left: data sources → Mid: agents → Right: outputs & downstream", ar: "مسار ج-06 · وكلاء منسّقون مع مراجعة بشرية · يسار: المصادر ← وسط: الوكلاء ← يمين: المخرجات واللاحق", zh: "G-06 故事线 · 带人工审批的编排智能体 · 左:数据源 → 中:智能体 → 右:输出与下游" })}</div>
 
       <div className="mf-canvas-wrap" ref={wrapRef} style={{ height: Math.ceil(760 * scale) }}><div className="mf-canvas" style={{ transform: "scale(" + scale + ")", transformOrigin: "top left" }}>
-        <svg className="mf-svg" width="1500" height="760" viewBox="0 0 1500 760" fill="none">
+        <svg className="mf-svg" width="1640" height="760" viewBox="0 0 1640 760" fill="none">
           <defs>
             <marker id="mfag" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#9aa7b5" strokeWidth="1.6" /></marker>
             <marker id="mfab" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#2563eb" strokeWidth="1.8" /></marker>
@@ -3285,10 +3309,10 @@ function RcDataFlow() {
           {/* Aggregator -> UC-13 (blue) */}
           <path d="M896,443 C930,443 924,340 946,340" stroke="#2563eb" strokeWidth="2.1" markerEnd="url(#mfab)" />
           {/* UC-13 -> downstream */}
-          <path d="M1276,165 C1290,160 1292,154 1300,154" stroke="#2563eb" strokeWidth="2.1" markerEnd="url(#mfab)" />
-          <path d="M1276,240 C1290,250 1292,260 1300,260" stroke="#2563eb" strokeWidth="2.1" markerEnd="url(#mfab)" />
-          <path d="M1276,335 C1290,342 1292,350 1300,350" stroke="#9aa7b5" strokeWidth="1.7" strokeDasharray="5 5" markerEnd="url(#mfag)" />
-          <path d="M1276,392 C1290,420 1292,440 1300,440" stroke="#9aa7b5" strokeWidth="1.7" strokeDasharray="5 5" markerEnd="url(#mfag)" />
+          <path d="M1276,165 C1370,158 1410,154 1440,154" stroke="#2563eb" strokeWidth="2.1" markerEnd="url(#mfab)" />
+          <path d="M1276,240 C1370,250 1410,260 1440,260" stroke="#2563eb" strokeWidth="2.1" markerEnd="url(#mfab)" />
+          <path d="M1276,335 C1370,344 1410,350 1440,350" stroke="#9aa7b5" strokeWidth="1.7" strokeDasharray="5 5" markerEnd="url(#mfag)" />
+          <path d="M1276,392 C1370,420 1410,440 1440,440" stroke="#9aa7b5" strokeWidth="1.7" strokeDasharray="5 5" markerEnd="url(#mfag)" />
           {/* flowing data packets */}
           <g>
             <circle r="3" fill="#9aa7b5"><animateMotion dur="2.2s" repeatCount="indefinite" path="M190,93 C224,93 220,200 240,200" /></circle>
@@ -3301,23 +3325,23 @@ function RcDataFlow() {
             <circle r="3" fill="#9aa7b5"><animateMotion dur="2s" begin="0.4s" repeatCount="indefinite" path="M730,455 C760,455 760,443 778,443" /></circle>
             <circle r="3" fill="#9aa7b5"><animateMotion dur="2s" begin="0.8s" repeatCount="indefinite" path="M730,593 C760,593 758,458 778,458" /></circle>
             <circle r="3.6" fill="#2563eb"><animateMotion dur="1.6s" repeatCount="indefinite" path="M896,443 C930,443 924,340 946,340" /></circle>
-            <circle r="3.2" fill="#2563eb"><animateMotion dur="1.5s" repeatCount="indefinite" path="M1276,165 C1290,160 1292,154 1300,154" /></circle>
-            <circle r="3.2" fill="#2563eb"><animateMotion dur="1.5s" begin="0.4s" repeatCount="indefinite" path="M1276,240 C1290,250 1292,260 1300,260" /></circle>
+            <circle r="3.2" fill="#2563eb"><animateMotion dur="1.6s" repeatCount="indefinite" path="M1276,165 C1370,158 1410,154 1440,154" /></circle>
+            <circle r="3.2" fill="#2563eb"><animateMotion dur="1.6s" begin="0.4s" repeatCount="indefinite" path="M1276,240 C1370,250 1410,260 1440,260" /></circle>
           </g>
         </svg>
         {/* top layer: human feedback (from Ask) -> Aggregator, drawn above cards */}
-        <svg className="mf-svg-top" width="1500" height="760" viewBox="0 0 1500 760" fill="none">
+        <svg className="mf-svg-top" width="1640" height="760" viewBox="0 0 1640 760" fill="none">
           <defs><marker id="mfap" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#7c5cff" strokeWidth="1.8" /></marker></defs>
-          <path d="M1072,648 C1000,742 800,616 837,484" stroke="#7c5cff" strokeWidth="1.8" strokeDasharray="6 6" markerEnd="url(#mfap)" />
-          <circle r="3.2" fill="#7c5cff"><animateMotion dur="2.6s" repeatCount="indefinite" path="M1072,648 C1000,742 800,616 837,484" /></circle>
+          <path d="M1072,672 C1000,752 800,624 837,486" stroke="#7c5cff" strokeWidth="1.8" strokeDasharray="6 6" markerEnd="url(#mfap)" />
+          <circle r="3.2" fill="#7c5cff"><animateMotion dur="2.6s" repeatCount="indefinite" path="M1072,672 C1000,752 800,624 837,486" /></circle>
         </svg>
 
         {/* column headers */}
         <div className="node mf-colh" style={{ left: 10, top: 14, width: 185 }}>{tr({ en: "UPSTREAM · DATA SOURCES", ar: "المنبع · مصادر البيانات", zh: "上游 · 数据源" })}</div>
         <div className="node mf-colh" style={{ left: 240, top: 14, width: 235 }}>{colh("UC-01", tr({ en: "UNIFICATION", ar: "التوحيد", zh: "统一" }))}</div>
         <div className="node mf-colh" style={{ left: 540, top: 14, width: 230 }}>{tr({ en: "ORCHESTRATOR · PARALLEL AGENTS", ar: "المنسّق · وكلاء متوازون", zh: "编排器 · 并行智能体" })}</div>
-        <div className="node mf-colh" style={{ left: 946, top: 14, width: 340 }}>{colh("UC-13", tr({ en: "REVENUE COLLECTION AGENT", ar: "وكيل تحصيل الإيرادات", zh: "收入征收智能体" }))}</div>
-        <div className="node mf-colh" style={{ left: 1300, top: 14, width: 185 }}>{tr({ en: "DOWNSTREAM", ar: "اللاحق", zh: "下游" })}</div>
+        <div className="node mf-colh" style={{ left: 946, top: 14, width: 340 }}>{colh("UC-13", tr({ en: "REVENUE, COLLECTION & EXCLUSIONS AGENT", ar: "وكيل الإيرادات والتحصيل والاستبعادات", zh: "收入、征收与排除项智能体" }))}</div>
+        <div className="node mf-colh" style={{ left: 1440, top: 14, width: 185 }}>{tr({ en: "DOWNSTREAM", ar: "اللاحق", zh: "下游" })}</div>
 
         {/* COL 1 — sources */}
         {MF.sources.map((s, i) => (<div className="node mf-src" style={{ left: 10, top: 60 + i * 86, width: 180 }} key={i}><span className="mf-badge">{s.k}</span><div><div className="t">{s.n}</div><div className="d">{tr(s.s)}</div></div></div>))}
@@ -3339,7 +3363,7 @@ function RcDataFlow() {
 
         {/* COL 4 — UC-13 */}
         <div className="node mf-uc13" style={{ left: 946, top: 95, width: 330 }}>
-          <div className="hd"><b>{colh("UC-13", tr({ en: "Agent · Revenue Collection", ar: "وكيل · تحصيل الإيرادات", zh: "智能体 · 收入征收" }))}</b><span className="core">CORE</span></div>
+          <div className="hd"><b>{colh("UC-13", tr({ en: "Agent · Revenue Collection Exclusions", ar: "وكيل · التحصيل والاستبعادات", zh: "智能体 · 收入征收与排除项" }))}</b><span className="core">CORE</span></div>
           <div className="sct">{tr({ en: "OUTPUTS", ar: "المخرجات", zh: "输出" })}</div>
           <div className="mf-outs">{MF.outputs.map((o, i) => (<div className="mf-out" key={i}><div className="t">{tr(o.t)} <span className="od" style={{ background: o.c }} /></div><div className="s">{tr(o.s)}</div></div>))}</div>
           <div className="mf-narr"><b>{tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}</b><div>{tr({ en: "Natural-language explanations of collection performance, gap drivers, and conversational follow-ups.", ar: "تفسيرات بلغة طبيعية لأداء التحصيل ومسبّبات الفجوة ومتابعات حوارية.", zh: "用自然语言解释征收表现、缺口成因及对话式追问。" })}</div></div>
@@ -3350,8 +3374,8 @@ function RcDataFlow() {
         </div>
 
         {/* COL 5 — downstream */}
-        {MF.down.map((d, i) => (<div className={"node mf-down " + d.cls} style={{ left: 1300, top: [108, 228, 318, 408][i], width: 180 }} key={i}><div className="t">{colh(d.code, tr(d.n))}{d.cls === "gold" || d.cls === "green" ? <span className="od" /> : null}</div><div className="s">{tr(d.s)}</div></div>))}
-        <div className="node mf-legend" style={{ left: 1300, top: 500, width: 195 }}>{tr({ en: "solid = primary · dashed = related", ar: "متصل = أساسي · متقطّع = ذو صلة", zh: "实线 = 主要 · 虚线 = 相关" })}</div>
+        {MF.down.map((d, i) => (<div className={"node mf-down " + d.cls} style={{ left: 1440, top: [108, 228, 318, 408][i], width: 185 }} key={i}><div className="t">{colh(d.code, tr(d.n))}{d.cls === "gold" || d.cls === "green" ? <span className="od" /> : null}</div><div className="s">{tr(d.s)}</div></div>))}
+        <div className="node mf-legend" style={{ left: 1440, top: 500, width: 195 }}>{tr({ en: "solid = primary · dashed = related", ar: "متصل = أساسي · متقطّع = ذو صلة", zh: "实线 = 主要 · 虚线 = 相关" })}</div>
 
         {/* labels */}
         <div className="node mf-edgelab" style={{ left: 480, top: 210 }}>{tr({ en: "unified data", ar: "بيانات موحّدة", zh: "统一数据" })}</div>

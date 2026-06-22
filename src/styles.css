@@ -597,6 +597,7 @@ table.tbl tbody tr:hover{background:#f8fbf9}
 .aibrief .abh{font-size:11px;font-weight:800;color:#6d5ae6;letter-spacing:.05em}
 
 /* regional map */
+.spend-center{display:flex;flex-direction:column;justify-content:center;min-height:296px}
 .ksa-map{position:relative;width:100%;border:1px solid var(--line);border-radius:12px;background:#f8fbf9;padding:8px}
 .ksa-map svg{width:100%;height:auto;display:block}
 .map-mk{cursor:default}
@@ -1104,7 +1105,7 @@ table.tbl tbody tr:hover{background:#f8fbf9}
    ========================================================================= */
 .mf-frame{box-shadow:0 12px 40px rgba(16,33,28,.13)}
 .mf-canvas-wrap{position:relative;overflow:hidden;margin-top:10px}
-.mf-canvas{position:relative;width:1500px;height:760px}
+.mf-canvas{position:relative;width:1640px;height:760px}
 .mf-svg{position:absolute;inset:0;z-index:0;pointer-events:none}
 .mf-svg-top{position:absolute;inset:0;z-index:2;pointer-events:none}
 .mf-canvas .node{position:absolute;z-index:1;box-sizing:border-box}
