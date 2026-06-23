@@ -1949,6 +1949,41 @@ const RC_AGENTS = [
       { t: "in", k: { en: "Input", ar: "مدخلات", zh: "输入" }, v: [{ en: "Revenue & Collections analysis results", ar: "نتائج تحليل وكيل الإيرادات والتحصيل", zh: "收入征收智能体分析结果" }] },
       { t: "out", k: { en: "Output", ar: "مخرجات", zh: "输出" }, v: [{ en: "Executive reports", ar: "تقارير تنفيذية", zh: "执行报告" }] }],
     btn: { en: "Open draft", ar: "فتح المسودة", zh: "打开草稿" } },
+  { id: "a14", code: "UC-14", kind: "base", icon: "⇲",
+    chips: [{ t: { en: "Existing", ar: "قائم", zh: "现有" }, cls: "gray" }],
+    title: { en: "Lease Activation", ar: "تفعيل عقود الإيجار", zh: "租约激活" },
+    desc: { en: "Turns signed contracts into live billing schedules — contract → billing live.", ar: "يحوّل العقود الموقّعة إلى جداول فوترة فعّالة — العقد ← الفوترة الحيّة.", zh: "将已签合同转为生效的计费计划——合同→计费上线。" },
+    io: [
+      { t: "in", k: { en: "Input", ar: "مدخلات", zh: "输入" }, v: [{ en: "Revenue config", ar: "إعداد الإيرادات", zh: "收入配置" }, { en: "Asset status", ar: "حالة الأصل", zh: "资产状态" }] },
+      { t: "out", k: { en: "Output", ar: "مخرجات", zh: "输出" }, v: [{ en: "Active leases", ar: "عقود مفعّلة", zh: "生效租约" }] }] },
+  { id: "a12", code: "UC-12", kind: "base", half: true, icon: "▤",
+    chips: [{ t: { en: "Existing", ar: "قائم", zh: "现有" }, cls: "gray" }],
+    title: { en: "Invoice Issue", ar: "إصدار الفواتير", zh: "开票" },
+    desc: { en: "Generates invoices and accounts receivable from active leases (AR generation).", ar: "ينشئ الفواتير والذمم المدينة من العقود المفعّلة.", zh: "依据生效租约生成发票与应收账款(AR 生成)。" },
+    io: [
+      { t: "in", k: { en: "Input", ar: "مدخلات", zh: "输入" }, v: [{ en: "Active leases", ar: "عقود مفعّلة", zh: "生效租约" }] },
+      { t: "out", k: { en: "Output", ar: "مخرجات", zh: "输出" }, v: [{ en: "Invoices (AR)", ar: "فواتير (ذمم)", zh: "发票(应收)" }] }] },
+  { id: "a11", code: "UC-11", kind: "base", half: true, icon: "◧",
+    chips: [{ t: { en: "Existing", ar: "قائم", zh: "现有" }, cls: "gray" }],
+    title: { en: "Payment Collect", ar: "تحصيل المدفوعات", zh: "收款" },
+    desc: { en: "Records cash receipts and reconciles payments against invoices.", ar: "يسجّل المقبوضات النقدية ويطابقها مع الفواتير.", zh: "登记现金回款并与发票对账。" },
+    io: [
+      { t: "in", k: { en: "Input", ar: "مدخلات", zh: "输入" }, v: [{ en: "Invoices", ar: "فواتير", zh: "发票" }] },
+      { t: "out", k: { en: "Output", ar: "مخرجات", zh: "输出" }, v: [{ en: "Cash receipts", ar: "مقبوضات نقدية", zh: "现金回款" }] }] },
+  { id: "a10", code: "UC-10", kind: "base", half: true, icon: "▣",
+    chips: [{ t: { en: "Existing", ar: "قائم", zh: "现有" }, cls: "gray" }],
+    title: { en: "Revenue Report", ar: "تقرير الإيرادات", zh: "收入报告" },
+    desc: { en: "Compiles executive revenue reports from collections (executive view).", ar: "يجمّع تقارير الإيرادات التنفيذية من بيانات التحصيل.", zh: "依据征收数据编制高管收入报告(执行视图)。" },
+    io: [
+      { t: "in", k: { en: "Input", ar: "مدخلات", zh: "输入" }, v: [{ en: "Collections data", ar: "بيانات التحصيل", zh: "征收数据" }] },
+      { t: "out", k: { en: "Output", ar: "مخرجات", zh: "输出" }, v: [{ en: "Executive revenue report", ar: "تقرير إيرادات تنفيذي", zh: "高管收入报告" }] }] },
+  { id: "a3", code: "UC-03", kind: "base", half: true, icon: "◆",
+    chips: [{ t: { en: "Existing", ar: "قائم", zh: "现有" }, cls: "gray" }],
+    title: { en: "Asset Performance", ar: "أداء الأصول", zh: "资产绩效" },
+    desc: { en: "Computes portfolio-level asset performance KPIs.", ar: "يحسب مؤشرات أداء الأصول على مستوى المحفظة.", zh: "计算组合层面的资产绩效 KPI。" },
+    io: [
+      { t: "in", k: { en: "Input", ar: "مدخلات", zh: "输入" }, v: [{ en: "Revenue & asset data", ar: "بيانات الإيرادات والأصول", zh: "收入与资产数据" }] },
+      { t: "out", k: { en: "Output", ar: "مخرجات", zh: "输出" }, v: [{ en: "Portfolio KPIs", ar: "مؤشرات المحفظة", zh: "组合 KPI" }] }] },
 ];
 const RC_FLOW = [
   { code: "UC-01", label: { en: "Unified data", ar: "بيانات موحّدة", zh: "统一数据" }, cap: { en: "unified data", ar: "بيانات موحّدة", zh: "统一数据" }, cls: "in" },
@@ -2344,6 +2379,29 @@ function RcWorkspace() {
     { en: "Planning subtasks", ar: "تخطيط المهام الفرعية", zh: "规划子任务" },
   ];
   const agents = RC_AGENTS.filter(a => seg === "all" ? true : seg === "enabled" ? a.kind !== "focus" : a.kind === "focus");
+  // group consecutive half-width agents (UC-12 / UC-11) into a single row
+  const agentRows = [];
+  for (let i = 0; i < agents.length; i++) {
+    if (agents[i].half && agents[i + 1] && agents[i + 1].half) { agentRows.push([agents[i], agents[i + 1]]); i++; }
+    else agentRows.push([agents[i]]);
+  }
+  const renderAgent = (a) => (
+    <div className={"agent-c " + a.kind} key={a.id}>
+      <div className="ah">
+        <span className="aic">{a.icon}</span>
+        <div className="ahx">
+          <div className="at">{ucl(a.code, tr(a.title))}<span className="at-tip" aria-label={tr(a.desc)} tabIndex={0}>i<span className="at-tip-pop">{tr(a.desc)}</span></span></div>
+          {a.chips && <div className="achips">{a.chips.map((c, i) => (<span className={"chip " + (c.cls || "")} key={i}>{tr(c.t)}</span>))}</div>}
+        </div>
+        {a.btn && <button className={a.kind === "focus" ? "btn ws-start" : "btn secondary sm ws-actr"} onClick={() => {
+          if (a.kind === "focus") setRoute("rcbench");
+          else if (a.id === "a6") { setPerfJump({ tab: "params" }); setBackRoute("rcwork"); setDeptSub("revcol"); setRoute("rcreports"); }
+          else if (a.route) setRoute(a.route);
+        }}>{a.kind === "focus" ? "▶ " : ""}{tr(a.btn)}{a.kind === "focus" ? "" : " "}{a.kind === "focus" ? null : ArrowIcon}</button>}
+      </div>
+      {a.io && <div className="agent-io">{a.io.map((m, i) => (<div className={"am io-" + (m.t || "")} key={i}><div className="l">{tr(m.k)}</div><div className="iovals">{(Array.isArray(m.v) ? m.v : [m.v]).map((x, j) => (<span className="ioval" key={j}>{tr(x)}</span>))}</div></div>))}</div>}
+    </div>
+  );
   const PH = {
     idle: { t: { en: "ready", ar: "جاهز", zh: "就绪" }, c: "var(--muted)" },
     running: { t: { en: "running", ar: "يعمل", zh: "运行中" }, c: "var(--info)" },
@@ -2399,26 +2457,12 @@ function RcWorkspace() {
       <div className="ws-left">
       <div className="ws-plaza">
         <div className="plaza-head">
-          <div><h2 style={{ fontSize: 16 }}>{tr({ en: "Business Plaza", ar: "ساحة الأعمال", zh: "业务广场" })}</h2><div className="sub muted">{tr({ en: "Three collaborative agents · scoped to Revenue Collection", ar: "ثلاثة وكلاء متعاونين · ضمن نطاق التحصيل", zh: "三个协作智能体 · 限定于收入征收" })}</div></div>
+          <div><h2 style={{ fontSize: 16 }}>{tr({ en: "Business Plaza", ar: "ساحة الأعمال", zh: "业务广场" })}</h2><div className="sub muted">{tr({ en: "End-to-end flow (scroll to view)", ar: "مسار من البداية للنهاية (مرّر للعرض)", zh: "端到端流程(下拉展示)" })}</div></div>
           <div className="seg">{["all", "enabled", "new"].map(s => <button key={s} className={seg === s ? "on" : ""} onClick={() => setSeg(s)}>{s === "all" ? "All" : s === "enabled" ? "Enabled" : "NEW"}</button>)}</div>
         </div>
-        {agents.map((a, idx) => (<React.Fragment key={a.id}>
-          {idx > 0 && <div className="agent-link">▾</div>}
-          <div className={"agent-c " + a.kind}>
-            <div className="ah">
-              <span className="aic">{a.icon}</span>
-              <div className="ahx">
-                <div className="at">{ucl(a.code, tr(a.title))}<span className="at-tip" aria-label={tr(a.desc)} tabIndex={0}>i<span className="at-tip-pop">{tr(a.desc)}</span></span></div>
-                {a.chips && <div className="achips">{a.chips.map((c, i) => (<span className={"chip " + (c.cls || "")} key={i}>{tr(c.t)}</span>))}</div>}
-              </div>
-              {a.btn && <button className={a.kind === "focus" ? "btn ws-start" : "btn secondary sm ws-actr"} onClick={() => {
-                if (a.kind === "focus") setRoute("rcbench");
-                else if (a.id === "a6") { setPerfJump({ tab: "params" }); setBackRoute("rcwork"); setDeptSub("revcol"); setRoute("rcreports"); }
-                else if (a.route) setRoute(a.route);
-              }}>{a.kind === "focus" ? "▶ " : ""}{tr(a.btn)}{a.kind === "focus" ? "" : " "}{a.kind === "focus" ? null : ArrowIcon}</button>}
-            </div>
-            {a.io && <div className="agent-io">{a.io.map((m, i) => (<div className={"am io-" + (m.t || "")} key={i}><div className="l">{tr(m.k)}</div><div className="iovals">{(Array.isArray(m.v) ? m.v : [m.v]).map((x, j) => (<span className="ioval" key={j}>{tr(x)}</span>))}</div></div>))}</div>}
-          </div>
+        {agentRows.map((row, ri) => (<React.Fragment key={ri}>
+          {ri > 0 && <div className="agent-link">▾</div>}
+          {row.length === 2 ? <div className="agent-pair">{row.map(a => renderAgent(a))}</div> : renderAgent(row[0])}
         </React.Fragment>))}
       </div>
       </div>
@@ -2475,14 +2519,14 @@ function RcWorkspace() {
       </div></div>
       <div className="ws-flowcard" onClick={() => setRoute("rcdata")} title={tr({ en: "Open Multi-Agent Flow", ar: "فتح تدفّق الوكلاء", zh: "打开多智能体流程" })}>
         <div className="ws-flowcard-h"><span>{tr({ en: "Multi-Agent Flow", ar: "تدفّق متعدد الوكلاء", zh: "多智能体流程" })}</span><span className="ws-flowcard-hr"><span className="at-tip at-tip-r" onClick={(e) => e.stopPropagation()} aria-label={ucl("UC-13", tr({ en: "Revenue Collection Exclusions — Multi-Agent Flow", ar: "التحصيل والاستبعادات — تدفّق متعدد الوكلاء", zh: "收入征收与排除项 — 多智能体流程" }))} tabIndex={0}>i<span className="at-tip-pop">{ucl("UC-13", tr({ en: "Revenue Collection Exclusions — Multi-Agent Flow", ar: "التحصيل والاستبعادات — تدفّق متعدد الوكلاء", zh: "收入征收与排除项 — 多智能体流程" }))}</span></span><span className="open">↗</span></span></div>
-        <svg className="ws-flowthumb" viewBox="0 0 300 86" fill="none" preserveAspectRatio="xMidYMid meet">
-          <rect x="6" y="8" width="22" height="13" rx="3" fill="#eef2f7" /><rect x="6" y="26" width="22" height="13" rx="3" fill="#eef2f7" /><rect x="6" y="44" width="22" height="13" rx="3" fill="#eef2f7" /><rect x="6" y="62" width="22" height="13" rx="3" fill="#eef2f7" />
-          <rect x="44" y="22" width="34" height="36" rx="5" fill="#fff" stroke="#2563eb" strokeWidth="1.4" />
-          <rect x="92" y="8" width="42" height="13" rx="3" fill="#2563eb" /><rect x="92" y="28" width="42" height="11" rx="3" fill="#f1f4f8" stroke="#dfe5ec" strokeWidth="0.8" /><rect x="92" y="44" width="42" height="11" rx="3" fill="#f1f4f8" stroke="#dfe5ec" strokeWidth="0.8" /><rect x="92" y="60" width="42" height="11" rx="3" fill="#f1f4f8" stroke="#dfe5ec" strokeWidth="0.8" />
-          <rect x="146" y="33" width="22" height="16" rx="4" fill="#eef4ff" stroke="#cdddfb" strokeWidth="0.8" />
-          <rect x="182" y="14" width="56" height="50" rx="6" fill="#2563eb" /><circle cx="210" cy="39" r="4" fill="#fff" />
-          <rect x="252" y="20" width="40" height="13" rx="3" fill="#e9f7ef" stroke="#bfe6cf" strokeWidth="0.8" /><rect x="252" y="40" width="40" height="13" rx="3" fill="#fdf4d9" stroke="#f0dca6" strokeWidth="0.8" />
-          <g stroke="#c2cbd6" strokeWidth="1"><path d="M28 40 H44" /><path d="M78 40 H92" /><path d="M134 40 H146" /><path d="M168 41 H182" /><path d="M238 39 H252" /></g>
+        <svg className="ws-flowthumb" viewBox="0 0 300 44" fill="none" preserveAspectRatio="xMidYMid meet">
+          <rect x="4" y="5" width="20" height="7" rx="2" fill="#eef2f7" /><rect x="4" y="14" width="20" height="7" rx="2" fill="#eef2f7" /><rect x="4" y="23" width="20" height="7" rx="2" fill="#eef2f7" /><rect x="4" y="32" width="20" height="7" rx="2" fill="#eef2f7" />
+          <rect x="40" y="12" width="28" height="20" rx="4" fill="#fff" stroke="#2563eb" strokeWidth="1.4" />
+          <rect x="86" y="5" width="40" height="9" rx="2.5" fill="#2563eb" /><rect x="86" y="18" width="40" height="9" rx="2.5" fill="#f1f4f8" stroke="#dfe5ec" strokeWidth="0.8" /><rect x="86" y="31" width="40" height="9" rx="2.5" fill="#f1f4f8" stroke="#dfe5ec" strokeWidth="0.8" />
+          <rect x="138" y="16" width="20" height="12" rx="3.5" fill="#eef4ff" stroke="#cdddfb" strokeWidth="0.8" />
+          <rect x="172" y="9" width="50" height="26" rx="5" fill="#2563eb" /><circle cx="197" cy="22" r="4" fill="#fff" />
+          <rect x="236" y="11" width="40" height="9" rx="2.5" fill="#e9f7ef" stroke="#bfe6cf" strokeWidth="0.8" /><rect x="236" y="24" width="40" height="9" rx="2.5" fill="#fdf4d9" stroke="#f0dca6" strokeWidth="0.8" />
+          <g stroke="#c2cbd6" strokeWidth="1"><path d="M24 22 H40" /><path d="M68 22 H86" /><path d="M126 22 H138" /><path d="M158 22 H172" /><path d="M222 22 H236" /></g>
         </svg>
       </div>
       </div>

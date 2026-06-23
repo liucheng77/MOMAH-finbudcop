@@ -781,9 +781,9 @@ table.tbl tbody tr:hover{background:#f8fbf9}
 .ws-grid{display:grid;grid-template-columns:236px 1fr 320px;gap:16px;align-items:start}
 @media(max-width:1200px){.ws-grid{grid-template-columns:1fr}}
 /* two-column workspace: Agent Plaza 65% / Orchestrator 35% */
-.ws-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-top:18px}
+.ws-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;margin-top:18px}
 @media(max-width:980px){.ws-grid2{grid-template-columns:1fr}}
-.ws-left{display:flex;flex-direction:column;gap:16px;min-width:0}
+.ws-left{position:relative;min-width:0;min-height:0}
 .ws-frame{box-shadow:0 12px 40px rgba(16,33,28,.13)}
 /* top KPI metric row */
 .ws-kpirow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
@@ -821,8 +821,13 @@ table.tbl tbody tr:hover{background:#f8fbf9}
 .seg button.on{background:#16211c;color:#fff}
 .agent-c{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff;margin-bottom:7px;position:relative;box-shadow:0 6px 20px rgba(16,33,28,.12)}
 .agent-c.focus{border-color:#2563eb;border-inline-start:4px solid #2563eb}
-.ws-plaza{border:1px solid var(--line);border-radius:14px;background:#fbfdfc;padding:16px;box-shadow:0 6px 20px rgba(16,33,28,.12)}
+.ws-plaza{position:absolute;inset:0;overflow-y:auto;border:1px solid var(--line);border-radius:14px;background:#fbfdfc;padding:16px;box-shadow:0 6px 20px rgba(16,33,28,.12)}
 .ws-plaza .agent-c:last-child{margin-bottom:0}
+.ws-plaza .plaza-head{position:sticky;top:-16px;margin:-16px -16px 6px;padding:16px 16px 8px;background:#fbfdfc;z-index:3}
+.agent-pair{display:flex;gap:7px;align-items:stretch;margin-bottom:7px}
+.agent-pair .agent-c{flex:1 1 0;min-width:0;margin-bottom:0}
+.agent-pair .agent-io{grid-template-columns:1fr}
+@media(max-width:980px){.ws-plaza{position:static;inset:auto;overflow:visible}.ws-plaza .plaza-head{position:static;margin:0 0 8px;padding:0}}
 .agent-c.base{border-color:var(--line);border-inline-start:4px solid #cbd5e1}
 .agent-c.existing{border-color:#2563eb;border-inline-start:4px solid #2563eb}
 .agent-c.soon{opacity:.55;background:#f8fbf9}
@@ -902,9 +907,9 @@ table.tbl tbody tr:hover{background:#f8fbf9}
 .ws-flowcard-hr{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto}
 .at-tip.at-tip-r .at-tip-pop{inset-inline-start:auto;inset-inline-end:0;transform:none}
 .at-tip.at-tip-r .at-tip-pop::after{inset-inline-start:auto;inset-inline-end:9px;transform:none}
-.ws-flowthumb{display:block;width:100%;height:auto;aspect-ratio:300 / 57;border:1px solid #eef2ef;border-radius:9px;background:#fbfdfc;padding:6px;box-sizing:border-box}
+.ws-flowthumb{display:block;width:100%;height:auto;aspect-ratio:300 / 44;border:1px solid #eef2ef;border-radius:9px;background:#fbfdfc;padding:6px;box-sizing:border-box}
 .ws-flowcap{font-size:11px;font-weight:600;color:var(--muted);line-height:1.4;margin-top:7px}
-.ws-right .orch-cell{flex:0 0 auto;min-height:0;height:520px}
+.ws-right .orch-cell{flex:1 1 auto;min-height:480px;height:auto}
 .orch-cell{position:relative;min-height:480px}
 .orch-chat{position:absolute;inset:0;display:flex;flex-direction:column;box-sizing:border-box}
 @media(max-width:980px){.orch-cell{min-height:0}.orch-chat{position:static;height:560px}}
