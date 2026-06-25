@@ -1219,11 +1219,11 @@ const DEPARTMENTS = [
   { key: "g05", name: { en: "General Directorate of Financial Reporting", ar: "الإدارة العامة للتقارير المالية", zh: "财务报告总局" }, subs: [
     { id: "frep", route: "reporting", name: { en: "Financial Reporting Department", ar: "إدارة التقارير المالية", zh: "财务报告部" } },
     { id: "comp", route: "reporting", name: { en: "Compliance Department", ar: "إدارة الامتثال", zh: "合规部" } },
-    { id: "cost", route: "reporting", name: { en: "Cost Management Department", ar: "إدارة التكاليف", zh: "成本管理部" } },
+    { id: "cost", route: "csfunds", name: { en: "Cost Management Department", ar: "إدارة التكاليف", zh: "成本管理部" } },
     { id: "acct", route: "reporting", name: { en: "Accounting Department", ar: "إدارة المحاسبة", zh: "会计部" } } ] },
   { key: "g06", name: { en: "General Directorate of Revenues and Assets", ar: "الإدارة العامة للإيرادات والأصول", zh: "收入与资产总局" }, subs: [
     { id: "revcol", route: "rcwork", name: { en: "Revenue Collection Department", ar: "إدارة التحصيل", zh: "收入征收部" } },
-    { id: "assets", route: "revassets", name: { en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" } } ] },
+    { id: "assets", route: "aswork", name: { en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" } } ] },
 ];
 function Sidebar() {
   const { t, tr, route, setRoute, deptSub, setDeptSub, setBackRoute } = useStore();
@@ -1236,7 +1236,7 @@ function Sidebar() {
         <div className={"dept-head" + (open ? " open" : "")} onClick={() => setOpenG(open ? "" : g.key)}>
           <span style={{ flex: 1 }}>{tr(g.name)}</span><span className="chev">{open ? "▾" : "▸"}</span>
         </div>
-        {open && <div className="dept-subs">{g.subs.map(s => { const on = s.id === "fpa" || s.id === "revcol" || s.id === "budexec";
+        {open && <div className="dept-subs">{g.subs.map(s => { const on = s.id === "fpa" || s.id === "revcol" || s.id === "budexec" || s.id === "assets" || s.id === "cost";
           return <div key={s.id} className={"dept-sub" + (deptSub === s.id ? " active" : "") + (on ? "" : " locked")} onClick={on ? () => { setBackRoute(null); setDeptSub(s.id); setRoute(s.route); } : undefined}>{tr(s.name)}{on ? null : <span className="lockic">🔒</span>}</div>;
         })}</div>}
       </div>);
@@ -1985,6 +1985,27 @@ const RC_AGENTS = [
       { t: "in", k: { en: "Input", ar: "مدخلات", zh: "输入" }, v: [{ en: "Revenue & asset data", ar: "بيانات الإيرادات والأصول", zh: "收入与资产数据" }] },
       { t: "out", k: { en: "Output", ar: "مخرجات", zh: "输出" }, v: [{ en: "Portfolio KPIs", ar: "مؤشرات المحفظة", zh: "组合 KPI" }] }] },
 ];
+// ===== Business Plaza · two-lane (Revenue × Assets) model =====
+const PLAZA_UCS = [
+  { id: "uc01", lane: "rev", col: 0, code: "UC-01", title: { en: "Financial Data Unification & Data Quality", ar: "توحيد البيانات المالية وجودتها", zh: "财务数据整合与数据质量" }, agents: ["Orchestrator", "Data Querying", "Proactive Insights"] },
+  { id: "uc13", lane: "rev", col: 1, code: "UC-13", title: { en: "Revenues, Collection & Exclusions", ar: "الإيرادات والتحصيل والاستبعادات", zh: "收入、征收与排除项" }, agents: ["Revenue Analytics", "Data Querying", "Proactive Insights"], open: "rcbench" },
+  { id: "uc06", lane: "rev", col: 2, code: "UC-06", title: { en: "Performance, Spend Analysis & Executive Reports", ar: "تحليل الأداء والإنفاق والتقارير التنفيذية", zh: "绩效、支出分析与执行报告" }, agents: ["Financial Reports Gen.", "Narrative Commentary", "Data Querying"], open: "report" },
+  { id: "uc02", lane: "rev", col: 3, code: "UC-02", title: { en: "Anomaly Detection, Alerts & Exceptions", ar: "كشف الانحرافات والتنبيهات والاستثناءات", zh: "异常检测、告警与例外" }, agents: ["Anomaly Detection", "Proactive Insights", "Orchestrator"] },
+  { id: "uc10", lane: "rev", col: 4, code: "UC-10", star: 1, title: { en: "Reporting & Dashboards (Periodic / Executive)", ar: "التقارير ولوحات المعلومات (دورية / تنفيذية)", zh: "报告与仪表盘(周期 / 执行)" }, agents: ["Financial Reports Gen.", "Narrative Commentary", "Data Querying"] },
+  { id: "uc14", lane: "ast", col: 0, code: "UC-14", title: { en: "Assets: Classification, Capitalization, Return & Maintenance", ar: "الأصول: التصنيف والرسملة والعوائد والصيانة", zh: "资产:分类、资本化、收益与维护" }, agents: ["Data Querying", "Market Trends", "Compliance/Rules"], open: "asbench" },
+  { id: "uc12", lane: "ast", col: 1, code: "UC-12", title: { en: "Costs, Assignment Orders & Funds", ar: "التكاليف وأوامر الإسناد والصناديق", zh: "成本、派工单与资金" }, agents: ["Data Querying", "Financial Reports Gen.", "Anomaly Detection"] },
+  { id: "uc11", lane: "ast", col: 2, code: "UC-11", star: 1, title: { en: "Compliance, Policies & Accounting Memos", ar: "الامتثال والسياسات والمذكرات المحاسبية", zh: "合规、政策与会计备忘录" }, agents: ["Compliance/Rules", "Financial Reports Gen.", "Data Querying"] },
+  { id: "uc03", lane: "ast", col: 3, code: "UC-03", title: { en: "Smart Query, Audit Log & Permissions", ar: "الاستعلام الذكي وسجل التدقيق والصلاحيات", zh: "智能查询、审计日志与权限" }, agents: ["Data Querying", "Orchestrator", "Proactive Insights"] },
+];
+const PLAZA_INTRA = [["uc01", "uc13"], ["uc13", "uc06"], ["uc06", "uc02"], ["uc02", "uc10"], ["uc14", "uc12"], ["uc12", "uc11"], ["uc11", "uc03"]];
+const PLAZA_CROSS = [
+  { from: "uc13", to: "uc12", label: { en: "Revenue & collection signals for cost/fund reconciliation", ar: "إشارات الإيرادات والتحصيل لمطابقة التكاليف/الصناديق", zh: "收入与征收信号 → 成本/资金对账" } },
+  { from: "uc14", to: "uc06", label: { en: "Asset cost basis for performance reports", ar: "أساس تكلفة الأصول لتقارير الأداء", zh: "资产成本基础 → 绩效报告" } },
+  { from: "uc12", to: "uc10", label: { en: "Asset costs, assignment orders & fund balances for unified reports", ar: "تكاليف الأصول وأوامر الإسناد وأرصدة الصناديق للتقارير الموحّدة", zh: "资产成本/派工单/资金余额 → 统一报告" } },
+  { from: "uc02", to: "uc11", label: { en: "Anomalies escalated to compliance review", ar: "تصعيد الانحرافات إلى مراجعة الامتثال", zh: "异常升级 → 合规复核" } },
+  { from: "uc11", to: "uc10", label: { en: "Compliance findings & accounting memos for reports", ar: "نتائج الامتثال والمذكرات المحاسبية للتقارير", zh: "合规结论与会计备忘 → 报告" } },
+  { from: "uc03", to: "uc10", label: { en: "Audit trail & permissioned data exports supporting reports", ar: "سجل التدقيق وتصدير البيانات المصرّح به لدعم التقارير", zh: "审计轨迹与授权数据导出 → 报告" } },
+];
 const RC_FLOW = [
   { code: "UC-01", label: { en: "Unified data", ar: "بيانات موحّدة", zh: "统一数据" }, cap: { en: "unified data", ar: "بيانات موحّدة", zh: "统一数据" }, cls: "in" },
   { code: "UC-13", label: { en: "Billing gap & risk", ar: "فجوة ومخاطر", zh: "缺口与风险" }, cap: { en: "billing gap & risk", ar: "فجوة الفوترة والمخاطر", zh: "开票缺口与风险" }, cls: "focus", star: true },
@@ -2003,11 +2024,9 @@ const WB = {
     { lab: { en: "Contract Tags (optional)", ar: "وسوم العقد (اختياري)", zh: "合同标签(可选)" }, opts: ["Wusool · Oqood", "Wusool", "Oqood", "—"] },
   ],
   roles: [
-    { code: "UC-01", name: { en: "Data Unification & Quality", ar: "توحيد البيانات وجودتها", zh: "数据统一与质量" }, sub: { en: "Foundation layer — unifies Furas, SAP AR, Doors/Services", ar: "طبقة الأساس — توحّد فرص و SAP AR و Doors/Services", zh: "基础层——统一 Furas、SAP AR、Doors/Services" }, status: "active", cls: "r-blue" },
-    { name: { en: "Join & Mapping Agent", ar: "وكيل الربط والمطابقة", zh: "联接与映射智能体" }, sub: { en: "Aligns Furas ↔ SAP AR ↔ Doors/Services records", ar: "يوائم سجلات فرص ↔ SAP AR ↔ Doors/Services", zh: "对齐 Furas ↔ SAP AR ↔ Doors/Services 记录" }, status: "active", cls: "r-blue" },
-    { name: { en: "Document RAG Agent", ar: "وكيل استرجاع الوثائق", zh: "文档 RAG 智能体" }, sub: { en: "Extracts terms & risks from Wusool / Oqood contracts", ar: "يستخرج الشروط والمخاطر من عقود وصول / عقود", zh: "从 Wusool / Oqood 合同提取条款与风险" }, status: "running", cls: "r-amber" },
-    { name: { en: "Numeric Query Agent", ar: "وكيل الاستعلام الرقمي", zh: "数值查询智能体" }, sub: { en: "Computes collection rates & aging buckets", ar: "يحسب معدلات التحصيل وفئات التقادم", zh: "计算征收率与账龄分桶" }, status: "active", cls: "r-blue" },
-    { code: "UC-13", name: { en: "Revenue Collection Agent", ar: "وكيل تحصيل الإيرادات", zh: "收入征收智能体" }, sub: { en: "Identifies billing gaps & generates narratives", ar: "يحدّد فجوات الفوترة ويولّد السرد", zh: "识别开票缺口并生成叙述" }, status: "focus", cls: "r-violet", focus: true },
+    { name: { en: "Revenue Analytics Agent", ar: "وكيل تحليل الإيرادات", zh: "收入分析智能体" }, sub: { en: "Detects billing gaps, trends & overdue risk across revenue streams", ar: "يكشف فجوات الفوترة والاتجاهات ومخاطر التأخر عبر مصادر الإيراد", zh: "检测各收入流的开票缺口、趋势与逾期风险" }, status: "running", cls: "r-violet" },
+    { name: { en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" }, sub: { en: "Aggregates Tahseel, Etimad, Wusool & bank statement data", ar: "يجمّع بيانات تحصيل واعتماد ووصول وكشوف البنوك", zh: "聚合 Tahseel、Etimad、Wusool 与银行流水数据" }, status: "active", cls: "r-blue" },
+    { name: { en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "前瞻洞察智能体" }, sub: { en: "Generates prioritized alerts & opportunity flags", ar: "يولّد تنبيهات مرتّبة وإشارات الفرص", zh: "生成排序告警与机会标记" }, status: "active", cls: "r-blue" },
   ],
   logs: [
     { tm: "10:02", code: "UC-01", h: { en: "Agent", ar: "وكيل", zh: "智能体" }, d: { en: "Unified Furas + SAP AR + Doors records (47 Amanat)", ar: "وحّد سجلات فرص + SAP AR + Doors (47 أمانة)", zh: "统一 Furas + SAP AR + Doors 记录(47 阿玛纳)" }, dot: "blue" },
@@ -2053,6 +2072,58 @@ const WB = {
     { code: "UC-06 / UC-02", cap: { en: "Summary / Alert", ar: "ملخص / تنبيه", zh: "摘要 / 告警" } },
     { code: "UC-14 / UC-12", cap: { en: "Operational follow-up", ar: "متابعة تشغيلية", zh: "运营跟进" } },
     { code: "UC-10 / UC-03", cap: { en: "Strategic loop", ar: "حلقة استراتيجية", zh: "战略闭环" } },
+  ],
+};
+/* ======= Assets Department — Analysis Workbench (UC-14) data ======= */
+const WB_AS = {
+  filters: [
+    { lab: { en: "Fiscal Year / Month", ar: "السنة المالية / الشهر", zh: "财年 / 月份" }, opts: ["FY 2025 · Q2", "FY 2025 · Q3", "FY 2026 · Q1"] },
+    { lab: { en: "Amanah", ar: "الأمانة", zh: "阿玛纳" }, opts: ["All Amanat (47)", "Riyadh-East", "Jeddah-Port", "Makkah-North"] },
+    { lab: { en: "Asset Class", ar: "فئة الأصل", zh: "资产类别" }, opts: ["All classes", "Land", "Buildings", "Infrastructure", "Equipment"] },
+    { lab: { en: "Status", ar: "الحالة", zh: "状态" }, opts: ["AUC + In-service", "AUC only", "In-service", "Impaired"] },
+  ],
+  roles: [
+    { name: { en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" }, sub: { en: "Queries & validates asset records across Asset Registry, SAP, Balady, Esnad", ar: "يستعلم ويتحقق من سجلات الأصول عبر سجل الأصول و SAP و بلدي و إسناد", zh: "跨资产台账、SAP、Balady、Esnad 查询并校验资产记录" }, status: "running", cls: "r-violet" },
+    { name: { en: "Market Trends Detection Agent", ar: "وكيل كشف اتجاهات السوق", zh: "市场趋势检测智能体" }, sub: { en: "Benchmarks asset values vs construction costs & market", ar: "يقايس قيم الأصول مقابل تكاليف الإنشاء والسوق", zh: "对标资产价值与建造成本/市场" }, status: "active", cls: "r-blue" },
+    { name: { en: "Compliance / Rules Agent", ar: "وكيل الامتثال / القواعد", zh: "合规 / 规则智能体" }, sub: { en: "Validates classification & capitalization vs policy & useful-life rules", ar: "يتحقق من التصنيف والرسملة وفق السياسة وقواعد العمر الإنتاجي", zh: "依政策与使用年限规则校验分类与资本化" }, status: "active", cls: "r-blue" },
+  ],
+  logs: [
+    { tm: "10:02", code: "UC-01", h: { en: "Agent", ar: "وكيل", zh: "智能体" }, d: { en: "Unified Asset Registry + SAP + Balady + Esnad (47 Amanat)", ar: "وحّد سجل الأصول + SAP + بلدي + إسناد (47 أمانة)", zh: "统一资产台账 + SAP + Balady + Esnad(47 阿玛纳)" }, dot: "blue" },
+    { tm: "10:03", h: { en: "Data Querying", ar: "استعلام البيانات", zh: "数据查询" }, d: { en: "Loaded 8,640 asset records · 312 AUC items reconciled", ar: "حمّل 8,640 سجل أصل · سوّى 312 بنداً تحت الإنشاء", zh: "载入 8,640 条资产记录 · 对账 312 项在建资产" }, dot: "blue" },
+    { tm: "10:04", h: { en: "Market Trends", ar: "اتجاهات السوق", zh: "市场趋势" }, d: { en: "Benchmarked 1,204 assets vs construction-cost index", ar: "قايس 1,204 أصلاً مقابل مؤشر تكلفة الإنشاء", zh: "对标 1,204 项资产与建造成本指数" }, dot: "amber" },
+    { tm: "10:05", h: { en: "Compliance / Rules", ar: "الامتثال / القواعد", zh: "合规 / 规则" }, d: { en: "Applied useful-life & capitalization policy · 3 exceptions", ar: "طبّق سياسة العمر الإنتاجي والرسملة · 3 استثناءات", zh: "应用使用年限与资本化政策 · 3 项例外" }, dot: "blue" },
+    { tm: "10:06", code: "UC-14", h: { en: "Agent", ar: "وكيل", zh: "智能体" }, d: { en: "Capitalized SAR 1.92B AUC · flagged 3 impairment, 5 maintenance", ar: "رسمل 1.92 مليار تحت الإنشاء · رصد 3 انخفاض، 5 صيانة", zh: "资本化 SAR 1.92B 在建资产 · 标记 3 项减值、5 项维护" }, dot: "violet" },
+    { tm: "10:06", h: { en: "Orchestrator", ar: "المنسّق", zh: "编排器" }, d: { en: "Awaiting user follow-up question", ar: "بانتظار سؤال متابعة من المستخدم", zh: "等待用户追问" }, dot: "gray" },
+  ],
+  qs: [
+    { en: "Which assets are due for capitalization?", ar: "ما الأصول المستحقة للرسملة؟", zh: "哪些资产应予资本化?" },
+    { en: "Where are impairment risks concentrated?", ar: "أين تتركّز مخاطر انخفاض القيمة؟", zh: "减值风险集中在哪里?" },
+    { en: "Which assets need maintenance soon?", ar: "ما الأصول التي تحتاج صيانة قريباً؟", zh: "哪些资产即将需要维护?" },
+  ],
+  answers: [
+    { en: "SAR 1.92B of completed assets-under-construction is due for capitalization this period — led by road infrastructure (SAR 0.84B) and buildings (SAR 0.61B), all meeting the approved useful-life policy.", ar: "1.92 مليار ريال من الأصول تحت الإنشاء المكتملة مستحقة للرسملة هذه الفترة — تقودها البنية التحتية للطرق (0.84 مليار) والمباني (0.61 مليار).", zh: "本期 SAR 1.92B 已完工在建资产应资本化——以道路基础设施(SAR 0.84B)与建筑(SAR 0.61B)为主,均符合核定使用年限政策。" },
+    { en: "Impairment risk is concentrated in 3 equipment items (SAR 47M net book value) showing idle utilization and market-value decline beyond the policy threshold.", ar: "تتركّز مخاطر الانخفاض في 3 معدات (47 مليون ريال صافي قيمة دفترية) تُظهر تشغيلاً خاملاً وتراجعاً سوقياً.", zh: "减值风险集中于 3 项设备(账面净值 SAR 47M),呈现闲置利用与超阈值的市场价值下跌。" },
+    { en: "5 infrastructure assets are due for maintenance within 60 days; road segments R-118 and R-204 carry the highest condition-deterioration scores.", ar: "5 أصول بنية تحتية مستحقة للصيانة خلال 60 يوماً؛ مقاطع الطرق R-118 و R-204 الأعلى تدهوراً.", zh: "5 项基础设施资产将在 60 天内到期维护;路段 R-118 与 R-204 的状况劣化评分最高。" },
+  ],
+  genAns: { en: "From UC-14 asset data: SAR 1.92B AUC capitalized, 3 impairment flags (SAR 47M), 5 maintenance-due assets, and data-quality score 96% — asset cost is fully traceable from assignment order to register.", ar: "من بيانات UC-14: رُسمل 1.92 مليار، 3 مؤشرات انخفاض (47 مليون)، 5 أصول مستحقة صيانة، وجودة بيانات 96% — تكلفة الأصل قابلة للتتبع من أمر الإسناد إلى السجل.", zh: "依据 UC-14 资产数据:资本化 SAR 1.92B,3 项减值标记(SAR 47M),5 项待维护资产,数据质量 96%——资产成本从派工单到台账全程可追溯。" },
+  focus: [
+    { id: "EQ-2024-0471", am: { en: "Equipment", ar: "معدات", zh: "设备" }, od: "SAR 22M", risk: "high", flag: { en: "impairment", ar: "انخفاض", zh: "减值" } },
+    { id: "EQ-2024-0388", am: { en: "Equipment", ar: "معدات", zh: "设备" }, od: "SAR 16M", risk: "high", flag: { en: "impairment", ar: "انخفاض", zh: "减值" } },
+    { id: "R-118", am: { en: "Infrastructure", ar: "بنية تحتية", zh: "基础设施" }, od: "SAR 9M", risk: "med", flag: { en: "maintenance", ar: "صيانة", zh: "维护" } },
+    { id: "R-204", am: { en: "Infrastructure", ar: "بنية تحتية", zh: "基础设施" }, od: "SAR 7M", risk: "med", flag: { en: "maintenance", ar: "صيانة", zh: "维护" } },
+    { id: "BLD-1192", am: { en: "Buildings", ar: "مبانٍ", zh: "建筑" }, od: "SAR 4M", risk: "low", flag: { en: "review", ar: "مراجعة", zh: "复核" } },
+  ],
+  dist: [
+    { am: { en: "Infrastructure", ar: "بنية تحتية", zh: "基础设施" }, v: "SAR 0.84B", pct: 100, cls: "blue" },
+    { am: { en: "Buildings", ar: "مبانٍ", zh: "建筑" }, v: "SAR 0.61B", pct: 73, cls: "blue" },
+    { am: { en: "Land", ar: "أراضٍ", zh: "土地" }, v: "SAR 0.31B", pct: 37, cls: "blue" },
+    { am: { en: "Equipment", ar: "معدات", zh: "设备" }, v: "SAR 0.12B", pct: 14, cls: "gray" },
+    { am: { en: "Other", ar: "أخرى", zh: "其他" }, v: "SAR 0.04B", pct: 5, cls: "gray" },
+  ],
+  next: [
+    { en: "Capitalize SAR 1.92B completed assets-under-construction", ar: "رسملة 1.92 مليار من الأصول تحت الإنشاء المكتملة", zh: "资本化 SAR 1.92B 已完工在建资产" },
+    { en: "Raise impairment memos for 3 equipment items (SAR 47M)", ar: "إصدار مذكرات انخفاض لـ 3 معدات (47 مليون)", zh: "为 3 项设备开具减值备忘(SAR 47M)" },
+    { en: "Schedule maintenance for road segments R-118 / R-204", ar: "جدولة صيانة لمقاطع الطرق R-118 / R-204", zh: "为路段 R-118 / R-204 安排维护" },
   ],
 };
 /* ===== UC-13 · Revenue Collection — Multi-Agent Flow (dataset & orchestration) ===== */
@@ -2226,11 +2297,36 @@ function RcWorkbench() {
   const [fsel, setFsel] = useState([2, 0, 0, 0]);
   const DEFAULT_SUMMARY = { en: "For FY 2025 Q2, overall collection rate is 87%, with SAR 120M billing gap concentrated in 3 high-risk Amanat. Lease contracts drive ~62% of overdue.", ar: "للربع الثاني 2025، معدل التحصيل الإجمالي 87%، مع فجوة فوترة 120 مليون ريال مركّزة في 3 أمانات عالية الخطورة. عقود الإيجار تقود ~62% من التأخر.", zh: "FY2025 Q2,整体征收率 87%,SAR 120M 开票缺口集中于 3 个高风险阿玛纳。租约合同造成约 62% 的逾期。" };
   const [summary, setSummary] = useState(DEFAULT_SUMMARY);
+  const [qaOpen, setQaOpen] = useState(false);
+  const WB_CHAIN = [
+    { code: "UC-01", pos: { en: "UPSTREAM", ar: "منبع", zh: "上游" }, name: { en: "Financial Data Consolidation & Data Quality", ar: "توحيد البيانات المالية وجودتها", zh: "财务数据整合与数据质量" } },
+    { code: "UC-13", here: true, pos: { en: "THIS", ar: "هذه", zh: "本环节" }, name: { en: "Revenue, Collections & Exclusions", ar: "الإيرادات والتحصيل والاستبعادات", zh: "收入、征收与排除项" } },
+    { code: "UC-06 / UC-02", pos: { en: "PARALLEL", ar: "متوازٍ", zh: "并行" }, name: { en: "Performance Reports / Anomaly Detection", ar: "تقارير الأداء / كشف الانحرافات", zh: "绩效报告 / 异常检测" } },
+    { code: "UC-14", pos: { en: "DOWNSTREAM", ar: "المصب", zh: "下游" }, name: { en: "Assets, Classification & Capitalization", ar: "الأصول والتصنيف والرسملة", zh: "资产、分类与资本化" } },
+    { code: "UC-12 / UC-11", pos: { en: "DOWNSTREAM", ar: "المصب", zh: "下游" }, name: { en: "Costs & Funds / Compliance & Memos", ar: "التكاليف والصناديق / الامتثال والمذكرات", zh: "成本与资金 / 合规与备忘" } },
+    { code: "UC-10 / UC-03", pos: { en: "CONVERGE ★", ar: "تقارب ★", zh: "汇聚 ★" }, name: { en: "Reporting & Dashboards / Smart Query & Audit", ar: "التقارير / الاستعلام والتدقيق", zh: "报告与仪表盘 / 智能查询与审计" } },
+  ];
+  const WB_SOURCES = [
+    { n: "Tahseel", s: "synced" }, { n: "Makin / Balady", s: "synced" }, { n: "Wusool", s: "loading" }, { n: "Etimad", s: "synced" }, { n: "Bank Statements", s: "synced" },
+    { n: "Revenue Sources", s: "synced" }, { n: "Invoices", s: "synced" }, { n: "Objections", s: "synced" }, { n: "Executions", s: "synced" }, { n: "White Land Files", s: "synced" },
+  ];
+  const WB_OUTPUTS = [
+    { l: { en: "Net Billed Amount", ar: "صافي المفوتر", zh: "净开票额" }, v: "SAR 920M", s: { en: "Gross billed − exclusions", ar: "إجمالي المفوتر − الاستبعادات", zh: "总开票 − 排除项" } },
+    { l: { en: "Exclusion Reports", ar: "تقارير الاستبعاد", zh: "排除项报告" }, v: "3 cat.", s: { en: "Judgment · objection · written-off", ar: "حكم · اعتراض · شطب", zh: "判决 · 异议 · 核销" } },
+    { l: { en: "Revenue Opportunity Alerts", ar: "تنبيهات فرص الإيراد", zh: "收入机会告警" }, v: "5", s: { en: "Under-billed / missed coverage", ar: "نقص فوترة / تغطية مفقودة", zh: "少开票 / 漏覆盖" } },
+  ];
   const cyc = (i) => setFsel(s => s.map((v, j) => j === i ? (v + 1) % WB.filters[i].opts.length : v));
   const applyFilters = () => {
     const period = WB.filters[0].opts[fsel[0]], amanah = WB.filters[1].opts[fsel[1]];
     setSummary({ en: `For ${period}, ${amanah}: collection 87%, SAR 120M billing gap across high-risk Amanat; leases drive ~62% of overdue.`, ar: `لـ ${period}، ${amanah}: التحصيل 87%، فجوة 120 مليون ريال في الأمانات عالية الخطورة؛ الإيجارات ~62% من التأخر.`, zh: `${period} · ${amanah}:征收率 87%,SAR 120M 开票缺口集中于高风险阿玛纳;租约造成约 62% 逾期。` });
     pushLog({ en: "Filters applied — " + period + " · " + amanah, ar: "تم تطبيق عوامل التصفية — " + period, zh: "已应用筛选 — " + period + " · " + amanah });
+  };
+  const SCOPE_K = [{ en: "Period", ar: "الفترة", zh: "期间" }, { en: "Amanah", ar: "الأمانة", zh: "阿玛纳" }, { en: "Revenue", ar: "الإيراد", zh: "收入" }, { en: "Tags", ar: "وسوم", zh: "标签" }];
+  const cycleScope = (i) => {
+    const ns = fsel.map((v, j) => j === i ? (v + 1) % WB.filters[i].opts.length : v); setFsel(ns);
+    const period = WB.filters[0].opts[ns[0]], amanah = WB.filters[1].opts[ns[1]];
+    setSummary({ en: `For ${period}, ${amanah}: collection 87%, SAR 120M billing gap across high-risk Amanat; leases drive ~62% of overdue.`, ar: `لـ ${period}، ${amanah}: التحصيل 87%، فجوة 120 مليون ريال؛ الإيجارات ~62% من التأخر.`, zh: `${period} · ${amanah}:征收率 87%,SAR 120M 开票缺口集中于高风险阿玛纳;租约造成约 62% 逾期。` });
+    pushLog({ en: "Scope changed — " + period + " · " + amanah, ar: "تغيّر النطاق — " + period, zh: "作用域已更改 — " + period + " · " + amanah });
   };
   useEffect(() => {
     let n = 0;
@@ -2268,18 +2364,40 @@ function RcWorkbench() {
     <div className="card pad wb-head">
       <div><div className="wb-title"><span className="wb-dot blue" /> {tr({ en: "Revenue Collection Department", ar: "إدارة التحصيل", zh: "收入征收部" })} · {tr({ en: "Analysis Workbench", ar: "منصة التحليل", zh: "分析工作台" })}</div>
         <div className="wb-subt">{ucl("UC-13", tr({ en: "Revenue Collection & Billing Gap", ar: "التحصيل وفجوة الفوترة", zh: "收入征收与开票缺口" }))}</div></div>
+      <div className="wb-chain"><span className="wb-clab">{tr({ en: "G-06 CHAIN", ar: "سلسلة ج-06", zh: "G-06 链路" })}</span>{WB_CHAIN.map((c, i) => (<React.Fragment key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (c.here ? " here" : "")}>{c.pos && <span className="wb-cpos">{tr(c.pos)}</span>}{SHOW_UC ? c.code + " · " : ""}{tr(c.name)}</span></React.Fragment>))}</div>
     </div>
-    {/* FILTERS */}
-    <div className="wb-filters">
-      <div className="wb-flab">{tr({ en: "FILTERS", ar: "عوامل التصفية", zh: "筛选" })}</div>
-      <div className="wb-frow">
-        {WB.filters.map((f, i) => (<div className="wb-field clickable" key={i} onClick={() => cyc(i)} title={tr({ en: "click to change", ar: "انقر للتغيير", zh: "点击切换" })}><div className="fl">{tr(f.lab)}</div><div className="fv">{f.opts[fsel[i]]} <span className="cyc">▾</span></div></div>))}
-        <button className="btn sm wb-apply" onClick={applyFilters}>{tr({ en: "Apply", ar: "تطبيق", zh: "应用" })}</button>
-        <div className="wb-ai1"><div className="h"><span className="wb-dot violet" /> {tr({ en: "AI ONE-LINER SUMMARY", ar: "ملخص ذكي بسطر واحد", zh: "AI 一句话摘要" })}</div><div className="b"><Money v={tr(summary)} /></div></div>
+    {/* INSIGHT & NEXT ACTIONS */}
+    <div className="wb-actbar">
+      <div className="wb-ab-top">
+        <div className="wb-ab-spark">✦</div>
+        <div className="wb-ab-tt">
+          <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء الاصطناعي والإجراءات", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">{SHOW_UC ? "UC-13 · " : ""}run #2041 · {tr({ en: "Revenue agent", ar: "وكيل الإيرادات", zh: "收入智能体" })} · {tr({ en: "scope", ar: "النطاق", zh: "作用域" })}: {WB.filters[0].opts[fsel[0]]} · {WB.filters[1].opts[fsel[1]]}</span></div>
+          <div className="wb-ab-insight"><Money v={tr(summary)} /></div>
+        </div>
+      </div>
+      <div className="wb-ab-rows">
+        <div className="wb-ab-col">
+          <div className="wb-ab-h">⚐ {tr({ en: "RECOMMENDED · prompts", ar: "موصى به · مقترحات", zh: "建议 · 提示(点击应用)" })}</div>
+          <div className="wb-sugs">{WB.next.map((n, i) => (<button className="wb-sug" key={i} onClick={() => { pushLog({ en: "Applied recommendation — " + tr(n), ar: "تطبيق توصية — " + tr(n), zh: "已应用建议 — " + tr(n) }); setQaOpen(true); }}><span className="pr">{i + 1}</span> {tr(n)}</button>))}</div>
+        </div>
+        <div className="wb-ab-col r">
+          <div className="wb-ab-h">➜ {tr({ en: "HAND OFF DOWNSTREAM · actions", ar: "تسليم لاحق · إجراءات", zh: "下游交接 · 动作" })}</div>
+          <div className="wb-ctas">
+            <button className="wb-cta p" onClick={() => { setPerfJump({ tab: "dash", generate: true }); setBackRoute("rcbench"); setDeptSub("revcol"); setRoute("rcreports"); }}>{SHOW_UC && <span className="uc">UC-06</span>}{tr({ en: "Generate Executive Summary", ar: "إنشاء الملخص التنفيذي", zh: "生成执行摘要" })}<span className="ar">→</span></button>
+            <button className="wb-cta s" onClick={() => setRoute("monitor")}>{SHOW_UC && <span className="uc">UC-02</span>}{tr({ en: "Create Alert / Case", ar: "إنشاء تنبيه / حالة", zh: "创建告警 / 案例" })}<span className="ar">→</span></button>
+          </div>
+        </div>
       </div>
     </div>
-    {/* RESULTS */}
-    <div className="wb-sech"><h2>{tr({ en: "Collection & Billing Gap Results", ar: "نتائج التحصيل وفجوة الفوترة", zh: "征收与开票缺口结果" })}</h2><div className="muted">{ucl("UC-13", tr({ en: "Produced by agent · FY 2025 Q2", ar: "أُنتجت بواسطة الوكيل · FY2025 Q2", zh: "由智能体生成 · FY2025 Q2" }))}</div></div>
+    {/* RESULTS + scope chips */}
+    <div className="wb-sech shead">
+      <div><h2>{tr({ en: "Collection & Billing Gap Results", ar: "نتائج التحصيل وفجوة الفوترة", zh: "征收与开票缺口结果" })}</h2><div className="muted">{ucl("UC-13", tr({ en: "UC-13 outputs · produced by agents", ar: "مخرجات UC-13 · أُنتجت بواسطة الوكلاء", zh: "UC-13 输出 · 由智能体生成" }))}</div></div>
+      <div className="wb-scope"><span className="wb-sl">{tr({ en: "SCOPE", ar: "النطاق", zh: "作用域" })}</span>
+        {WB.filters.map((f, i) => (<button className="wb-schip" key={i} onClick={() => cycleScope(i)} title={tr(f.lab)}><span className="k">{tr(SCOPE_K[i])}</span><span className="v">{f.opts[fsel[i]]}</span><span className="cv">▾</span></button>))}
+        <span className="wb-auto">● {tr({ en: "auto-applied", ar: "تطبيق تلقائي", zh: "自动应用" })}</span>
+      </div>
+    </div>
+    <div className="wb-ogrid">{WB_OUTPUTS.map((o, i) => (<div className="wb-ocard" key={i}><div className="oc-h">{tr(o.l)}</div><div className="oc-b"><div className="oc-v"><Money v={o.v} /></div><div className="oc-s">{tr(o.s)}</div></div></div>))}</div>
     <div className="wb-cols3">
       <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Collection Overview", ar: "نظرة عامة على التحصيل", zh: "征收概览" })}</b></div>
         <div className="wb-pb">
@@ -2295,6 +2413,8 @@ function RcWorkbench() {
         </div></div>
       <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Billing Gap · Focus List", ar: "فجوة الفوترة · قائمة التركيز", zh: "开票缺口 · 重点清单" })}</b><span className="wb-pm">{tr({ en: "top 5 overdue", ar: "أعلى 5 متأخرة", zh: "前 5 逾期" })}</span></div>
         <div className="wb-pb">
+          <div className="wb-kl">{tr({ en: "TOTAL COLLECTION GAPS", ar: "إجمالي فجوات التحصيل", zh: "征收缺口总计" })}</div>
+          <div className="wb-krow"><span className="wb-big">13%</span><span className="chip">{tr({ en: "SAR 120M uncollected", ar: "120 مليون غير محصّلة", zh: "SAR 120M 未收" })}</span></div>
           <table className="wb-table"><thead><tr><th>{tr({ en: "CONTRACT ID", ar: "رقم العقد", zh: "合同编号" })}</th><th>{tr({ en: "AMANAH", ar: "الأمانة", zh: "阿玛纳" })}</th><th>{tr({ en: "OVERDUE", ar: "متأخر", zh: "逾期" })}</th><th>{tr({ en: "RISK", ar: "الخطر", zh: "风险" })}</th><th>{tr({ en: "ASK", ar: "اسأل", zh: "提问" })}</th></tr></thead>
             <tbody>{WB.focus.map((r, i) => (<tr key={i} onClick={() => fAsk(r)}><td className="mono">{r.id}</td><td>{tr(r.am)}</td><td><Money v={r.od} /></td><td>{risk(r.risk)}</td><td><span className="wb-q" title={tr({ en: "Ask the agent", ar: "اسأل الوكيل", zh: "向智能体提问" })}>?</span></td></tr>))}</tbody></table>
           <div className="wb-tfoot"><span>{tr({ en: "Showing 5 of 47 · click any row to ask the agent", ar: "عرض 5 من 47 · انقر أي صف لسؤال الوكيل", zh: "显示 47 中的 5 条 · 点击任意行向智能体提问" })}</span><a onClick={() => askQ(2)}>{tr({ en: "View all →", ar: "عرض الكل →", zh: "查看全部 →" })}</a></div>
@@ -2309,14 +2429,19 @@ function RcWorkbench() {
     {/* MULTI-AGENT WORKSPACE */}
     <div className="wb-sech"><h2>{tr({ en: "Multi-Agent Workspace", ar: "مساحة عمل متعددة الوكلاء", zh: "多智能体工作区" })}</h2><div className="muted">{tr({ en: "Orchestrated agent roles & live action timeline", ar: "أدوار وكلاء منسّقة وخط زمني حي", zh: "编排的智能体角色与实时操作时间线" })}</div></div>
     <div className="wb-cols3 wb-work">
-      <div className="wb-panel"><div className="wb-ph"><span className="wb-dot blue" /> <b>{tr({ en: "Orchestrator · Task Board", ar: "المنسّق · لوحة المهام", zh: "编排器 · 任务板" })}</b><span className="wb-orchpill"><span className="gear">⚙</span>{tr({ en: "Auto-orchestration · 5 agents", ar: "تنسيق تلقائي · 5 وكلاء", zh: "自动编排 · 5 个智能体" })}</span></div>
+      <div className="wb-panel"><div className="wb-ph"><span className="wb-dot" style={{ background: "#1C8354" }} /> <b>{tr({ en: "Data Inputs · sources", ar: "مدخلات البيانات · المصادر", zh: "数据输入 · 源系统" })}</b><span className="wb-pm">{tr({ en: "10 systems", ar: "10 أنظمة", zh: "10 个系统" })}</span></div>
+        <div className="wb-pb"><div className="wb-srclist">{WB_SOURCES.map((s, i) => (<div className="wb-src" key={i}><span className={"sd" + (s.s === "loading" ? " load" : "")} /><span className="sn">{s.n}</span><span className="ss">{tr(s.s === "loading" ? { en: "loading", ar: "تحميل", zh: "载入" } : { en: "synced", ar: "متزامن", zh: "已同步" })}</span></div>))}</div></div></div>
+      <div className="wb-panel"><div className="wb-ph"><span className="wb-dot blue" /> <b>{tr({ en: "Orchestrator · Task Board", ar: "المنسّق · لوحة المهام", zh: "编排器 · 任务板" })}</b><span className="wb-orchpill"><span className="gear">⚙</span>{tr({ en: "Auto-orchestration · 3 agents", ar: "تنسيق تلقائي · 3 وكلاء", zh: "自动编排 · 3 个智能体" })}</span></div>
         <div className="wb-pb">{WB.roles.map((r, i) => (<div className={"wb-role " + (r.cls || "") + (r.focus ? " foc-card" : "")} key={i} onClick={r.focus ? () => setRoute("rcwork") : undefined}>
           <div className="rl"><div className="rt">{r.code ? ucl(r.code, tr(r.name)) : tr(r.name)}</div><div className="rs">{tr(r.sub)}</div></div>{badge(r.status)}
         </div>))}</div></div>
       <div className="wb-panel"><div className="wb-ph"><span className="wb-dot blue" /> <b>{tr({ en: "Agent Timeline · Logs", ar: "خط زمن الوكلاء · السجلات", zh: "智能体时间线 · 日志" })}</b><span className="wb-pm">{tr({ en: "last 5 min", ar: "آخر 5 د", zh: "最近 5 分钟" })}</span></div>
         <div className="wb-pb"><div className="wb-tl" ref={logRef}>{feed.map((e, i) => (<div className={"wb-ev" + (i === feed.length - 1 ? " live" : "")} key={i}><span className={"wb-dot2 " + e.dot} /><div className="wb-eh"><b>{e.tm}</b> · {e.code ? ucl(e.code, tr(e.h)) : tr(e.h)}</div><div className="wb-ed">{tr(e.d)}</div></div>))}</div></div></div>
-      <div className="wb-panel violet"><div className="wb-ph"><span className="wb-dot violet" /> <b>{tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}</b></div>
-        <div className="wb-pb">
+    </div>
+    <button className="wb-qfab" onClick={() => setQaOpen(o => !o)} aria-label="AI Narratives & Q&A" title={tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}>🤖</button>
+    {qaOpen && <div className="wb-qpanel">
+      <div className="wb-qph"><span className="wb-dot violet" /> <b>{tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}</b><button className="wb-qx" onClick={() => setQaOpen(false)}>✕</button></div>
+        <div className="wb-pb wb-qbody">
           {qa.length === 0 && !thinking && <div className="wb-narrwrap"><div className="wb-ntag">{ucl("UC-13", tr({ en: "NARRATIVE", ar: "السرد", zh: "叙述" }))}</div>
           <div className="wb-narr">
             <p>{tr({ en: "Collection performance is stable at 87% overall, but three Amanat (Riyadh-East, Jeddah-Port, Dammam-Industrial) account for SAR 78M of the SAR 120M gap.", ar: "أداء التحصيل مستقر عند 87% إجمالاً، لكن ثلاث أمانات (الرياض-شرق، جدة-الميناء، الدمام-الصناعية) تمثّل 78 مليون ريال من فجوة 120 مليون ريال.", zh: "整体征收表现稳定在 87%,但三个阿玛纳(利雅得-东、吉达-港、达曼-工业)占 SAR 120M 缺口中的 SAR 78M。" })}</p>
@@ -2335,29 +2460,95 @@ function RcWorkbench() {
           {(qa.length === 0 || showSugs) && WB.qs.map((q, i) => (<div className="wb-sq" key={i} onClick={() => askQ(i)}>{tr(q)} <span className="ar">→</span></div>))}
           <div className="wb-askh">{tr({ en: "Ask the Revenue agent…", ar: "اسأل وكيل الإيرادات…", zh: "向收入智能体提问…" })}</div>
           <div className="wb-ask"><input value={ask} onChange={e => setAsk(e.target.value)} placeholder={tr({ en: "Type your question…", ar: "اكتب سؤالك…", zh: "输入你的问题…" })} onKeyDown={e => e.key === "Enter" && askQ(-1, ask)} /><button className="btn sm" onClick={() => askQ(-1, ask)}>{tr({ en: "Send", ar: "إرسال", zh: "发送" })}</button></div>
-        </div></div>
-    </div>
-    {/* NEXT STEPS */}
-    <div className="card pad wb-nextcard">
-      <div className="wb-sech inner"><h2>{tr({ en: "Next Steps", ar: "الخطوات التالية", zh: "后续步骤" })}</h2><div className="muted">{tr({ en: "AI-suggested actions & downstream UCs", ar: "إجراءات مقترحة وحالات استخدام لاحقة", zh: "AI 建议的行动与下游用例" })}</div></div>
-      <div className="wb-next3">
-        <div className="wb-nlist">{WB.next.map((n, i) => (<div className="wb-nrow" key={i}><span className="wb-dot violet" /> {tr(n)}</div>))}</div>
-        <div className="wb-down"><div className="wb-dh">{tr({ en: "DOWNSTREAM ACTIONS", ar: "إجراءات لاحقة", zh: "下游行动" })}</div>
-          <button className="btn wb-downb" onClick={() => { setPerfJump({ tab: "dash", generate: true }); setBackRoute("rcbench"); setDeptSub("revcol"); setRoute("rcreports"); }}>{ucl("UC-06", tr({ en: "Generate Executive Summary", ar: "إنشاء الملخص التنفيذي", zh: "生成执行摘要" }))} →</button>
-          <button className="btn secondary wb-downb" onClick={() => setRoute("monitor")}>{ucl("UC-02", tr({ en: "Create Alert / Case", ar: "إنشاء تنبيه / حالة", zh: "创建告警 / 案例" }))} →</button>
         </div>
-        <div className="wb-storyc"><div className="wb-dh">{tr({ en: "G-06 STORYLINE", ar: "مسار ج-06", zh: "G-06 故事线" })}</div>
-          <div className="wb-flow">{WB.story.map((s, i) => (<React.Fragment key={i}>{i > 0 && <span className="wb-far">→</span>}
-            <div className="wb-node"><div className={"wb-circ" + (s.here ? " here" : "")}>{(SHOW_UC ? s.code : String(i + 1)).split(" / ").map((c, j) => <span key={j}>{c}</span>)}</div><div className={"wb-ncap" + (s.here ? " here" : "")}>{tr(s.cap)}</div></div>
-          </React.Fragment>))}</div></div>
-      </div>
-    </div>
+    </div>}
     </div>
   </div>);
 }
+// ===== Shared Business Plaza · two-lane overview (Revenue × Assets) =====
+function BusinessPlaza({ defaultSel }) {
+  const { tr, setRoute, setPerfJump, setDeptSub, setBackRoute } = useStore();
+  const plazaWrapRef = useRef(null);
+  const [plazaBox, setPlazaBox] = useState({ w: 0, h: 0 });
+  const [plazaSel, setPlazaSel] = useState(defaultSel || null);
+  const [plazaModal, setPlazaModal] = useState(false);
+  useEffect(() => {
+    const el = plazaWrapRef.current; if (!el || typeof ResizeObserver === "undefined") return;
+    const calc = () => setPlazaBox({ w: el.clientWidth, h: el.clientHeight });
+    calc(); const ro = new ResizeObserver(calc); ro.observe(el); return () => ro.disconnect();
+  }, []);
+  const PZ = { W: 720, H: 400, NW: 130, NH: 88, colX: [8, 152, 296, 440, 584] };
+  const pzById = {}; PLAZA_UCS.forEach(n => { pzById[n.id] = n; });
+  const pzRelated = (a, b) => PLAZA_CROSS.some(e => (e.from === a && e.to === b) || (e.from === b && e.to === a));
+  const pzOpen = (n) => {
+    if (n.open === "rcbench") { setDeptSub("revcol"); setRoute("rcbench"); }
+    else if (n.open === "asbench") { setDeptSub("assets"); setRoute("asbench"); }
+    else if (n.open === "report") { setPerfJump({ tab: "params" }); setBackRoute("rcwork"); setDeptSub("revcol"); setRoute("rcreports"); }
+  };
+  const ovScale = (plazaBox.w || 480) / PZ.W;
+  const renderPlaza = (full, scale, sel) => {
+    const astTop = full ? 424 : 280;
+    const H = full ? 536 : PZ.H;
+    const mid = full ? "pzarF" : "pzar";
+    const top = (id) => pzById[id].lane === "rev" ? 62 : astTop;
+    const bot = (id) => top(id) + PZ.NH;
+    const cy = (id) => top(id) + PZ.NH / 2;
+    const cx = (id) => PZ.colX[pzById[id].col] + PZ.NW / 2;
+    const cross = (e, i) => {
+      const sx = cx(e.from), sy = pzById[e.from].lane === "rev" ? bot(e.from) : top(e.from);
+      const tx = cx(e.to), ty = pzById[e.to].lane === "rev" ? bot(e.to) : top(e.to);
+      const my = full ? (158 + i * 44) : (215 + (i - 2.5) * 12);
+      return { d: `M${sx},${sy} L${sx},${my} L${tx},${my} L${tx},${ty}`, lx: Math.min(sx, tx) + Math.abs(tx - sx) / 2, ly: my };
+    };
+    return (<div className="pz-canvas" style={{ width: PZ.W, height: H, transform: "scale(" + scale + ")" }}>
+      <svg className="pz-links" width={PZ.W} height={H} viewBox={"0 0 " + PZ.W + " " + H} fill="none">
+        <defs><marker id={mid} viewBox="0 0 10 10" markerWidth="7" markerHeight="7" refX="7" refY="5" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="context-stroke" strokeWidth="1.6" strokeLinecap="round" /></marker></defs>
+        <rect x="2" y="34" width="716" height="140" rx="14" fill="#f3f6fd" />
+        <rect x="2" y={astTop - 30} width="716" height="132" rx="14" fill="#f7f3fc" />
+        <text x="14" y="51" className="pz-lane rev">REVENUE COLLECTION DEPARTMENT</text>
+        <text x="14" y={astTop - 12} className="pz-lane ast">ASSETS DEPARTMENT</text>
+        {PLAZA_INTRA.map(([a, b], i) => { const y = cy(a); const x1 = PZ.colX[pzById[a].col] + PZ.NW, x2 = PZ.colX[pzById[b].col]; const c = pzById[a].lane === "rev" ? "#1f3a8a" : "#5b3a9e"; return <path key={i} d={`M${x1},${y} L${x2 - 3},${y}`} stroke={c} strokeWidth="2" fill="none" markerEnd={`url(#${mid})`} opacity={(!full && sel) ? 0.3 : 0.85} />; })}
+        {PLAZA_CROSS.map((e, i) => { if (!(full || (sel && (e.from === sel || e.to === sel)))) return null; const p = cross(e, i); return <path key={"c" + i} d={p.d} stroke="#e0524a" strokeWidth="1.7" strokeDasharray="5 4" fill="none" markerEnd={`url(#${mid})`} />; })}
+      </svg>
+      {PLAZA_UCS.map(n => { const dim = !full && sel && sel !== n.id && !pzRelated(sel, n.id); return (
+        <div key={n.id} className={"pz-node " + n.lane + (sel === n.id ? " on" : "") + (dim ? " dim" : "")} style={{ left: PZ.colX[n.col], top: top(n.id), width: PZ.NW, height: PZ.NH }} onClick={full ? undefined : (ev) => { ev.stopPropagation(); setPlazaSel(s => s === n.id ? null : n.id); }}>
+          <div className="pz-code">{n.star ? <span className="pz-star">★</span> : null}{n.code}</div>
+          <div className="pz-ttl">{tr(n.title)}</div>
+          <div className="pz-ag">{full ? n.agents.join(" · ") : n.agents.length + " agents"}</div>
+        </div>); })}
+      {full && PLAZA_CROSS.map((e, i) => { const p = cross(e, i); return <div key={"l" + i} className="pz-elab" style={{ left: p.lx - 100, top: p.ly - 15 }}>{tr(e.label)}</div>; })}
+    </div>);
+  };
+  return (<React.Fragment>
+    <div className="ws-plaza">
+      <div className="plaza-head">
+        <div><h2 style={{ fontSize: 16 }}>{tr({ en: "Business Plaza", ar: "ساحة الأعمال", zh: "业务广场" })}</h2><div className="sub muted">{tr({ en: "Two-lane overview · click a UC for its cross-department I/O", ar: "نظرة عامة على مسارين · انقر على حالة لعرض التبادل بين الإدارات", zh: "双泳道概览 · 点击 UC 查看其跨部门 I/O" })}</div></div>
+        <div className="pz-tools">{plazaSel && <button className="btn secondary sm" onClick={() => setPlazaSel(null)}>{tr({ en: "Overview", ar: "نظرة عامة", zh: "概览" })}</button>}<button className="btn sm pz-expand" onClick={() => setPlazaModal(true)}>{tr({ en: "Expand", ar: "توسيع", zh: "展开" })} ↗</button></div>
+      </div>
+      <div className="ws-flowwrap pz-wrap" ref={plazaWrapRef} style={{ height: Math.ceil(PZ.H * ovScale) }} onClick={() => setPlazaSel(null)}>
+        {renderPlaza(false, ovScale, plazaSel)}
+      </div>
+      {plazaSel && (() => { const n = pzById[plazaSel]; const ios = PLAZA_CROSS.filter(e => e.from === plazaSel || e.to === plazaSel).map(e => ({ out: e.from === plazaSel, code: pzById[e.from === plazaSel ? e.to : e.from].code, label: e.label }));
+        return (<div className="pz-detail">
+          <div className="pz-dhead"><span className={"pz-dcode " + n.lane}>{n.star ? "★ " : ""}{n.code}</span><b>{tr(n.title)}</b>{n.open && <button className="btn sm pz-openb" onClick={() => pzOpen(n)}>{tr({ en: "Open", ar: "فتح", zh: "打开" })} ↗</button>}</div>
+          <div className="pz-drow">
+            <div className="pz-dcol"><div className="pz-dlab">{tr({ en: "Agents", ar: "الوكلاء", zh: "智能体" })}</div><div>{n.agents.map((a, i) => <span className="pz-chip" key={i}>{a}</span>)}</div></div>
+            <div className="pz-dcol"><div className="pz-dlab">{tr({ en: "Cross-department I/O", ar: "التبادل بين الإدارات", zh: "跨部门 I/O" })}</div>{ios.length ? ios.map((x, i) => <p className="pz-io" key={i}>{x.out ? "→ " : "← "}{x.code}: {tr(x.label)}</p>) : <p className="pz-io muted">{tr({ en: "No cross-department links", ar: "لا روابط بين الإدارات", zh: "无跨部门连接" })}</p>}</div>
+          </div>
+        </div>); })()}
+    </div>
+    {plazaModal && <div className="pz-overlay" onClick={() => setPlazaModal(false)}>
+      <div className="pz-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="pz-mhead"><b>{tr({ en: "Full flow — Revenue Collection × Assets", ar: "المسار الكامل — التحصيل × الأصول", zh: "完整流程 — 收入征收 × 资产" })}</b><button className="pz-x" onClick={() => setPlazaModal(false)}>✕</button></div>
+        <div className="pz-mscroll"><div className="pz-mcanvas" style={{ width: PZ.W * ovScale, height: 536 * ovScale }}>{renderPlaza(true, ovScale, null)}</div></div>
+        <div className="pz-legend"><span><i className="ln rev" />{tr({ en: "Revenue intra-lane", ar: "تدفّق التحصيل", zh: "收入同泳道" })}</span><span><i className="ln ast" />{tr({ en: "Assets intra-lane", ar: "تدفّق الأصول", zh: "资产同泳道" })}</span><span><i className="ln cross" />{tr({ en: "Cross-department I/O", ar: "التبادل بين الإدارات", zh: "跨部门 I/O" })}</span><span>★ {tr({ en: "shared convergence (UC-10 / UC-11)", ar: "تقارب مشترك (UC-10 / UC-11)", zh: "汇聚目标 (UC-10 / UC-11)" })}</span></div>
+      </div>
+    </div>}
+  </React.Fragment>);
+}
+
 function RcWorkspace() {
-  const { t, tr, setRoute, pushLog, lang, setPerfJump, setDeptSub, setBackRoute } = useStore();
-  const [seg, setSeg] = useState("all");
+  const { t, tr, setRoute, pushLog, lang } = useStore();
   const DEFAULT_PROMPT = { en: "Analyze billing gap for Q3 across all BU, flag overdue contracts > 60 days, and draft a collection note for executive review.", ar: "حلّل فجوة الفوترة للربع الثالث عبر كل الوحدات، وحدّد العقود المتأخرة > 60 يوماً، وصُغ مذكرة تحصيل للمراجعة التنفيذية.", zh: "分析第三季度各业务单元的开票缺口,标记逾期 > 60 天的合同,并起草供高管复核的征收说明。" };
   const [phase, setPhase] = useState("idle");            // idle | running | review | approved | returned
   const [prompt, setPrompt] = useState(tr(DEFAULT_PROMPT));
@@ -2378,30 +2569,6 @@ function RcWorkspace() {
     { en: "Selecting agents", ar: "اختيار الوكلاء", zh: "选择智能体" },
     { en: "Planning subtasks", ar: "تخطيط المهام الفرعية", zh: "规划子任务" },
   ];
-  const agents = RC_AGENTS.filter(a => seg === "all" ? true : seg === "enabled" ? a.kind !== "focus" : a.kind === "focus");
-  // group consecutive half-width agents (UC-12 / UC-11) into a single row
-  const agentRows = [];
-  for (let i = 0; i < agents.length; i++) {
-    if (agents[i].half && agents[i + 1] && agents[i + 1].half) { agentRows.push([agents[i], agents[i + 1]]); i++; }
-    else agentRows.push([agents[i]]);
-  }
-  const renderAgent = (a) => (
-    <div className={"agent-c " + a.kind} key={a.id}>
-      <div className="ah">
-        <span className="aic">{a.icon}</span>
-        <div className="ahx">
-          <div className="at">{ucl(a.code, tr(a.title))}<span className="at-tip" aria-label={tr(a.desc)} tabIndex={0}>i<span className="at-tip-pop">{tr(a.desc)}</span></span></div>
-          {a.chips && <div className="achips">{a.chips.map((c, i) => (<span className={"chip " + (c.cls || "")} key={i}>{tr(c.t)}</span>))}</div>}
-        </div>
-        {a.btn && <button className={a.kind === "focus" ? "btn ws-start" : "btn secondary sm ws-actr"} onClick={() => {
-          if (a.kind === "focus") setRoute("rcbench");
-          else if (a.id === "a6") { setPerfJump({ tab: "params" }); setBackRoute("rcwork"); setDeptSub("revcol"); setRoute("rcreports"); }
-          else if (a.route) setRoute(a.route);
-        }}>{a.kind === "focus" ? "▶ " : ""}{tr(a.btn)}{a.kind === "focus" ? "" : " "}{a.kind === "focus" ? null : ArrowIcon}</button>}
-      </div>
-      {a.io && <div className="agent-io">{a.io.map((m, i) => (<div className={"am io-" + (m.t || "")} key={i}><div className="l">{tr(m.k)}</div><div className="iovals">{(Array.isArray(m.v) ? m.v : [m.v]).map((x, j) => (<span className="ioval" key={j}>{tr(x)}</span>))}</div></div>))}</div>}
-    </div>
-  );
   const PH = {
     idle: { t: { en: "ready", ar: "جاهز", zh: "就绪" }, c: "var(--muted)" },
     running: { t: { en: "running", ar: "يعمل", zh: "运行中" }, c: "var(--info)" },
@@ -2451,20 +2618,17 @@ function RcWorkspace() {
       </div>
     </div>
     {/* top KPI metrics */}
-    <div className="ws-kpirow">{RC_KPIS.map((k, i) => (<div className="ws-kpi2" key={i}><div className="lab"><span className="dot" style={{ background: k.dot }} />{tr(k.k)}</div><div className="v"><Money v={k.v} /> <span className="d">{tr(k.d)}</span></div></div>))}</div>
+    <div className="ws-kpirow km4">
+      <div className="ws-kpi2 km"><div className="lab">{tr({ en: "Collection Rate", ar: "معدل التحصيل", zh: "征收率" })}</div><div className="v">87% <span className="d up">+2.1% QoQ</span></div></div>
+      <div className="ws-kpi2 km"><div className="lab">{tr({ en: "Billing Gap", ar: "فجوة الفوترة", zh: "开票缺口" })}</div><div className="v"><Money v="SAR 120M" /> <span className="d">{tr({ en: "unbilled coverage", ar: "تغطية غير مفوترة", zh: "未开票覆盖" })}</span></div></div>
+      <div className="ws-kpi2 km kmrisk"><div className="lab">{tr({ en: "Overdue Risk (30/60/90+)", ar: "مخاطر التأخر (30/60/90+)", zh: "逾期风险 (30/60/90+)" })}</div>
+        <div className="km-aging">{[["30d", 47, "28M"], ["60d", 53, "32M"], ["90+", 100, "60M"]].map((b, i) => (<div className="ab" key={i}><div className="abar"><i style={{ width: b[1] + "%" }} /></div><div className="at">{b[0]}</div><div className="av"><Money v={"SAR " + b[2]} /></div></div>))}</div></div>
+      <div className="ws-kpi2 km"><div className="lab">{tr({ en: "Prioritized Actions", ar: "إجراءات مرتّبة", zh: "优先行动" })}</div><div className="v">14 <span className="d">{tr({ en: "5 escalations · by impact", ar: "5 تصعيدات · حسب الأثر", zh: "5 项升级 · 按影响" })}</span></div></div>
+    </div>
     <div className="ws-grid2">
       {/* LEFT (50%) — Business Plaza + Multi-Agent Flow */}
       <div className="ws-left">
-      <div className="ws-plaza">
-        <div className="plaza-head">
-          <div><h2 style={{ fontSize: 16 }}>{tr({ en: "Business Plaza", ar: "ساحة الأعمال", zh: "业务广场" })}</h2><div className="sub muted">{tr({ en: "End-to-end flow (scroll to view)", ar: "مسار من البداية للنهاية (مرّر للعرض)", zh: "端到端流程(下拉展示)" })}</div></div>
-          <div className="seg">{["all", "enabled", "new"].map(s => <button key={s} className={seg === s ? "on" : ""} onClick={() => setSeg(s)}>{s === "all" ? "All" : s === "enabled" ? "Enabled" : "NEW"}</button>)}</div>
-        </div>
-        {agentRows.map((row, ri) => (<React.Fragment key={ri}>
-          {ri > 0 && <div className="agent-link">▾</div>}
-          {row.length === 2 ? <div className="agent-pair">{row.map(a => renderAgent(a))}</div> : renderAgent(row[0])}
-        </React.Fragment>))}
-      </div>
+        <BusinessPlaza defaultSel="uc13" />
       </div>
       {/* RIGHT (50%) — Smart query (top) + Multi-Agent Flow (below) */}
       <div className="ws-right">
@@ -2534,6 +2698,550 @@ function RcWorkspace() {
   </div></div>);
 }
 
+/* ======= Assets Department — Analysis Workbench (UC-14) ======= */
+function AssetsWorkbench() {
+  const { tr, setRoute, pushLog, setDeptSub } = useStore();
+  const [ask, setAsk] = useState("");
+  const [feed, setFeed] = useState(WB_AS.logs);
+  const logRef = useRef(null);
+  const [qa, setQa] = useState([]);
+  const [thinking, setThinking] = useState(false);
+  const [showSugs, setShowSugs] = useState(false);
+  const qaRef = useRef(null);
+  const [fsel, setFsel] = useState([2, 0, 0, 0]);
+  const DEFAULT_SUMMARY = { en: "For FY 2026 Q1, SAR 1.92B of completed assets-under-construction is ready for capitalization; 3 equipment items are flagged for impairment (SAR 47M NBV) and 5 infrastructure assets are due for maintenance.", ar: "للربع الأول 2026، 1.92 مليار ريال من الأصول تحت الإنشاء المكتملة جاهزة للرسملة؛ 3 معدات مرصودة للانخفاض (47 مليون) و5 أصول بنية تحتية مستحقة للصيانة.", zh: "FY2026 Q1,SAR 1.92B 已完工在建资产可资本化;3 项设备标记减值(账面净值 SAR 47M),5 项基础设施待维护。" };
+  const [summary, setSummary] = useState(DEFAULT_SUMMARY);
+  const [qaOpen, setQaOpen] = useState(false);
+  const UP = { en: "UPSTREAM", ar: "منبع", zh: "上游" }, PARA = { en: "PARALLEL", ar: "متوازٍ", zh: "并行" }, DOWN = { en: "DOWNSTREAM", ar: "المصب", zh: "下游" }, THIS = { en: "THIS", ar: "هذه", zh: "本环节" };
+  const WB_CHAIN = [
+    { code: "UC-01", pos: UP, name: { en: "Financial Data Consolidation & Data Quality", ar: "توحيد البيانات المالية وجودتها", zh: "财务数据整合与数据质量" } },
+    { code: "UC-13", pos: UP, name: { en: "Revenue, Collections & Exclusions", ar: "الإيرادات والتحصيل والاستبعادات", zh: "收入、征收与排除项" } },
+    { code: "UC-06 / UC-02", pos: UP, name: { en: "Performance Reports / Anomaly Detection", ar: "تقارير الأداء / كشف الانحرافات", zh: "绩效报告 / 异常检测" } },
+    { code: "UC-14", here: true, pos: THIS, name: { en: "Assets, Classification & Capitalization", ar: "الأصول والتصنيف والرسملة", zh: "资产、分类与资本化" } },
+    { code: "UC-12 / UC-11", pos: PARA, name: { en: "Costs & Funds / Compliance & Memos", ar: "التكاليف والصناديق / الامتثال والمذكرات", zh: "成本与资金 / 合规与备忘" } },
+    { code: "UC-10 / UC-03", pos: DOWN, name: { en: "Reporting & Dashboards / Smart Query & Audit", ar: "التقارير / الاستعلام والتدقيق", zh: "报告与仪表盘 / 智能查询与审计" } },
+  ];
+  const WB_SOURCES = [
+    { n: "Asset Registry", s: "synced" }, { n: "SAP", s: "synced" }, { n: "Balady Data", s: "synced" }, { n: "Esnad", s: "loading" }, { n: "Invoices", s: "synced" },
+    { n: "Comprehensive Guide", s: "synced" }, { n: "Coordinates", s: "synced" }, { n: "Investment & Maint. Data", s: "synced" }, { n: "Secretariats Data", s: "synced" },
+  ];
+  const WB_OUTPUTS = [
+    { l: { en: "Improved Asset Registry", ar: "سجل أصول محسّن", zh: "改进的资产台账" }, v: "8,640", s: { en: "records cleansed · 96% quality", ar: "سجلات منقّحة · جودة 96%", zh: "记录清洗 · 质量 96%" } },
+    { l: { en: "Capitalization Recommendations", ar: "توصيات الرسملة", zh: "资本化建议" }, v: "SAR 1.92B", s: { en: "312 AUC items ready", ar: "312 بنداً جاهزاً", zh: "312 项在建资产就绪" } },
+    { l: { en: "Asset Cost Tracking", ar: "تتبّع تكلفة الأصل", zh: "资产成本追踪" }, v: "100%", s: { en: "invoice → register traceable", ar: "الفاتورة ← السجل قابل للتتبع", zh: "发票 → 台账可追溯" } },
+    { l: { en: "Investment Opportunities", ar: "فرص استثمارية", zh: "投资机会" }, v: "5", s: { en: "reuse / disposal flags", ar: "إعادة استخدام / تصرّف", zh: "复用 / 处置标记" } },
+    { l: { en: "Maintenance Alerts", ar: "تنبيهات الصيانة", zh: "维护告警" }, v: "5", s: { en: "infra-led · ≤60 days", ar: "بنية تحتية · ≤60 يوماً", zh: "基础设施 · ≤60 天" } },
+  ];
+  const cyc = (i) => setFsel(s => s.map((v, j) => j === i ? (v + 1) % WB_AS.filters[i].opts.length : v));
+  const applyFilters = () => {
+    const period = WB_AS.filters[0].opts[fsel[0]], cls = WB_AS.filters[2].opts[fsel[2]];
+    setSummary({ en: `For ${period} · ${cls}: SAR 1.92B AUC ready for capitalization, 3 impairment flags (SAR 47M) and 5 maintenance-due assets; data quality 96%.`, ar: `لـ ${period} · ${cls}: 1.92 مليار جاهزة للرسملة، 3 مؤشرات انخفاض (47 مليون) و5 أصول صيانة؛ جودة 96%.`, zh: `${period} · ${cls}:SAR 1.92B 可资本化,3 项减值(SAR 47M),5 项待维护;数据质量 96%。` });
+    pushLog({ en: "Filters applied — " + period + " · " + cls, ar: "تم تطبيق عوامل التصفية — " + period, zh: "已应用筛选 — " + period + " · " + cls });
+  };
+  const SCOPE_K = [{ en: "Period", ar: "الفترة", zh: "期间" }, { en: "Fund", ar: "الصندوق", zh: "基金" }, { en: "Class", ar: "الفئة", zh: "类别" }, { en: "Status", ar: "الحالة", zh: "状态" }];
+  const cycleScope = (i) => {
+    const ns = fsel.map((v, j) => j === i ? (v + 1) % WB_AS.filters[i].opts.length : v); setFsel(ns);
+    const period = WB_AS.filters[0].opts[ns[0]], cls = WB_AS.filters[2].opts[ns[2]];
+    setSummary({ en: `For ${period} · ${cls}: SAR 1.92B AUC ready for capitalization, 3 impairment flags (SAR 47M) and 5 maintenance-due assets; data quality 96%.`, ar: `لـ ${period} · ${cls}: 1.92 مليار جاهزة للرسملة، 3 مؤشرات انخفاض (47 مليون) و5 أصول صيانة؛ جودة 96%.`, zh: `${period} · ${cls}:SAR 1.92B 可资本化,3 项减值(SAR 47M),5 项待维护;数据质量 96%。` });
+    pushLog({ en: "Scope changed — " + period + " · " + cls, ar: "تغيّر النطاق — " + period, zh: "作用域已更改 — " + period + " · " + cls });
+  };
+  useEffect(() => {
+    let n = 0;
+    const id = setInterval(() => {
+      n++; const base = WB_AS.logs[n % WB_AS.logs.length];
+      const tm = "10:" + String((6 + n) % 60).padStart(2, "0");
+      setFeed(f => [...f.slice(-7), { ...base, tm }]);
+    }, 2300);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => { const el = logRef.current; if (el) el.scrollTop = el.scrollHeight; }, [feed]);
+  const askQ = (idx, raw, ansObj) => {
+    const q = idx >= 0 ? tr(WB_AS.qs[idx]) : (raw || "").trim();
+    if (!q || thinking) return;
+    const a = ansObj ? tr(ansObj) : (idx >= 0 ? tr(WB_AS.answers[idx]) : tr(WB_AS.genAns));
+    pushLog({ en: "Q&A → Assets agent: " + q, ar: "سؤال → وكيل الأصول: " + q, zh: "提问 → 资产智能体:" + q });
+    setShowSugs(false);
+    setQa(p => [...p, { role: "u", text: q }]); setAsk(""); setThinking(true);
+    setTimeout(() => { setQa(p => [...p, { role: "a", text: a }]); setThinking(false); }, 850);
+  };
+  useEffect(() => { const el = qaRef.current; if (el) el.scrollTop = el.scrollHeight; }, [qa, thinking]);
+  const badge = (s) => s === "running" ? <span className="wb-badge run">{tr({ en: "running", ar: "يعمل", zh: "运行中" })}</span>
+    : s === "focus" ? <span className="wb-badge foc">{tr({ en: "in focus", ar: "قيد التركيز", zh: "聚焦中" })}</span>
+    : <span className="wb-badge act">{tr({ en: "active", ar: "نشط", zh: "活动" })}</span>;
+  const risk = (r) => <span className={"wb-risk " + r}>{tr(r === "high" ? { en: "high", ar: "مرتفع", zh: "高" } : r === "med" ? { en: "med", ar: "متوسط", zh: "中" } : { en: "low", ar: "منخفض", zh: "低" })}</span>;
+  const fAsk = (row) => askQ(-1, row.id + " · " + tr(row.am) + " — " + row.od, {
+    en: row.id + " (" + tr(row.am) + ", NBV " + row.od + ") is flagged for " + tr(row.flag) + " at " + row.risk + " risk. Driver: utilization decline and market-value drop beyond the policy threshold. Recommended: raise an accounting memo and route to compliance review.",
+    ar: row.id + " (" + tr(row.am) + "، 47 مليون) مرصود لـ " + tr(row.flag) + " بخطر " + row.risk + ". الموصى به: إصدار مذكرة محاسبية وتحويلها لمراجعة الامتثال.",
+    zh: row.id + "(" + tr(row.am) + ",账面净值 " + row.od + ")被标记为" + tr(row.flag) + ",风险 " + row.risk + "。主因:利用率下降与市场价值跌破政策阈值。建议:开具会计备忘并转合规复核。",
+  });
+  return (<div className="fade wb">
+    <div className="ws-back" onClick={() => { setDeptSub("assets"); setRoute("aswork"); }}>← {tr({ en: "Back to Assets workspace", ar: "العودة إلى مساحة عمل الأصول", zh: "返回资产工作区" })}</div>
+    <div className="card pad wb-frame">
+    {/* HEADER */}
+    <div className="card pad wb-head">
+      <div><div className="wb-title"><span className="wb-dot violet" /> {tr({ en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" })} · {tr({ en: "Analysis Workbench", ar: "منصة التحليل", zh: "分析工作台" })}</div>
+        <div className="wb-subt">{ucl("UC-14", tr({ en: "Assets, Classification, Capitalization, Returns & Maintenance", ar: "الأصول والتصنيف والرسملة والعوائد والصيانة", zh: "资产、分类、资本化、收益与维护" }))}</div></div>
+      <div className="wb-chain"><span className="wb-clab">{tr({ en: "G-06 CHAIN", ar: "سلسلة ج-06", zh: "G-06 链路" })}</span>{WB_CHAIN.map((c, i) => (<React.Fragment key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (c.here ? " here" : "")}>{c.pos && <span className="wb-cpos">{tr(c.pos)}</span>}{SHOW_UC ? c.code + " · " : ""}{tr(c.name)}</span></React.Fragment>))}</div>
+    </div>
+    {/* INSIGHT & NEXT ACTIONS */}
+    <div className="wb-actbar">
+      <div className="wb-ab-top">
+        <div className="wb-ab-spark">✦</div>
+        <div className="wb-ab-tt">
+          <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء الاصطناعي والإجراءات", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">{SHOW_UC ? "UC-14 · " : ""}run #3107 · {tr({ en: "Assets agent", ar: "وكيل الأصول", zh: "资产智能体" })} · {tr({ en: "scope", ar: "النطاق", zh: "作用域" })}: {WB_AS.filters[0].opts[fsel[0]]} · {WB_AS.filters[2].opts[fsel[2]]}</span></div>
+          <div className="wb-ab-insight"><Money v={tr(summary)} /></div>
+        </div>
+      </div>
+      <div className="wb-ab-rows">
+        <div className="wb-ab-col">
+          <div className="wb-ab-h">⚐ {tr({ en: "RECOMMENDED · prompts", ar: "موصى به · مقترحات", zh: "建议 · 提示(点击应用)" })}</div>
+          <div className="wb-sugs">{WB_AS.next.map((n, i) => (<button className="wb-sug" key={i} onClick={() => { pushLog({ en: "Applied recommendation — " + tr(n), ar: "تطبيق توصية — " + tr(n), zh: "已应用建议 — " + tr(n) }); setQaOpen(true); }}><span className="pr">{i + 1}</span> {tr(n)}</button>))}</div>
+        </div>
+        <div className="wb-ab-col r">
+          <div className="wb-ab-h">➜ {tr({ en: "HAND OFF DOWNSTREAM · actions", ar: "تسليم لاحق · إجراءات", zh: "下游交接 · 动作" })}</div>
+          <div className="wb-ctas">
+            <button className="wb-cta p" onClick={() => setRoute("reports")}>{SHOW_UC && <span className="uc">UC-12</span>}{tr({ en: "Send to Costs & Funds Close", ar: "إرسال إلى إقفال التكاليف والصناديق", zh: "推送至成本与资金结账" })}<span className="ar">→</span></button>
+            <button className="wb-cta s" onClick={() => setRoute("monitor")}>{SHOW_UC && <span className="uc">UC-11</span>}{tr({ en: "Raise Compliance / Accounting Memo", ar: "إصدار مذكرة امتثال / محاسبية", zh: "发起合规 / 会计备忘" })}<span className="ar">→</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {/* RESULTS + scope chips */}
+    <div className="wb-sech shead">
+      <div><h2>{tr({ en: "Asset Capitalization & Lifecycle Results", ar: "نتائج رسملة الأصول ودورة الحياة", zh: "资产资本化与生命周期结果" })}</h2><div className="muted">{ucl("UC-14", tr({ en: "UC-14 outputs · produced by agents", ar: "مخرجات UC-14 · أُنتجت بواسطة الوكلاء", zh: "UC-14 输出 · 由智能体生成" }))}</div></div>
+      <div className="wb-scope"><span className="wb-sl">{tr({ en: "SCOPE", ar: "النطاق", zh: "作用域" })}</span>
+        {WB_AS.filters.map((f, i) => (<button className="wb-schip" key={i} onClick={() => cycleScope(i)} title={tr(f.lab)}><span className="k">{tr(SCOPE_K[i])}</span><span className="v">{f.opts[fsel[i]]}</span><span className="cv">▾</span></button>))}
+        <span className="wb-auto">● {tr({ en: "auto-applied", ar: "تطبيق تلقائي", zh: "自动应用" })}</span>
+      </div>
+    </div>
+    <div className="wb-ogrid">{WB_OUTPUTS.map((o, i) => (<div className="wb-ocard" key={i}><div className="oc-h">{tr(o.l)}</div><div className="oc-b"><div className="oc-v"><Money v={o.v} /></div><div className="oc-s">{tr(o.s)}</div></div></div>))}</div>
+    <div className="wb-cols3">
+      <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Capitalization Overview", ar: "نظرة عامة على الرسملة", zh: "资本化概览" })}</b></div>
+        <div className="wb-pb">
+          <div className="wb-kl">{tr({ en: "AUC → CAPITALIZED (PERIOD)", ar: "تحت الإنشاء ← مرسمل (الفترة)", zh: "在建资产 → 已资本化(本期)" })}</div>
+          <div className="wb-krow"><span className="wb-big">62%</span><span className="chip">SAR 1.92B</span></div>
+          <div className="wb-bars">
+            <div className="wb-bar"><div className="bl">{tr({ en: "AUC opening", ar: "تحت الإنشاء (افتتاحي)", zh: "在建期初" })}</div><div className="bt"><span className="bf plan" style={{ width: "100%" }} /></div><div className="bv"><Money v="SAR 3.10B" /></div></div>
+            <div className="wb-bar"><div className="bl">{tr({ en: "Capitalized", ar: "مرسمل", zh: "已资本化" })}</div><div className="bt"><span className="bf coll" style={{ width: "62%" }} /></div><div className="bv"><Money v="SAR 1.92B" /></div></div>
+            <div className="wb-bar"><div className="bl">{tr({ en: "Remaining AUC", ar: "متبقٍ تحت الإنشاء", zh: "剩余在建" })}</div><div className="bt"><span className="bf out" style={{ width: "38%" }} /></div><div className="bv"><Money v="SAR 1.18B" /></div></div>
+          </div>
+          <div className="wb-kk"><span>{tr({ en: "Avg useful life", ar: "متوسط العمر الإنتاجي", zh: "平均使用年限" })}</span><b>28 {tr({ en: "yr", ar: "سنة", zh: "年" })}</b></div>
+          <div className="wb-kk"><span>{tr({ en: "Data quality score", ar: "درجة جودة البيانات", zh: "数据质量分" })}</span><b className="up">96%</b></div>
+        </div></div>
+      <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Impairment & Maintenance · Focus List", ar: "الانخفاض والصيانة · قائمة التركيز", zh: "减值与维护 · 重点清单" })}</b><span className="wb-pm">{tr({ en: "top 5", ar: "أعلى 5", zh: "前 5" })}</span></div>
+        <div className="wb-pb">
+          <table className="wb-table"><thead><tr><th>{tr({ en: "ASSET ID", ar: "رقم الأصل", zh: "资产编号" })}</th><th>{tr({ en: "CLASS", ar: "الفئة", zh: "类别" })}</th><th>{tr({ en: "NBV", ar: "ق. دفترية", zh: "账面净值" })}</th><th>{tr({ en: "FLAG", ar: "العلم", zh: "标记" })}</th><th>{tr({ en: "RISK", ar: "الخطر", zh: "风险" })}</th></tr></thead>
+            <tbody>{WB_AS.focus.map((r, i) => (<tr key={i} onClick={() => fAsk(r)}><td className="mono">{r.id}</td><td>{tr(r.am)}</td><td><Money v={r.od} /></td><td><span className="chip gray">{tr(r.flag)}</span></td><td>{risk(r.risk)}</td></tr>))}</tbody></table>
+          <div className="wb-tfoot"><span>{tr({ en: "Showing 5 of 18 · click any row to ask the agent", ar: "عرض 5 من 18 · انقر أي صف لسؤال الوكيل", zh: "显示 18 中的 5 条 · 点击任意行向智能体提问" })}</span><a onClick={() => askQ(1)}>{tr({ en: "View all →", ar: "عرض الكل →", zh: "查看全部 →" })}</a></div>
+        </div></div>
+      <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Asset Class Distribution", ar: "توزيع فئات الأصول", zh: "资产类别分布" })}</b></div>
+        <div className="wb-pb">
+          <div className="wb-kl2">{tr({ en: "Capitalized value by class", ar: "القيمة المرسملة حسب الفئة", zh: "按类别的已资本化价值" })}</div>
+          {WB_AS.dist.map((d, i) => (<div className="wb-dist" key={i}><div className="dn">{tr(d.am)}</div><div className="dt"><span className={"df " + d.cls} style={{ width: d.pct + "%" }} /></div><div className="dv"><Money v={d.v} /></div></div>))}
+          <div className="wb-other"><span>{tr({ en: "Total capitalized", ar: "إجمالي المرسمل", zh: "已资本化合计" })}</span><b><Money v="SAR 1.92B" /></b></div>
+        </div></div>
+    </div>
+    {/* MULTI-AGENT WORKSPACE */}
+    <div className="wb-sech"><h2>{tr({ en: "Multi-Agent Workspace", ar: "مساحة عمل متعددة الوكلاء", zh: "多智能体工作区" })}</h2><div className="muted">{tr({ en: "Orchestrated agent roles & live action timeline", ar: "أدوار وكلاء منسّقة وخط زمني حي", zh: "编排的智能体角色与实时操作时间线" })}</div></div>
+    <div className="wb-cols3 wb-work">
+      <div className="wb-panel"><div className="wb-ph"><span className="wb-dot" style={{ background: "#5b3a9e" }} /> <b>{tr({ en: "Data Inputs · sources", ar: "مدخلات البيانات · المصادر", zh: "数据输入 · 源系统" })}</b><span className="wb-pm">{tr({ en: "9 systems", ar: "9 أنظمة", zh: "9 个系统" })}</span><button className="wb-impbtn" onClick={() => pushLog({ en: "Manual Excel / CSV import — flagged as temporary source (BR-04)", ar: "استيراد Excel / CSV يدوي — مصدر مؤقت (BR-04)", zh: "手动导入 Excel / CSV — 标记为临时来源(BR-04)" })} title={tr({ en: "Upload an Excel/CSV file when an API is unavailable (temporary source)", ar: "رفع ملف Excel/CSV عند عدم توفّر الواجهة (مصدر مؤقت)", zh: "当接口不可用时上传 Excel/CSV 文件(临时来源)" })}>⬆ {tr({ en: "Import Excel/CSV", ar: "استيراد Excel/CSV", zh: "导入 Excel/CSV" })}</button></div>
+        <div className="wb-pb"><div className="wb-srclist">{WB_SOURCES.map((s, i) => (<div className="wb-src" key={i}><span className={"sd" + (s.s === "loading" ? " load" : "")} /><span className="sn">{s.n}</span><span className="ss">{tr(s.s === "loading" ? { en: "loading", ar: "تحميل", zh: "载入" } : { en: "synced", ar: "متزامن", zh: "已同步" })}</span></div>))}</div></div></div>
+      <div className="wb-panel"><div className="wb-ph"><span className="wb-dot violet" /> <b>{tr({ en: "Orchestrator · Task Board", ar: "المنسّق · لوحة المهام", zh: "编排器 · 任务板" })}</b><span className="wb-orchpill"><span className="gear">⚙</span>{tr({ en: "Auto-orchestration · 3 agents", ar: "تنسيق تلقائي · 3 وكلاء", zh: "自动编排 · 3 个智能体" })}</span></div>
+        <div className="wb-pb">{WB_AS.roles.map((r, i) => (<div className={"wb-role " + (r.cls || "") + (r.focus ? " foc-card" : "")} key={i} onClick={r.focus ? () => { setDeptSub("assets"); setRoute("aswork"); } : undefined}>
+          <div className="rl"><div className="rt">{r.code ? ucl(r.code, tr(r.name)) : tr(r.name)}</div><div className="rs">{tr(r.sub)}</div></div>{badge(r.status)}
+        </div>))}</div></div>
+      <div className="wb-panel"><div className="wb-ph"><span className="wb-dot violet" /> <b>{tr({ en: "Agent Timeline · Logs", ar: "خط زمن الوكلاء · السجلات", zh: "智能体时间线 · 日志" })}</b><span className="wb-pm">{tr({ en: "last 5 min", ar: "آخر 5 د", zh: "最近 5 分钟" })}</span></div>
+        <div className="wb-pb"><div className="wb-tl" ref={logRef}>{feed.map((e, i) => (<div className={"wb-ev" + (i === feed.length - 1 ? " live" : "")} key={i}><span className={"wb-dot2 " + e.dot} /><div className="wb-eh"><b>{e.tm}</b> · {e.code ? ucl(e.code, tr(e.h)) : tr(e.h)}</div><div className="wb-ed">{tr(e.d)}</div></div>))}</div></div></div>
+    </div>
+    <button className="wb-qfab" onClick={() => setQaOpen(o => !o)} aria-label="AI Narratives & Q&A" title={tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}>🤖</button>
+    {qaOpen && <div className="wb-qpanel">
+      <div className="wb-qph"><span className="wb-dot violet" /> <b>{tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}</b><button className="wb-qx" onClick={() => setQaOpen(false)}>✕</button></div>
+        <div className="wb-pb wb-qbody">
+          {qa.length === 0 && !thinking && <div className="wb-narrwrap"><div className="wb-ntag">{ucl("UC-14", tr({ en: "NARRATIVE", ar: "السرد", zh: "叙述" }))}</div>
+          <div className="wb-narr">
+            <p>{tr({ en: "SAR 1.92B of completed assets-under-construction is ready for capitalization this period, led by road infrastructure (SAR 0.84B) and buildings (SAR 0.61B).", ar: "1.92 مليار ريال من الأصول تحت الإنشاء المكتملة جاهزة للرسملة، تقودها البنية التحتية (0.84) والمباني (0.61).", zh: "本期 SAR 1.92B 已完工在建资产可资本化,以道路基础设施(SAR 0.84B)与建筑(SAR 0.61B)为主。" })}</p>
+            <p>{tr({ en: "Three equipment items (SAR 47M NBV) breach the impairment threshold on idle utilization and market decline; five infrastructure assets are due for maintenance within 60 days.", ar: "ثلاث معدات (47 مليون) تتجاوز حد الانخفاض؛ وخمسة أصول بنية تحتية مستحقة للصيانة خلال 60 يوماً.", zh: "三项设备(账面净值 SAR 47M)因闲置利用与市场下跌突破减值阈值;五项基础设施资产将在 60 天内到期维护。" })}</p>
+            <div className="wb-rp">{tr({ en: "Recommended priorities:", ar: "الأولويات الموصى بها:", zh: "建议优先事项:" })}</div>
+            <ul><li>{tr({ en: "Capitalize SAR 1.92B completed AUC", ar: "رسملة 1.92 مليار من الأصول المكتملة", zh: "资本化 SAR 1.92B 已完工在建资产" })}</li>
+              <li>{tr({ en: "Raise impairment memos for 3 equipment items", ar: "إصدار مذكرات انخفاض لـ 3 معدات", zh: "为 3 项设备开具减值备忘" })}</li>
+              <li>{tr({ en: "Schedule maintenance for R-118 / R-204", ar: "جدولة صيانة لـ R-118 / R-204", zh: "为 R-118 / R-204 安排维护" })}</li></ul>
+            <div className="wb-src">{ucl("UC-01", tr({ en: "Source: unified asset data · Data Querying Agent", ar: "المصدر: بيانات أصول موحّدة · وكيل الاستعلام", zh: "来源:统一资产数据 · 数据查询智能体" }))}</div>
+          </div></div>}
+          {(qa.length > 0 || thinking) && <div className="wb-qa" ref={qaRef}>
+            {qa.map((m, i) => (<div className={"wb-qm " + m.role} key={i}><div className="bb"><Money v={m.text} /></div></div>))}
+            {thinking && <div className="wb-qm a"><div className="bb think"><span className="wb-typing"><i /><i /><i /></span></div></div>}
+          </div>}
+          <div className={"wb-sqh" + (qa.length > 0 ? " tog" : "")} onClick={() => { if (qa.length > 0) setShowSugs(v => !v); }}>{tr({ en: "SUGGESTED QUESTIONS", ar: "أسئلة مقترحة", zh: "建议问题" })}{qa.length > 0 && <span className="sqtg">{showSugs ? "▾" : "▸"}</span>}</div>
+          {(qa.length === 0 || showSugs) && WB_AS.qs.map((q, i) => (<div className="wb-sq" key={i} onClick={() => askQ(i)}>{tr(q)} <span className="ar">→</span></div>))}
+          <div className="wb-askh">{tr({ en: "Ask the Assets agent…", ar: "اسأل وكيل الأصول…", zh: "向资产智能体提问…" })}</div>
+          <div className="wb-ask"><input value={ask} onChange={e => setAsk(e.target.value)} placeholder={tr({ en: "Type your question…", ar: "اكتب سؤالك…", zh: "输入你的问题…" })} onKeyDown={e => e.key === "Enter" && askQ(-1, ask)} /><button className="btn sm" onClick={() => askQ(-1, ask)}>{tr({ en: "Send", ar: "إرسال", zh: "发送" })}</button></div>
+        </div>
+    </div>}
+    </div>
+  </div>);
+}
+
+/* ======= Assets Department — workspace (department landing) ======= */
+function AssetsWorkspace() {
+  const { tr, setRoute, pushLog, lang } = useStore();
+  const DEFAULT_PROMPT = { en: "Review completed assets-under-construction for capitalization, flag impairment and maintenance risks, and draft an asset note for executive review.", ar: "راجع الأصول تحت الإنشاء المكتملة للرسملة، وحدّد مخاطر الانخفاض والصيانة، وصُغ مذكرة أصول للمراجعة التنفيذية.", zh: "复核已完工在建资产以进行资本化,标记减值与维护风险,并起草供高管复核的资产说明。" };
+  const [phase, setPhase] = useState("idle");
+  const [prompt, setPrompt] = useState(tr(DEFAULT_PROMPT));
+  const [sent, setSent] = useState(null);
+  const [tl, setTl] = useState(["queued", "queued", "queued", "queued"]);
+  const [thk, setThk] = useState(["queued", "queued", "queued", "queued"]);
+  const [stage, setStage] = useState("idle");
+  const [showDiff, setShowDiff] = useState(false);
+  const timersRef = useRef([]);
+  const bodyRef = useRef(null);
+  const clearTimers = () => { timersRef.current.forEach(clearTimeout); timersRef.current = []; };
+  useEffect(() => { if (phase === "idle") setPrompt(tr(DEFAULT_PROMPT)); }, [lang]);
+  useEffect(() => () => clearTimers(), []);
+  useEffect(() => { const el = bodyRef.current; if (el) el.scrollTop = el.scrollHeight; }, [tl, thk, phase, sent, showDiff]);
+  const THINK_STEPS = [
+    { en: "Interpreting intent", ar: "تفسير القصد", zh: "解析意图" },
+    { en: "Checking permission scope", ar: "التحقق من نطاق الصلاحيات", zh: "检查权限范围" },
+    { en: "Selecting agents", ar: "اختيار الوكلاء", zh: "选择智能体" },
+    { en: "Planning subtasks", ar: "تخطيط المهام الفرعية", zh: "规划子任务" },
+  ];
+  const AS_PROMPTS = [
+    { t: { en: "Capitalize completed AUC", ar: "رسملة الأصول المكتملة", zh: "资本化已完工在建资产" }, s: { en: "this period · all classes", ar: "هذه الفترة · كل الفئات", zh: "本期 · 全部类别" } },
+    { t: { en: "Detect impairment risk", ar: "كشف مخاطر الانخفاض", zh: "检测减值风险" }, s: { en: "equipment & infrastructure", ar: "معدات وبنية تحتية", zh: "设备与基础设施" } },
+    { t: { en: "Plan maintenance schedule", ar: "تخطيط جدول الصيانة", zh: "规划维护计划" }, s: { en: "next 60 days", ar: "الـ 60 يوماً القادمة", zh: "未来 60 天" } },
+  ];
+  const PH = {
+    idle: { t: { en: "ready", ar: "جاهز", zh: "就绪" }, c: "var(--muted)" },
+    running: { t: { en: "running", ar: "يعمل", zh: "运行中" }, c: "var(--info)" },
+    review: { t: { en: "awaiting review", ar: "بانتظار المراجعة", zh: "待审批" }, c: "var(--amber)" },
+    approved: { t: { en: "completed", ar: "اكتمل", zh: "已完成" }, c: "var(--green-dark)" },
+    returned: { t: { en: "returned", ar: "أُعيد", zh: "已退回" }, c: "var(--danger)" },
+  };
+  const runOrch = () => {
+    if (phase === "running" || !prompt.trim()) return;
+    clearTimers(); setShowDiff(false); setSent(prompt.trim()); setPhase("running"); setStage("think");
+    setThk(["think", "queued", "queued", "queued"]);
+    setTl(["queued", "queued", "queued", "queued"]);
+    pushLog({ en: "Orchestrator started — reviewing AUC capitalization & impairment (FY26 Q1, all classes)", ar: "بدأ المنسّق — مراجعة الرسملة والانخفاض (الربع الأول 2026)", zh: "编排器已启动——复核在建资产资本化与减值(FY26 Q1,全部类别)" });
+    [[450, ["done", "think", "queued", "queued"]], [900, ["done", "done", "think", "queued"]], [1350, ["done", "done", "done", "think"]], [1750, ["done", "done", "done", "done"]]]
+      .forEach(p => timersRef.current.push(setTimeout(() => setThk(p[1]), p[0])));
+    timersRef.current.push(setTimeout(() => { setStage("timeline"); setTl(["think", "queued", "queued", "queued"]); }, 1800));
+    [[2500, ["done", "think", "queued", "queued"]], [3300, ["done", "done", "think", "queued"]], [4200, ["done", "done", "done", "think"]]]
+      .forEach(p => timersRef.current.push(setTimeout(() => setTl(p[1]), p[0])));
+    timersRef.current.push(setTimeout(() => { setPhase("review"); pushLog({ en: "Draft ready — 12 capitalization entries await human approval", ar: "المسودة جاهزة — 12 قيد رسملة بانتظار الاعتماد", zh: "草稿就绪——12 项资本化分录等待人工审批" }); }, 4900));
+  };
+  const approve = () => {
+    if (phase === "approved") return; clearTimers(); setPhase("approved"); setStage("result"); setTl(["done", "done", "done", "done"]);
+    pushLog({ en: "Finance Lead approved 12 capitalization entries; asset note generated", ar: "اعتمد قائد المالية 12 قيداً؛ وأُنشئت مذكرة الأصول", zh: "财务负责人批准 12 项资本化分录;已生成资产说明" });
+  };
+  const returnFix = () => {
+    clearTimers(); setShowDiff(false); setPhase("returned"); setStage("result"); setTl(["done", "done", "done", "queued"]);
+    pushLog({ en: "12 entries returned to the Assets agent for rework", ar: "أُعيدت 12 قيداً لوكيل الأصول لإعادة المعالجة", zh: "12 项分录已退回资产智能体重新处理" });
+  };
+  const tlMeta = [
+    { code: "UC-01", t: { en: "pull unified asset dataset", ar: "سحب بيانات الأصول الموحّدة", zh: "拉取统一资产数据集" }, s: { en: "8,640 records reconciled · 0.9s", ar: "8,640 سجلاً · 0.9 ث", zh: "对账 8,640 条 · 0.9s" } },
+    { code: "UC-14", t: { en: "detect capitalization candidates", ar: "كشف مرشحي الرسملة", zh: "检测资本化候选" }, s: { en: "SAR 1.92B AUC ready · 312 items", ar: "1.92 مليار جاهزة · 312 بنداً", zh: "SAR 1.92B 就绪 · 312 项" } },
+    { code: "UC-14", t: { en: "score impairment & maintenance", ar: "تقييم الانخفاض والصيانة", zh: "评估减值与维护" }, s: { en: "3 impairment · 5 maintenance flagged", ar: "3 انخفاض · 5 صيانة", zh: "标记 3 减值 · 5 维护" } },
+    { code: "UC-06", t: { en: "draft asset note", ar: "صياغة مذكرة الأصول", zh: "起草资产说明" }, s: { en: "waits for human approval", ar: "بانتظار الاعتماد البشري", zh: "等待人工审批" } },
+  ];
+  return (<div className="fade"><div className="card pad ws-frame">
+    <div className="ws-head">
+      <div className="ws-ava" style={{ background: "#5b3a9e" }}>AS</div>
+      <div className="ws-htext"><h1 style={{ fontSize: 22 }}>{tr({ en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" })}</h1>
+        <div className="sub muted">{tr({ en: "Multi-Agent Workspace — classification, capitalization, returns & maintenance", ar: "مساحة عمل متعددة الوكلاء — التصنيف والرسملة والعوائد والصيانة", zh: "多智能体工作区 — 分类、资本化、回报与维护" })}{SHOW_UC ? " · UC-14 focused" : ""}</div></div>
+      <div className="ws-story-r">
+        <div className="ws-story-h">{tr({ en: "G-06 storyline · downstream evolution", ar: "مسار ج-06 · التطور اللاحق", zh: "G-06 故事线 · 下游演进" })}</div>
+        <div className="flowstrip mini">{RC_FLOW.map((f, i) => (<React.Fragment key={i}>{i > 0 && <span className="farr">➜</span>}
+          <div className={"fb " + f.cls}>{f.star ? "★ " : ""}{SHOW_UC ? f.code : tr(f.label)}</div></React.Fragment>))}</div>
+      </div>
+    </div>
+    {/* top KPI metrics — asset lifecycle */}
+    <div className="ws-kpirow km4">
+      <div className="ws-kpi2 km"><div className="lab">{tr({ en: "Capitalized AUC", ar: "المرسمل من تحت الإنشاء", zh: "已资本化在建资产" })}</div><div className="v"><Money v="SAR 1.92B" /> <span className="d up">{tr({ en: "62% of SAR 3.10B", ar: "62% من 3.10 مليار", zh: "占 SAR 3.10B 的 62%" })}</span></div></div>
+      <div className="ws-kpi2 km"><div className="lab">{tr({ en: "Impairment Flagged", ar: "مرصود للانخفاض", zh: "减值标记" })}</div><div className="v">3 <span className="d">{tr({ en: "items · SAR 47M NBV", ar: "بنود · 47 مليون", zh: "项 · 账面净值 SAR 47M" })}</span></div></div>
+      <div className="ws-kpi2 km kmrisk"><div className="lab">{tr({ en: "Maintenance Due (≤30/≤60/>60d)", ar: "صيانة مستحقة (≤30/≤60/>60ي)", zh: "待维护 (≤30/≤60/>60天)" })}</div>
+        <div className="km-aging">{[["≤30d", 40, "2"], ["≤60d", 60, "3"], [">60d", 100, "5"]].map((b, i) => (<div className="ab" key={i}><div className="abar"><i style={{ width: b[1] + "%" }} /></div><div className="at">{b[0]}</div><div className="av">{b[2]}</div></div>))}</div></div>
+      <div className="ws-kpi2 km"><div className="lab">{tr({ en: "Data Quality Score", ar: "درجة جودة البيانات", zh: "数据质量分" })}</div><div className="v">96% <span className="d up">+1.4% QoQ</span></div></div>
+    </div>
+    <div className="ws-grid2">
+      {/* LEFT (50%) — Business Plaza */}
+      <div className="ws-left">
+        <BusinessPlaza defaultSel="uc14" />
+      </div>
+      {/* RIGHT (50%) — Smart query (top) + Analysis Workbench entry (below) */}
+      <div className="ws-right">
+      <div className="orch-cell"><div className="orch orch-chat">
+        <div className="orch-h">{tr({ en: "Smart query", ar: "استعلام ذكي", zh: "智能查询" })} {phase === "running" && <span className="pulse" style={{ marginInlineStart: 2 }} />} <span style={{ fontSize: 12, color: PH[phase].c, fontWeight: 600, marginInlineStart: 4 }}>{tr(PH[phase].t)}</span></div>
+        <div className="orch-sub">{SHOW_UC ? "UC-14 · " : ""}run #3107 · {tr({ en: "Assets agent", ar: "وكيل الأصول", zh: "资产智能体" })}</div>
+        <div className="ctx-chips" style={{ marginBottom: 4 }}><span className="chip gray">scope: FY26 Q1</span><span className="chip gray">dept: Assets only</span><span className="chip gray">policy: IPSAS · useful-life</span></div>
+        <div className="orch-body" ref={bodyRef}>
+          {!sent && <div className="orch-empty">
+            <div>{tr({ en: "Type a request below — the orchestrator runs the agent timeline, then returns a human-in-the-loop review.", ar: "اكتب طلباً بالأسفل — يشغّل المنسّق الخط الزمني للوكلاء ثم يعيد مراجعة بشرية.", zh: "在下方输入请求——编排器会运行智能体时间线,随后返回人工审批。" })}</div>
+            <div className="orch-sugs">{AS_PROMPTS.map((p, i) => (<button className="orch-sug" key={i} onClick={() => setPrompt(tr(p.t) + " · " + tr(p.s))}>↗ {tr(p.t)}</button>))}</div>
+          </div>}
+          {sent && <div className="chat-msg user"><div className="bubble">{sent}</div></div>}
+          {stage === "think" && <div className="msg bot think-msg">
+            <div className="av">✦</div>
+            <div className="bubble"><div className="think">{THINK_STEPS.map((s, i) => { const st = thk[i]; const stt = st === "done" ? "ok" : st === "think" ? "act" : "";
+              return (<div className={"tl " + stt} key={i}><span className="ti">{st === "done" ? "✓" : st === "think" ? "◐" : "○"}</span><span>{tr(s)}</span></div>); })}</div></div>
+          </div>}
+          {stage === "timeline" && <div className="chat-msg bot">
+            <div className="ws-sec-h">{tr({ en: "Agent timeline", ar: "خط زمن الوكلاء", zh: "智能体时间线" })}</div>
+            <div className="tl">{tlMeta.map((e, i) => { const st = tl[i]; const cur = st === "think";
+              return (<div className={"ev" + (cur ? " cur" : "")} key={i}>
+                <span className={"dotc " + (st === "done" ? "done" : st === "think" ? "think" : "")}>{st === "done" ? "✓" : st === "think" ? "◐" : ""}</span>
+                <div className="et">{ucl(e.code, tr(e.t))} {st === "queued" ? <span className="chip gray">{tr({ en: "queued", ar: "في الانتظار", zh: "排队" })}</span> : st === "think" ? <span className="chip info">{tr({ en: "thinking…", ar: "يفكّر…", zh: "思考中…" })}</span> : <span className="chip">{tr({ en: "done", ar: "تم", zh: "完成" })}</span>}</div>
+                <div className="es">{tr(e.s)}</div>
+              </div>); })}</div>
+          </div>}
+          {(phase === "review" || phase === "approved" || phase === "returned") && <div className="chat-msg bot">
+            {(phase === "review" || phase === "approved") && <div className="hitl">
+              <div className="hh">⚑ {tr({ en: "HUMAN-IN-THE-LOOP REVIEW", ar: "مراجعة بشرية إلزامية", zh: "人工审批" })}</div>
+              <div className="hb">{tr({ en: "12 capitalization entries require finance approval before the asset note is generated.", ar: "تتطلب 12 قيد رسملة اعتماد المالية قبل إنشاء مذكرة الأصول.", zh: "12 项资本化分录需财务批准后方可生成资产说明。" })}</div>
+              {phase === "approved"
+                ? <span className="chip">✓ {tr({ en: "Approved · asset note generated", ar: "معتمد · أُنشئت المذكرة", zh: "已批准 · 已生成资产说明" })}</span>
+                : <React.Fragment><div className="hitl-btns"><button className="btn" onClick={approve}>✓ {tr({ en: "Approve entries", ar: "اعتماد القيود", zh: "批准分录" })}</button><button className="btn danger sm" onClick={returnFix}>↺ {tr({ en: "Return for fix", ar: "إعادة للتصحيح", zh: "退回修正" })}</button><button className="btn ghost sm" onClick={() => setShowDiff(v => !v)}>⌥ {tr({ en: "View diff", ar: "عرض الفرق", zh: "查看差异" })}</button></div>
+                  {showDiff && <div className="diffbox">
+                    <div className="dl rem">− AUC-2207 — SAR 0 {tr({ en: "(not capitalized)", ar: "(غير مرسمل)", zh: "(未资本化)" })}</div>
+                    <div className="dl add">+ AUC-2207 — SAR 1.92B {tr({ en: "(capitalized)", ar: "(مرسمل)", zh: "(已资本化)" })}</div>
+                    <div className="dl rem">− {tr({ en: "impairment flag · none", ar: "علم الانخفاض · لا شيء", zh: "减值标记 · 无" })}</div>
+                    <div className="dl add">+ {tr({ en: "impairment flag · 3 equipment items (SAR 47M)", ar: "علم الانخفاض · 3 معدات (47 مليون)", zh: "减值标记 · 3 项设备(SAR 47M)" })}</div>
+                  </div>}</React.Fragment>}
+            </div>}
+            {phase === "returned" && <div className="hitl ret">
+              <div className="hh">↺ {tr({ en: "RETURNED FOR FIX", ar: "أُعيد للتصحيح", zh: "已退回修正" })}</div>
+              <div className="hb">{tr({ en: "Entries sent back to the Assets agent. Edit the prompt and run again.", ar: "أُعيدت القيود لوكيل الأصول. عدّل الطلب وأعد التشغيل.", zh: "分录已退回资产智能体。请修改提示后重新运行。" })}</div>
+            </div>}
+          </div>}
+        </div>
+        <div className="orch-bar">
+          <textarea className="orch-cin" rows={1} value={prompt} disabled={phase === "running"} onChange={e => setPrompt(e.target.value)} placeholder={tr(DEFAULT_PROMPT)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runOrch(); } }} />
+          <button className="orch-send" disabled={phase === "running" || !prompt.trim()} onClick={runOrch}>{phase === "running" ? "…" : "SEND"}</button>
+        </div>
+      </div></div>
+      <div className="ws-flowcard" onClick={() => setRoute("asbench")} title={tr({ en: "Open Analysis Workbench", ar: "فتح منصة التحليل", zh: "打开分析工作台" })}>
+        <div className="ws-flowcard-h"><span>{tr({ en: "Analysis Workbench", ar: "منصة التحليل", zh: "分析工作台" })}</span><span className="ws-flowcard-hr"><span className="at-tip at-tip-r" onClick={(e) => e.stopPropagation()} aria-label={ucl("UC-14", tr({ en: "Assets, Classification & Capitalization — Analysis Workbench", ar: "الأصول والتصنيف والرسملة — منصة التحليل", zh: "资产、分类与资本化 — 分析工作台" }))} tabIndex={0}>i<span className="at-tip-pop">{ucl("UC-14", tr({ en: "Assets, Classification & Capitalization — Analysis Workbench", ar: "الأصول والتصنيف والرسملة — منصة التحليل", zh: "资产、分类与资本化 — 分析工作台" }))}</span></span><span className="open">↗</span></span></div>
+        <svg className="ws-flowthumb" viewBox="0 0 300 44" fill="none" preserveAspectRatio="xMidYMid meet">
+          <rect x="4" y="5" width="20" height="7" rx="2" fill="#f1ecfa" /><rect x="4" y="14" width="20" height="7" rx="2" fill="#f1ecfa" /><rect x="4" y="23" width="20" height="7" rx="2" fill="#f1ecfa" /><rect x="4" y="32" width="20" height="7" rx="2" fill="#f1ecfa" />
+          <rect x="40" y="12" width="28" height="20" rx="4" fill="#fff" stroke="#5b3a9e" strokeWidth="1.4" />
+          <rect x="86" y="5" width="40" height="9" rx="2.5" fill="#5b3a9e" /><rect x="86" y="18" width="40" height="9" rx="2.5" fill="#f3eefb" stroke="#e4d7fb" strokeWidth="0.8" /><rect x="86" y="31" width="40" height="9" rx="2.5" fill="#f3eefb" stroke="#e4d7fb" strokeWidth="0.8" />
+          <rect x="138" y="16" width="20" height="12" rx="3.5" fill="#f3eefb" stroke="#e4d7fb" strokeWidth="0.8" />
+          <rect x="172" y="9" width="50" height="26" rx="5" fill="#5b3a9e" /><circle cx="197" cy="22" r="4" fill="#fff" />
+          <rect x="236" y="11" width="40" height="9" rx="2.5" fill="#e9f7ef" stroke="#bfe6cf" strokeWidth="0.8" /><rect x="236" y="24" width="40" height="9" rx="2.5" fill="#fdf4d9" stroke="#f0dca6" strokeWidth="0.8" />
+          <g stroke="#c2cbd6" strokeWidth="1"><path d="M24 22 H40" /><path d="M68 22 H86" /><path d="M126 22 H138" /><path d="M158 22 H172" /><path d="M222 22 H236" /></g>
+        </svg>
+      </div>
+      </div>
+    </div>
+  </div></div>);
+}
+
+/* ======= UC-12 · Costs, Assignment Orders & Funds — mode-driven console ======= */
+const CF_LOGS = [
+  { tm: "10:02", code: "UC-01", h: { en: "Data Querying", ar: "استعلام البيانات", zh: "数据查询" }, d: { en: "Matched 1,840 payment orders ↔ Etimad records · 0.9s", ar: "طابق 1,840 أمر دفع ↔ سجلات اعتماد · 0.9 ث", zh: "匹配 1,840 付款单 ↔ Etimad 记录 · 0.9s" }, dot: "blue" },
+  { tm: "10:03", h: { en: "Data Querying", ar: "استعلام البيانات", zh: "数据查询" }, d: { en: "Reconciled 4 cash requests with payment orders & invoices", ar: "سوّى 4 طلبات نقدية مع أوامر الدفع والفواتير", zh: "对账 4 现金申请 ↔ 付款单 ↔ 发票" }, dot: "blue" },
+  { tm: "10:04", h: { en: "Financial Reports Gen.", ar: "توليد التقارير", zh: "财务报告生成" }, d: { en: "Allocated SAR 2.14B project cost across 1,780 units", ar: "وزّع 2.14 مليار على 1,780 وحدة", zh: "将 SAR 2.14B 项目成本分摊至 1,780 单元" }, dot: "blue" },
+  { tm: "10:05", h: { en: "Anomaly Detection", ar: "كشف الشذوذ", zh: "异常检测" }, d: { en: "Flagged INV-3410 (no completion certificate) · blocks approval", ar: "رصد INV-3410 (لا شهادة إنجاز) · يمنع الاعتماد", zh: "标记 INV-3410(缺完工证明)· 阻断审批" }, dot: "amber" },
+  { tm: "10:06", code: "UC-12", h: { en: "Anomaly Detection", ar: "كشف الشذوذ", zh: "异常检测" }, d: { en: "Idle surplus SAR 85M traced to AO-2207 (Real-Estate Dev.)", ar: "فائض خامل 85 مليون يُعزى إلى AO-2207", zh: "闲置结余 SAR 85M 追溯至 AO-2207(房地产基金)" }, dot: "violet" },
+  { tm: "10:06", h: { en: "Orchestrator", ar: "المنسّق", zh: "编排器" }, d: { en: "Awaiting user follow-up question", ar: "بانتظار سؤال متابعة", zh: "等待用户追问" }, dot: "gray" },
+];
+const CF_REC = [
+  { en: "Release SAR 85M idle surplus (AO-2207)", ar: "الإفراج عن فائض خامل 85 مليون (AO-2207)", zh: "释放 SAR 85M 闲置结余(AO-2207)" },
+  { en: "Request completion certificate for INV-3410", ar: "طلب شهادة إنجاز لـ INV-3410", zh: "为 INV-3410 申请完工证明" },
+  { en: "Resolve CR-5533 amount mismatch", ar: "حل عدم تطابق مبلغ CR-5533", zh: "解决 CR-5533 金额不一致" },
+];
+function CostFundsConsole() {
+  const { tr, setRoute, pushLog } = useStore();
+  const [mode, setMode] = useState("ao");
+  const [qaOpen, setQaOpen] = useState(false);
+  const [feed, setFeed] = useState(CF_LOGS);
+  const logRef = useRef(null);
+  useEffect(() => {
+    let n = 0;
+    const id = setInterval(() => { n++; const base = CF_LOGS[n % CF_LOGS.length]; const tm = "10:" + String((6 + n) % 60).padStart(2, "0"); setFeed(f => [...f.slice(-7), { ...base, tm }]); }, 2300);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => { const el = logRef.current; if (el) el.scrollTop = el.scrollHeight; }, [feed]);
+  const UP = { en: "UPSTREAM", ar: "منبع", zh: "上游" }, PARA = { en: "PARALLEL", ar: "متوازٍ", zh: "并行" }, DOWN = { en: "DOWNSTREAM", ar: "المصب", zh: "下游" }, THISP = { en: "THIS", ar: "هذه", zh: "本环节" };
+  const CF_CHAIN = [
+    { code: "UC-01", pos: UP, name: { en: "Data Consolidation & Quality", ar: "توحيد البيانات وجودتها", zh: "数据整合与质量" } },
+    { code: "UC-13", pos: UP, name: { en: "Revenue, Collections & Exclusions", ar: "الإيرادات والتحصيل والاستبعادات", zh: "收入、征收与排除项" } },
+    { code: "UC-06 / UC-02", pos: UP, name: { en: "Performance / Anomaly", ar: "الأداء / الانحرافات", zh: "绩效 / 异常" } },
+    { code: "UC-14", pos: UP, name: { en: "Assets & Capitalization", ar: "الأصول والرسملة", zh: "资产与资本化" } },
+    { code: "UC-12", here: true, pos: THISP, name: { en: "Costs, Assignment Orders & Funds", ar: "التكاليف وأوامر الإسناد والصناديق", zh: "成本、派工单与资金" } },
+    { code: "UC-11", pos: PARA, name: { en: "Compliance & Memos", ar: "الامتثال والمذكرات", zh: "合规与备忘" } },
+    { code: "UC-10 / UC-03", pos: DOWN, name: { en: "Reporting / Smart Query", ar: "التقارير / الاستعلام", zh: "报告 / 智能查询" } },
+  ];
+  const CF_SOURCES = [
+    { n: "Esnad", s: "loading" }, { n: "Etimad", s: "synced" }, { n: "SAP", s: "synced" }, { n: "Invoices", s: "synced" }, { n: "Completion Certificates", s: "synced" },
+    { n: "Liquidity Requests", s: "synced" }, { n: "Payment Orders", s: "synced" }, { n: "Bank Statements", s: "synced" }, { n: "Dev. Fund Agreements", s: "synced" },
+  ];
+  const CF_ROLES = [
+    { n: { en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" }, s: { en: "Matches cash requests ↔ payment orders ↔ invoices across Esnad, Etimad, SAP", ar: "يطابق الطلبات النقدية ↔ أوامر الدفع ↔ الفواتير", zh: "跨 Esnad/Etimad/SAP 匹配 现金申请↔付款单↔发票" }, st: "running" },
+    { n: { en: "Financial Reports Generation Agent", ar: "وكيل توليد التقارير المالية", zh: "财务报告生成智能体" }, s: { en: "Calculates unit/land cost & consideration; builds fund reports with aging", ar: "يحسب تكلفة الوحدة والمقابل؛ ويبني تقارير الصناديق", zh: "计算单元/地块成本与对价;生成基金 Aging 报告" }, st: "active" },
+    { n: { en: "Anomaly Detection Agent", ar: "وكيل كشف الشذوذ", zh: "异常检测智能体" }, s: { en: "Flags SAP↔document discrepancies, missing certs & dormant surplus", ar: "يرصد فروق ساب↔المستندات والشهادات المفقودة والفائض الخامل", zh: "标记 SAP↔单据差异、缺证与闲置结余" }, st: "active" },
+  ];
+  const MODES = [
+    { k: "ao", t: { en: "Assignment Orders", ar: "أوامر الإسناد", zh: "派工单" } },
+    { k: "unit", t: { en: "Unit Cost", ar: "تكلفة الوحدة", zh: "单元成本" } },
+    { k: "ind", t: { en: "Industrial Fund", ar: "الصندوق الصناعي", zh: "工业基金" } },
+    { k: "ref", t: { en: "Real Estate Fund", ar: "صندوق العقار", zh: "房地产基金" } },
+  ];
+  const rbadge = (st) => st === "running" ? <span className="wb-badge run">{tr({ en: "running", ar: "يعمل", zh: "运行中" })}</span> : <span className="wb-badge act">{tr({ en: "active", ar: "نشط", zh: "活动" })}</span>;
+  const cst = (k) => ({ ok: { en: "matched", ar: "مطابق", zh: "已匹配" }, ver: { en: "verified", ar: "مُتحقق", zh: "已核验" }, blk: { en: "blocked · no cert", ar: "محظور · لا شهادة", zh: "阻断 · 缺证" }, nc: { en: "non-compliant · Δ amount", ar: "غير مطابق · فرق مبلغ", zh: "不合规 · 金额差" } }[k]);
+  return (<div className="fade wb">
+    <div className="card pad wb-frame">
+    {/* HEADER */}
+    <div className="card pad wb-head">
+      <div><div className="wb-title"><span className="wb-dot violet" /> {tr({ en: "Cost Management Department", ar: "إدارة التكاليف", zh: "成本管理部" })} · {tr({ en: "Costs & Funds Console", ar: "وحدة التكاليف والصناديق", zh: "成本与资金控制台" })}</div>
+        <div className="wb-subt">{ucl("UC-12", tr({ en: "Costs, Assignment Orders & Funds", ar: "التكاليف وأوامر الإسناد والصناديق", zh: "成本、派工单与资金" }))}</div></div>
+      <div className="wb-chain"><span className="wb-clab">{tr({ en: "G-06 CHAIN", ar: "سلسلة ج-06", zh: "G-06 链路" })}</span>{CF_CHAIN.map((c, i) => (<React.Fragment key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (c.here ? " here" : "")}>{c.pos && <span className="wb-cpos">{tr(c.pos)}</span>}{SHOW_UC ? c.code + " · " : ""}{tr(c.name)}</span></React.Fragment>))}</div>
+    </div>
+    {/* INSIGHT & NEXT ACTIONS */}
+    <div className="wb-actbar">
+      <div className="wb-ab-top">
+        <div className="wb-ab-spark">✦</div>
+        <div className="wb-ab-tt">
+          <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء الاصطناعي والإجراءات", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">{SHOW_UC ? "UC-12 · " : ""}run #3402 · {tr({ en: "Costs & Funds agent", ar: "وكيل التكاليف والصناديق", zh: "成本与资金智能体" })}</span></div>
+          <div className="wb-ab-insight">{tr({ en: "SAR 85M idle surplus traced to AO-2207 (Real-Estate Dev. Fund); SAP↔Etimad matching at 98%; 9 assignment orders aged > 90 days lack completion certificates.", ar: "فائض خامل 85 مليون يُعزى إلى AO-2207؛ مطابقة ساب↔اعتماد 98%؛ 9 أوامر إسناد تجاوزت 90 يوماً دون شهادات إنجاز.", zh: "SAR 85M 闲置结余追溯至 AO-2207(房地产开发基金);SAP↔Etimad 对账率 98%;9 个派工单逾期 >90 天缺完工证明。" })}</div>
+        </div>
+      </div>
+      <div className="wb-ab-rows">
+        <div className="wb-ab-col">
+          <div className="wb-ab-h">⚐ {tr({ en: "RECOMMENDED · prompts", ar: "موصى به · مقترحات", zh: "建议 · 提示(点击应用)" })}</div>
+          <div className="wb-sugs">{CF_REC.map((n, i) => (<button className="wb-sug" key={i} onClick={() => { pushLog({ en: "Applied recommendation — " + tr(n), ar: "تطبيق توصية — " + tr(n), zh: "已应用建议 — " + tr(n) }); setQaOpen(true); }}><span className="pr">{i + 1}</span> {tr(n)}</button>))}</div>
+        </div>
+        <div className="wb-ab-col r">
+          <div className="wb-ab-h">➜ {tr({ en: "HAND OFF DOWNSTREAM · actions", ar: "تسليم لاحق · إجراءات", zh: "下游交接 · 动作" })}</div>
+          <div className="wb-ctas">
+            <button className="wb-cta p" onClick={() => setRoute("reports")}>{SHOW_UC && <span className="uc">UC-10</span>}{tr({ en: "Open Fund & Cost Report", ar: "فتح تقرير التكاليف والصناديق", zh: "打开成本与资金报告" })}<span className="ar">→</span></button>
+            <button className="wb-cta s" onClick={() => setRoute("monitor")}>{SHOW_UC && <span className="uc">UC-11</span>}{tr({ en: "Raise Compliance / Accounting Memo", ar: "إصدار مذكرة امتثال / محاسبية", zh: "发起合规 / 会计备忘" })}<span className="ar">→</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {/* RANGE SELECTION + Type of analysis */}
+    <div className="cs-range">
+      <span className="cs-talab">{tr({ en: "SCOPE", ar: "النطاق", zh: "作用域" })}</span>
+      <div className="wb-field" title="Assignment / Initiative / Fund / Project"><div className="fl">{tr({ en: "Object type", ar: "نوع الكائن", zh: "对象类型" })}</div><div className="fv">{tr({ en: "Assignment", ar: "أمر إسناد", zh: "派工单" })} ▾</div></div>
+      <div className="wb-field"><div className="fl">{tr({ en: "Value", ar: "القيمة", zh: "取值" })}</div><div className="fv">🔍 AO-2207 ▾</div></div>
+      <span className="cs-rdiv" />
+      <span className="cs-talab">{tr({ en: "TYPE OF ANALYSIS", ar: "نوع التحليل", zh: "分析类型" })}</span>
+      <div className="cs-seg">{MODES.map(m => <button key={m.k} className={mode === m.k ? "on" : ""} onClick={() => setMode(m.k)}>{tr(m.t)}</button>)}</div>
+      <span className="cs-rdiv" />
+      <div className="wb-field"><div className="fl">{tr({ en: "Period", ar: "الفترة", zh: "期间" })}</div><div className="fv">FY 2026 · Q1 ▾</div></div>
+    </div>
+    <div className="cs-hint">{tr({ en: "Scope object = Assignment · Initiative · Fund · Project (what to analyze); Type of analysis = which view to render.", ar: "كائن النطاق = أمر إسناد · مبادرة · صندوق · مشروع؛ نوع التحليل = العرض المطلوب.", zh: "作用域对象 = 派工单 · 倡议 · 基金 · 项目(选对象);分析类型 = 渲染哪种视图。" })}</div>
+
+    {/* ===== MODE: ASSIGNMENT ORDERS ===== */}
+    {mode === "ao" && <React.Fragment>
+      <div className="cs-banner"><span className="ic">!</span><div><b>{tr({ en: "Financial approval blocked.", ar: "تم منع الاعتماد المالي.", zh: "财务审批已阻断。" })}</b> {tr({ en: "1 invoice without completion certificate — INV-3410 (SAR 17M).", ar: "فاتورة بلا شهادة إنجاز — INV-3410 (17 مليون).", zh: "1 张发票缺完工证明 — INV-3410(SAR 17M)。" })}</div></div>
+      <div className="wb-sech"><h2>{tr({ en: "Matching & Calculation", ar: "المطابقة والاحتساب", zh: "匹配与核算" })}</h2><div className="muted">{tr({ en: "assignment-order value · 3-way match · consideration", ar: "قيمة أمر الإسناد · مطابقة ثلاثية · المقابل", zh: "派工单价值 · 三方匹配 · 对价" })}</div></div>
+      <div className="cs-ao">
+        <div className="cs-aoh"><span className="cs-aoid">AO-2207</span><span className="cs-tag">{tr({ en: "Real-Estate Dev. Fund", ar: "صندوق العقار", zh: "房地产开发基金" })}</span><span className="cs-tag">Agreement REDF-2024-07</span><span className="cs-warn">{tr({ en: "120 days · no disbursement", ar: "120 يوماً · بلا صرف", zh: "120 天 · 无支付" })}</span></div>
+        <div className="cs-aob">
+          <div className="cs-mi"><div className="l">{tr({ en: "Original value", ar: "القيمة الأصلية", zh: "原值" })}</div><div className="v"><Money v="SAR 320M" /></div></div>
+          <div className="cs-mi"><div className="l">{tr({ en: "Modified value", ar: "القيمة المعدّلة", zh: "修改值" })}</div><div className="v"><Money v="SAR 320M" /></div></div>
+          <div className="cs-mi"><div className="l">{tr({ en: "Spent", ar: "المصروف", zh: "已花" })}</div><div className="v"><Money v="SAR 235M" /> <span style={{ fontSize: 11, color: "var(--muted)" }}>(73%)</span></div></div>
+          <div className="cs-mi"><div className="l">{tr({ en: "Idle surplus", ar: "فائض خامل", zh: "闲置结余" })}</div><div className="v hot"><Money v="SAR 85M" /></div></div>
+        </div>
+      </div>
+      <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "3-way Match · Cash Request ↔ Payment Order ↔ Invoice", ar: "مطابقة ثلاثية · طلب نقدي ↔ أمر دفع ↔ فاتورة", zh: "三方匹配 · 现金申请 ↔ 付款单 ↔ 发票" })}</b><span className="wb-pm">{tr({ en: "cert verified per invoice", ar: "شهادة لكل فاتورة", zh: "每张发票需完工证明" })}</span></div>
+        <div className="wb-pb"><table className="wb-table"><thead><tr><th>{tr({ en: "CASH REQ.", ar: "طلب نقدي", zh: "现金申请" })}</th><th></th><th>{tr({ en: "PAYMENT ORDER", ar: "أمر الدفع", zh: "付款单" })}</th><th></th><th>{tr({ en: "INVOICE", ar: "الفاتورة", zh: "发票" })}</th><th>{tr({ en: "CERT.", ar: "شهادة", zh: "证明" })}</th><th>{tr({ en: "AMOUNT", ar: "المبلغ", zh: "金额" })}</th><th>{tr({ en: "STATUS", ar: "الحالة", zh: "状态" })}</th></tr></thead>
+          <tbody>
+            <tr><td className="mono">CR-5521</td><td className="cs-arrl">↔</td><td className="mono">PO-8841</td><td className="cs-arrl">↔</td><td className="mono">INV-3401</td><td className="mono">CC-1190</td><td><Money v="SAR 60M" /></td><td><span className="cs-st ok">{tr(cst("ok"))}</span></td></tr>
+            <tr><td className="mono">CR-5522</td><td className="cs-arrl">↔</td><td className="mono">PO-8847</td><td className="cs-arrl">↔</td><td className="mono">INV-3402</td><td className="mono">CC-1191</td><td><Money v="SAR 32M" /></td><td><span className="cs-st ok">{tr(cst("ok"))}</span></td></tr>
+            <tr><td className="mono">CR-5530</td><td className="cs-arrl">↔</td><td className="mono" style={{ color: "#b7791f" }}>{tr({ en: "PO pending", ar: "أمر معلّق", zh: "付款单待定" })}</td><td className="cs-arrl">↔</td><td className="mono">INV-3410</td><td className="mono" style={{ color: "var(--danger)", fontWeight: 700 }}>✗</td><td><Money v="SAR 17M" /></td><td><span className="cs-st bad">{tr(cst("blk"))}</span></td></tr>
+            <tr><td className="mono">CR-5533</td><td className="cs-arrl">↔</td><td className="mono">PO-8860</td><td className="cs-arrl">↔</td><td className="mono">INV-3415</td><td className="mono">CC-1205</td><td><Money v="SAR 12M" /></td><td><span className="cs-st bad">{tr(cst("nc"))}</span></td></tr>
+          </tbody></table>
+          <div className="wb-tfoot"><span>{tr({ en: "Cash request matched to its payment order and invoice in one row; cert column blocks approval when missing.", ar: "كل طلب مطابق لأمر دفعه وفاتورته في صف واحد؛ عمود الشهادة يمنع الاعتماد عند غيابها.", zh: "每行同时对上付款单与发票;缺完工证明则在证明列阻断审批。" })}</span></div>
+        </div></div>
+      <div className="cs-calc"><div><div className="cl">{tr({ en: "Financial Consideration", ar: "المقابل المالي", zh: "财务对价" })}</div><div className="cs2">{tr({ en: "By order classification & agreement REDF-2024-07 · not a flat % (BR-01)", ar: "حسب التصنيف والاتفاقية · ليس نسبة ثابتة (BR-01)", zh: "按分类与协议 REDF-2024-07 计算 · 非固定百分比(BR-01)" })}</div></div><div className="cv"><Money v="SAR 312M" /></div></div>
+    </React.Fragment>}
+
+    {/* ===== MODE: UNIT COST ===== */}
+    {mode === "unit" && <React.Fragment>
+      <div className="wb-sech"><h2>{tr({ en: "Unit / Land Cost — distribution", ar: "تكلفة الوحدة / الأرض — التوزيع", zh: "单元 / 地块成本 — 分摊" })}</h2><div className="muted">{tr({ en: "project cost distributed by area / number of units", ar: "توزيع تكلفة المشروع حسب المساحة / عدد الوحدات", zh: "项目成本按面积 / 套数分摊" })}</div></div>
+      <div className="cs-check">{tr({ en: "Project cost", ar: "تكلفة المشروع", zh: "项目成本" })} <b><Money v="SAR 2.40B" /></b> <span className="eq">= Σ {tr({ en: "unit/land cost", ar: "تكلفة الوحدة/الأرض", zh: "单元/地块成本" })}</span> <b><Money v="SAR 2.14B" /></b> <span className="eq">+ {tr({ en: "unallocated", ar: "غير موزّع", zh: "未分摊" })}</span> <b><Money v="SAR 0.26B" /></b><span className="bdg">Δ SAR 0.26B · {tr({ en: "review (BR-03)", ar: "مراجعة (BR-03)", zh: "复核(BR-03)" })}</span></div>
+      <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Cost distribution", ar: "توزيع التكلفة", zh: "成本分摊" })}</b><span className="wb-pm">{tr({ en: "project: Housing Cluster R-12", ar: "مشروع: مجمّع R-12", zh: "项目:Housing Cluster R-12" })}</span></div>
+        <div className="wb-pb"><table className="wb-table"><thead><tr><th>{tr({ en: "COMPONENT", ar: "المكوّن", zh: "组成" })}</th><th>{tr({ en: "UNITS / AREA", ar: "وحدات / مساحة", zh: "套数 / 面积" })}</th><th>{tr({ en: "COST", ar: "التكلفة", zh: "成本" })}</th><th>{tr({ en: "PER UNIT", ar: "لكل وحدة", zh: "每单元" })}</th></tr></thead>
+          <tbody>
+            <tr><td>Plot A</td><td>320 units</td><td><Money v="SAR 0.78B" /></td><td><Money v="SAR 2.44M" /></td></tr>
+            <tr><td>Plot B</td><td>260 units</td><td><Money v="SAR 0.61B" /></td><td><Money v="SAR 2.35M" /></td></tr>
+            <tr><td>{tr({ en: "Shared infrastructure", ar: "بنية تحتية مشتركة", zh: "共用基础设施" })}</td><td>{tr({ en: "allocated", ar: "موزّع", zh: "已分摊" })}</td><td><Money v="SAR 0.45B" /></td><td>—</td></tr>
+            <tr><td>{tr({ en: "Land acquisition", ar: "اقتناء الأرض", zh: "土地取得" })}</td><td>{tr({ en: "by area", ar: "حسب المساحة", zh: "按面积" })}</td><td><Money v="SAR 0.30B" /></td><td>—</td></tr>
+            <tr><td style={{ color: "var(--danger)" }}>{tr({ en: "Unallocated (review)", ar: "غير موزّع (مراجعة)", zh: "未分摊(复核)" })}</td><td>—</td><td><Money v="SAR 0.26B" /></td><td>—</td></tr>
+          </tbody></table></div></div>
+    </React.Fragment>}
+
+    {/* ===== MODE: FUND (industrial / real-estate) ===== */}
+    {(mode === "ind" || mode === "ref") && (() => {
+      const F = mode === "ind"
+        ? { name: { en: "Industrial Development Fund", ar: "صندوق التنمية الصناعية", zh: "工业发展基金" }, bal: "SAR 0.54B", com: "SAR 0.40B", avl: "SAR 0.14B", idle: "SAR 0", ag: [["Current", 100, "0.42B"], ["31–60", 34, "0.07B"], ["61–90", 18, "0.03B"], ["90+", 12, "0.02B"]], match: "99%", diff: 1 }
+        : { name: { en: "Real-Estate Development Fund", ar: "صندوق التطوير العقاري", zh: "房地产开发基金" }, bal: "SAR 0.92B", com: "SAR 0.64B", avl: "SAR 0.28B", idle: "SAR 85M", ag: [["Current", 100, "0.50B"], ["31–60", 42, "0.11B"], ["61–90", 30, "0.08B"], ["90+", 20, "0.05B"]], match: "98%", diff: 2 };
+      return (<React.Fragment>
+        <div className="wb-sech"><h2>{tr(F.name)}</h2><div className="muted">{tr({ en: "balance · aging & repayment · reconciliation", ar: "الرصيد · التقادم والسداد · المطابقة", zh: "余额 · 账龄与还款 · 对账" })}</div></div>
+        <div className="cs-fcards">
+          <div className="cs-fc"><div className="l">{tr({ en: "Balance", ar: "الرصيد", zh: "余额" })}</div><div className="v"><Money v={F.bal} /></div></div>
+          <div className="cs-fc"><div className="l">{tr({ en: "Committed", ar: "ملتزم", zh: "已承诺" })}</div><div className="v"><Money v={F.com} /></div></div>
+          <div className="cs-fc"><div className="l">{tr({ en: "Available", ar: "متاح", zh: "可用" })}</div><div className="v"><Money v={F.avl} /></div></div>
+          <div className="cs-fc"><div className="l">{tr({ en: "Idle surplus", ar: "فائض خامل", zh: "闲置结余" })}</div><div className={"v" + (F.idle !== "SAR 0" ? " hot" : "")}><Money v={F.idle} /></div></div>
+        </div>
+        <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Aging Report — loans / repayment", ar: "تقرير التقادم — القروض / السداد", zh: "Aging 报告 — 贷款 / 还款" })}</b></div>
+          <div className="wb-pb">
+            <div className="km-aging">{F.ag.map((b, i) => (<div className="ab" key={i}><div className="abar" style={{ background: "#ece7f5" }}><i style={{ width: b[1] + "%", background: i === 3 ? "#dc2626" : "#7c3aed" }} /></div><div className="at">{b[0]}</div><div className="av"><Money v={"SAR " + b[2]} /></div></div>))}</div>
+            <div className="cs-recon"><span className="cs-st ok">{F.match} {tr({ en: "matched", ar: "مطابق", zh: "已对平" })}</span> Bank ↔ SAP ↔ docs · <span style={{ color: "#b7791f", fontWeight: 700 }}>{F.diff} {tr({ en: "difference(s) to review (BR-04)", ar: "فروق للمراجعة (BR-04)", zh: "项差异待复核(BR-04)" })}</span></div>
+          </div></div>
+      </React.Fragment>);
+    })()}
+
+    {/* ===== CROSS-CUTTING ===== */}
+    <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Surpluses · source → destination", ar: "الفوائض · المصدر → الوجهة", zh: "结余 · 来源 → 去向" })}</b><span className="wb-pm">{tr({ en: "traceable (BR-02)", ar: "قابل للتتبع (BR-02)", zh: "可追溯(BR-02)" })}</span></div>
+      <div className="wb-pb">
+        <div className="cs-drill"><span className="cs-node">AO-2207 · {tr({ en: "Real-Estate Dev.", ar: "العقار", zh: "房地产" })}</span><span className="cs-arrl">→</span><span className="cs-node">{tr({ en: "Central Liquidity Pool", ar: "مجمع السيولة المركزي", zh: "中央流动性池" })}</span><span style={{ marginInlineStart: "auto", fontWeight: 800, color: "var(--danger)" }}><Money v="SAR 85M" /> {tr({ en: "idle", ar: "خامل", zh: "闲置" })}</span></div>
+        <div className="wb-kk"><span>{tr({ en: "Status", ar: "الحالة", zh: "状态" })}</span><b>{tr({ en: "120 days no activity · milestone delivered", ar: "120 يوماً بلا حركة · أُنجزت المرحلة", zh: "120 天无活动 · 里程碑已交付" })}</b></div>
+        <div className="wb-kk"><span>{tr({ en: "Recommendation", ar: "التوصية", zh: "建议" })}</span><b style={{ color: "var(--violet, #6d28d9)" }}>{tr({ en: "Use surplus before requesting new liquidity", ar: "استخدم الفائض قبل طلب سيولة جديدة", zh: "先用结余再申请新流动性" })}</b></div>
+      </div></div>
+
+    <div className="cs-approve">
+      <button className="btn" disabled>✓ {tr({ en: "Approve assignment order", ar: "اعتماد أمر الإسناد", zh: "批准派工单" })}</button>
+      <button className="btn secondary" onClick={() => pushLog({ en: "Surplus reuse recommended", ar: "تمت التوصية بإعادة استخدام الفائض", zh: "已建议复用结余" })}>{tr({ en: "Recommend use of surplus", ar: "التوصية باستخدام الفائض", zh: "建议复用结余" })}</button>
+      <button className="btn ghost sm" onClick={() => pushLog({ en: "Flagged for review", ar: "وُسم للمراجعة", zh: "已标记复核" })}>⚑ {tr({ en: "Flag for review", ar: "وسم للمراجعة", zh: "标记复核" })}</button>
+      <span className="cs-apnote">{tr({ en: "Approval disabled — 1 invoice missing completion certificate & 1 non-compliant cash request.", ar: "الاعتماد معطّل — فاتورة بلا شهادة وطلب غير مطابق.", zh: "审批禁用 — 1 张发票缺完工证明、1 笔现金申请不合规。" })}</span>
+    </div>
+
+    {/* MULTI-AGENT WORKSPACE */}
+    <div className="wb-sech"><h2>{tr({ en: "Multi-Agent Workspace", ar: "مساحة عمل متعددة الوكلاء", zh: "多智能体工作区" })}</h2><div className="muted">{tr({ en: "Orchestrated agent roles & live action timeline", ar: "أدوار وكلاء منسّقة وخط زمني حي", zh: "编排的智能体角色与实时操作时间线" })}</div></div>
+    <div className="wb-cols3 wb-work">
+      <div className="wb-panel"><div className="wb-ph"><span className="wb-dot violet" /> <b>{tr({ en: "Data Inputs · sources", ar: "مدخلات البيانات · المصادر", zh: "数据输入 · 源系统" })}</b><span className="wb-pm">{tr({ en: "9 systems", ar: "9 أنظمة", zh: "9 个系统" })}</span><button className="wb-impbtn" onClick={() => pushLog({ en: "Manual Excel / CSV / PDF import — temporary source (BR-04)", ar: "استيراد يدوي — مصدر مؤقت (BR-04)", zh: "手动导入 Excel/CSV/PDF — 临时来源(BR-04)" })} title={tr({ en: "Upload Excel/CSV/PDF when an API is unavailable", ar: "رفع ملف عند عدم توفّر الواجهة", zh: "接口不可用时上传文件(临时来源)" })}>⬆ {tr({ en: "Import Excel/CSV", ar: "استيراد Excel/CSV", zh: "导入 Excel/CSV" })}</button></div>
+        <div className="wb-pb"><div className="wb-srclist">{CF_SOURCES.map((s, i) => (<div className="wb-src" key={i}><span className={"sd" + (s.s === "loading" ? " load" : "")} /><span className="sn">{s.n}</span><span className="ss">{tr(s.s === "loading" ? { en: "loading", ar: "تحميل", zh: "载入" } : { en: "synced", ar: "متزامن", zh: "已同步" })}</span></div>))}</div></div></div>
+      <div className="wb-panel"><div className="wb-ph"><span className="wb-dot violet" /> <b>{tr({ en: "Orchestrator · Task Board", ar: "المنسّق · لوحة المهام", zh: "编排器 · 任务板" })}</b><span className="wb-orchpill"><span className="gear">⚙</span>{tr({ en: "Auto-orchestration · 3 agents", ar: "تنسيق تلقائي · 3 وكلاء", zh: "自动编排 · 3 个智能体" })}</span></div>
+        <div className="wb-pb">{CF_ROLES.map((r, i) => (<div className={"wb-role " + (r.st === "running" ? "r-violet" : "r-blue")} key={i}><div className="rl"><div className="rt">{tr(r.n)}</div><div className="rs">{tr(r.s)}</div></div>{rbadge(r.st)}</div>))}</div></div>
+      <div className="wb-panel"><div className="wb-ph"><span className="wb-dot violet" /> <b>{tr({ en: "Agent Timeline · Logs", ar: "خط زمن الوكلاء · السجلات", zh: "智能体时间线 · 日志" })}</b><span className="wb-pm">{tr({ en: "last 5 min", ar: "آخر 5 د", zh: "最近 5 分钟" })}</span></div>
+        <div className="wb-pb"><div className="wb-tl" ref={logRef}>{feed.map((e, i) => (<div className={"wb-ev" + (i === feed.length - 1 ? " live" : "")} key={i}><span className={"wb-dot2 " + e.dot} /><div className="wb-eh"><b>{e.tm}</b> · {e.code ? ucl(e.code, tr(e.h)) : tr(e.h)}</div><div className="wb-ed">{tr(e.d)}</div></div>))}</div></div></div>
+    </div>
+
+    {/* KEY PRINCIPLE */}
+    <div className="wb-keyp"><div className="wb-keyp-tag">!</div><div><div className="wb-keyp-h">{tr({ en: "Surplus traced from the original assignment order to the beneficiary project", ar: "الفائض يُتتبع من أمر الإسناد الأصلي إلى المشروع المستفيد", zh: "结余须从原派工单追溯到受益项目" })}</div><div className="wb-keyp-s">{tr({ en: "Project cost = Σ unit/land cost after adjustments; fund reports reconcile to bank statements, SAP & supporting documents (BR-02 / BR-03 / BR-04).", ar: "تكلفة المشروع = مجموع تكاليف الوحدات بعد التعديلات؛ وتقارير الصناديق تطابق كشوف البنوك وساب والمستندات.", zh: "项目成本 = 调整后各单元/地块成本之和;基金报告须与银行流水、SAP 及单据对账(BR-02 / BR-03 / BR-04)。" })}</div></div></div>
+
+    <button className="wb-qfab" onClick={() => setQaOpen(o => !o)} title={tr({ en: "AI Narratives & Q&A", ar: "السرد والأسئلة", zh: "AI 叙述与问答" })}>🤖</button>
+    {qaOpen && <div className="wb-qpanel">
+      <div className="wb-qph"><span className="wb-dot violet" /> <b>{tr({ en: "AI Narratives & Q&A", ar: "السرد والأسئلة", zh: "AI 叙述与问答" })}</b><button className="wb-qx" onClick={() => setQaOpen(false)}>✕</button></div>
+      <div className="wb-pb wb-qbody">
+        <div className="wb-narrwrap"><div className="wb-ntag">{ucl("UC-12", tr({ en: "NARRATIVE", ar: "السرد", zh: "叙述" }))}</div>
+        <div className="wb-narr">
+          <p>{tr({ en: "AO-2207 has SAR 85M idle for 120 days with its milestone delivered — a release candidate. Three-way matching is clean except CR-5530/INV-3410 (missing completion certificate) and CR-5533 (amount mismatch).", ar: "AO-2207 لديه 85 مليون خامل منذ 120 يوماً مع إنجاز المرحلة. المطابقة الثلاثية سليمة عدا INV-3410 (بلا شهادة) و CR-5533 (فرق مبلغ).", zh: "AO-2207 已闲置 SAR 85M 达 120 天且里程碑已交付,可释放。三方匹配除 CR-5530/INV-3410(缺完工证明)与 CR-5533(金额不一致)外均干净。" })}</p>
+          <div className="wb-rp">{tr({ en: "Recommended priorities:", ar: "الأولويات الموصى بها:", zh: "建议优先事项:" })}</div>
+          <ul><li>{tr({ en: "Release SAR 85M idle surplus (AO-2207)", ar: "الإفراج عن فائض 85 مليون", zh: "释放 SAR 85M 闲置结余" })}</li>
+            <li>{tr({ en: "Obtain completion cert for INV-3410", ar: "الحصول على شهادة لـ INV-3410", zh: "为 INV-3410 取得完工证明" })}</li>
+            <li>{tr({ en: "Reconcile 2 SAP↔document differences", ar: "تسوية فرقي ساب↔المستندات", zh: "对平 2 项 SAP↔单据差异" })}</li></ul>
+          <div className="wb-src">{ucl("UC-01", tr({ en: "Source: Esnad · Etimad · SAP · Data Querying Agent", ar: "المصدر: إسناد · اعتماد · ساب", zh: "来源:Esnad · Etimad · SAP · 数据查询智能体" }))}</div>
+        </div></div>
+      </div>
+    </div>}
+    </div>
+  </div>);
+}
+
 /* =========================================================================
    Reports
    ========================================================================= */
@@ -2596,6 +3304,9 @@ function Shell() {
   else if (route === "rcwork") page = <RcWorkspace />;
   else if (route === "rcbench") page = <RcWorkbench />;
   else if (route === "rcdata") page = <RcDataFlow />;
+  else if (route === "aswork") page = <AssetsWorkspace />;
+  else if (route === "asbench") page = <AssetsWorkbench />;
+  else if (route === "csfunds") page = <CostFundsConsole />;
   else if (route === "reports") page = <Reports />;
   else page = <Hub />;
   return (<><TopBar /><div className="shell"><Sidebar /><div className="content">{page}</div></div><AgentLog /><ReleaseNotes /></>);

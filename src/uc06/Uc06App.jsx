@@ -2614,7 +2614,7 @@ function SmartQueryFloating({ lang, dashboardData }) {
                 className="mt-3 ml-auto w-14 h-14 rounded-full bg-momahGreen-700 hover:bg-momahGreen-800 text-white shadow-2xl flex items-center justify-center text-xl"
                 aria-label={lang === 'ar' ? 'فتح الاستعلام الذكي' : 'Open Smart Query'}
             >
-                💬
+                🤖
             </button>
         </div>
     );
@@ -5330,7 +5330,7 @@ export default function Uc06App({ embedded = false, subDept = 'performanceAnalys
                                                 {/* Glowing orb spinner */}
                                                 <div className="relative w-20 h-20">
                                                     <div className="absolute inset-0 rounded-full border-4 border-momahGreen-500/20 border-t-momahGreen-500 animate-spin" style={{ animationDuration: '3s' }}></div>
-                                                    <div className="absolute inset-2 rounded-full bg-momahGreen-900/40 flex items-center justify-center text-xl shadow-2xl shadow-momahGreen-500/50">🧠</div>
+                                                    <div className="absolute inset-2 rounded-full bg-momahGreen-900/40 flex items-center justify-center text-xl shadow-2xl shadow-momahGreen-500/50">🤖</div>
                                                 </div>
                                             </div>
 
