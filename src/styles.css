@@ -1209,7 +1209,7 @@ html[dir="rtl"] .rp-backbtn,html[dir="rtl"] .pg-back{transform:scaleX(-1)}
 .rp-srcs{display:flex;gap:4px;flex-wrap:wrap}.rp-upd{font-size:11px;color:#8a93a0}
 /* drawer */
 .rp-ov{display:none;position:fixed;inset:0;z-index:300;background:rgba(16,24,40,.5);justify-content:flex-end}
-.rp-ov.open{display:flex}
+.rp-ov.open{display:flex;animation:al-fade .2s ease}
 .rp-dw{width:min(760px,92vw);height:100%;background:#f3f4f7;box-shadow:-24px 0 70px rgba(0,0,0,.28);overflow:auto;padding:16px 20px;animation:al-slide .34s cubic-bezier(.4,0,.2,1)}
 html[dir="rtl"] .rp-dw{animation:al-slide-rtl .34s cubic-bezier(.4,0,.2,1)}
 .rp-dwhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}

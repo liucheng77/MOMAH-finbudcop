@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
+import { createPortal } from "react-dom";
 import * as RC from "recharts";
 
 /* =========================================================================
@@ -2769,13 +2770,13 @@ function BusinessPlaza({ defaultSel }) {
           </div>
         </div>); })()}
     </div>
-    {plazaModal && <div className="al-overlay" onClick={() => setPlazaModal(false)}>
+    {plazaModal && createPortal(<div className="al-overlay" onClick={() => setPlazaModal(false)}>
       <div className="pz-drawer" onClick={(e) => e.stopPropagation()}>
         <div className="pz-mhead"><b>{tr({ en: "Full flow — Revenue Collection × Assets", ar: "المسار الكامل — التحصيل × الأصول", zh: "完整流程 — 收入征收 × 资产" })}</b><button className="pz-x" onClick={() => setPlazaModal(false)}>✕</button></div>
         <div className="pz-mscroll"><div className="pz-mcanvas" style={{ width: PZ.W * dScale, height: 536 * dScale }}>{renderPlaza(true, dScale, null)}</div></div>
         <div className="pz-legend"><span><i className="ln rev" />{tr({ en: "Revenue intra-lane", ar: "تدفّق التحصيل", zh: "收入同泳道" })}</span><span><i className="ln ast" />{tr({ en: "Assets intra-lane", ar: "تدفّق الأصول", zh: "资产同泳道" })}</span><span><i className="ln cross" />{tr({ en: "Cross-department I/O", ar: "التبادل بين الإدارات", zh: "跨部门 I/O" })}</span><span>★ {tr({ en: "shared convergence (UC-10 / UC-11)", ar: "تقارب مشترك (UC-10 / UC-11)", zh: "汇聚目标 (UC-10 / UC-11)" })}</span></div>
       </div>
-    </div>}
+    </div>, document.body)}
   </React.Fragment>);
 }
 
@@ -3789,7 +3790,7 @@ function ReportHub() {
       </div>))}
     </div>
 
-    {r && <div className="rp-ov open" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
+    {r && createPortal(<div className="rp-ov open" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
       <div className="rp-dw">
         <div className="rp-dwhead"><span className="rp-dwt">📄 {ucl("UC-10", tr({ en: "Report Composer", ar: "منشئ التقارير", zh: "报告编排" }))}</span><button className="rp-dwx" onClick={() => setOpen(null)}>✕ {tr({ en: "Close", ar: "إغلاق", zh: "关闭" })}</button></div>
         <div className="rp-ctop">
@@ -3833,8 +3834,8 @@ function ReportHub() {
         </div>
         <div className="rp-lock">🔒 {tr({ en: "Approved version saved immutably; edits create a new version (BR-04). Each copy carries number, owner, date & sources (BR-03).", ar: "النسخة المعتمدة تُحفظ دون تعديل؛ التعديل يُنشئ نسخة جديدة (BR-04). وكل نسخة تحمل رقماً ومالكاً وتاريخاً ومصادر (BR-03).", zh: "已批准版本不可变保存;修改生成新版本(BR-04)。每份副本含编号、归属、日期与来源(BR-03)。" })}</div>
       </div>
-    </div>}
-    {nw && <div className="rp-nov" onClick={(e) => { if (e.target === e.currentTarget) setNw(false); }}>
+    </div>, document.body)}
+    {nw && createPortal(<div className="rp-nov" onClick={(e) => { if (e.target === e.currentTarget) setNw(false); }}>
       <div className="rp-ncard">
         <div className="rp-nhd">{tr({ en: "New report", ar: "تقرير جديد", zh: "新建报告" })}<button className="x" onClick={() => setNw(false)}>✕</button></div>
         <div className="rp-nbody">
@@ -3853,7 +3854,7 @@ function ReportHub() {
         </div>
         <div className="rp-nfoot"><button className="rp-ncancel" onClick={() => setNw(false)}>{tr({ en: "Cancel", ar: "إلغاء", zh: "取消" })}</button><button className="rp-ngen" onClick={genReport}>✦ {tr({ en: "Generate report", ar: "إنشاء التقرير", zh: "生成报告" })}</button></div>
       </div>
-    </div>}
+    </div>, document.body)}
   </div>);
 }
 
