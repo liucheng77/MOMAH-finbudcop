@@ -1304,7 +1304,7 @@ function buildRegionalMap(groupContext, filters, scopeRows, metrics, lang) {
         matrixRows.forEach((row) => {
             row.cells.forEach((cell) => {
                 if (cell.value < 50) {
-                    riskCells.push(`${row.label.split(' - ')[0]}-${cell.label}`);
+                    riskCells.push(`${String(row.label || '').split(' - ')[0]}-${cell.label}`);
                 }
             });
         });
@@ -1798,7 +1798,11 @@ function buildDataNotes(groupContext, lang) {
 }
 
 export function getDashboardData(filters) {
-    const { groupContext, lang, fiscalYear } = filters;
+    const { groupContext, fiscalYear } = filters;
+    // This embedded analysis module ships EN/AR copy only; for any other UI
+    // language (e.g. zh) fall back to English so data labels never resolve to
+    // undefined (which previously crashed the g03 regional matrix on .split).
+    const lang = filters.lang === 'ar' ? 'ar' : 'en';
     const scopeRows = getScopeRows(filters, lang);
     const metrics = buildScopeMetrics(groupContext, scopeRows, fiscalYear);
     const groupMeta = buildGroupMeta(groupContext, lang);

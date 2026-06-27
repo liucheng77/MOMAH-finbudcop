@@ -1027,6 +1027,7 @@ function StoreProvider({ children }) {
   const [pendingQ, setPendingQ] = useState(null);
   const [perfJump, setPerfJump] = useState(null);
   const [backRoute, setBackRoute] = useState(null);
+  const [alertsOpen, setAlertsOpen] = useState(false);   // UC-02 modal side-drawer
   const [curMode, setCurMode] = useState("riyal");   // riyal (⃁) default | sar
 
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -1053,7 +1054,7 @@ function StoreProvider({ children }) {
   const cycleLang = () => setLang(l => (l === "ar" ? "en" : "ar")); // UI toggle: AR/EN only (zh via ?ln=zh)
 
   const value = { lang, setLang, cycleLang, dir, t, tr, clean, user, setUser, route, setRoute, deptSub, setDeptSub, cov, setCov,
-    alerts, ackAlert, log, pushLog, reports, addReport, pendingQ, setPendingQ, perfJump, setPerfJump, backRoute, setBackRoute, curMode, setCurMode, askOrchestrator, reset };
+    alerts, ackAlert, log, pushLog, reports, addReport, pendingQ, setPendingQ, perfJump, setPerfJump, backRoute, setBackRoute, alertsOpen, setAlertsOpen, curMode, setCurMode, askOrchestrator, reset };
   return <Store.Provider value={value}>{children}</Store.Provider>;
 }
 
@@ -1162,7 +1163,7 @@ function Login() {
    ========================================================================= */
 const NOTIFS = [
   { sev: "danger", t: { en: "Budget overrun — Housing Program 2.0 at 103% of allocation", ar: "تجاوز الميزانية — برنامج الإسكان 2.0 عند 103٪ من المخصص", zh: "预算超支——住房计划 2.0 已达拨款的 103%" }, time: { en: "2m ago", ar: "قبل دقيقتين", zh: "2 分钟前" } },
-  { sev: "warn", t: { en: "Billing gap SAR 120M flagged in Revenue Collection · FY2026 Q3", ar: "فجوة فوترة SAR 120M في التحصيل · FY2026 Q3", zh: "收入征收发现开票缺口 SAR 120M · FY2026 Q3" }, time: { en: "18m ago", ar: "قبل 18 د", zh: "18 分钟前" } },
+  { sev: "warn", t: { en: "Billing gap SAR 120M flagged in Revenue Collection · FY2026 Q3", ar: "فجوة فوترة SAR 120M في التحصيل · FY2026 Q3", zh: "收入征收发现征收缺口 SAR 120M · FY2026 Q3" }, time: { en: "18m ago", ar: "قبل 18 د", zh: "18 分钟前" } },
   { sev: "warn", t: { en: "42 contracts overdue >60 days in Riyadh-East Amanah", ar: "42 عقداً متأخراً >60 يوماً في أمانة الرياض-شرق", zh: "利雅得-东阿玛纳有 42 个合同逾期 >60 天" }, time: { en: "1h ago", ar: "قبل ساعة", zh: "1 小时前" } },
   { sev: "info", t: { en: "Forecast variance: Q3 spend projected 8% above plan", ar: "انحراف التنبؤ: إنفاق الربع 3 أعلى من الخطة بـ 8٪", zh: "预测偏差:Q3 支出预计高于计划 8%" }, time: { en: "3h ago", ar: "قبل 3 س", zh: "3 小时前" } },
 ];
@@ -1209,18 +1210,18 @@ function TopBar() {
 // Left menu = BRD organizational tree (General Directorates → sub-departments), matching the reference.
 const DEPARTMENTS = [
   { key: "g02", name: { en: "General Directorate of Planning and Financial Performance", ar: "الإدارة العامة للتخطيط والأداء المالي", zh: "规划与财务绩效总局" }, subs: [
-    { id: "fpa", route: "perf", name: { en: "Financial Performance Analysis Department", ar: "إدارة تحليل الأداء المالي", zh: "财务绩效分析部" } },
-    { id: "plan", route: "planning", name: { en: "Planning Department", ar: "إدارة التخطيط", zh: "规划部" } } ] },
+    { id: "fpa", route: "fpawork", name: { en: "Financial Performance Analysis Department", ar: "إدارة تحليل الأداء المالي", zh: "财务绩效分析部" } },
+    { id: "plan", route: "plnwork", name: { en: "Planning Department", ar: "إدارة التخطيط", zh: "规划部" } } ] },
   { key: "g03", name: { en: "General Budget Department", ar: "الإدارة العامة للميزانية", zh: "预算总局" }, subs: [
-    { id: "budexec", route: "budexec", name: { en: "Budget Execution Department", ar: "إدارة تنفيذ الميزانية", zh: "预算执行部" } } ] },
+    { id: "budexec", route: "buwork", name: { en: "Budget Execution Department", ar: "إدارة تنفيذ الميزانية", zh: "预算执行部" } } ] },
   { key: "g04", name: { en: "General Administration of Affairs Finance", ar: "الإدارة العامة للشؤون المالية", zh: "财务事务总局" }, subs: [
-    { id: "entitle", route: "claims", name: { en: "Financial Entitlements Department", ar: "إدارة الاستحقاقات المالية", zh: "财务权益部" } },
-    { id: "audit", route: "claims", name: { en: "Audit Department", ar: "إدارة التدقيق", zh: "审计部" } } ] },
+    { id: "entitle", route: "entwork", name: { en: "Financial Entitlements Department", ar: "إدارة الاستحقاقات المالية", zh: "财务权益部" } },
+    { id: "audit", route: "audwork", name: { en: "Audit Department", ar: "إدارة التدقيق", zh: "审计部" } } ] },
   { key: "g05", name: { en: "General Directorate of Financial Reporting", ar: "الإدارة العامة للتقارير المالية", zh: "财务报告总局" }, subs: [
-    { id: "frep", route: "reporting", name: { en: "Financial Reporting Department", ar: "إدارة التقارير المالية", zh: "财务报告部" } },
-    { id: "comp", route: "reporting", name: { en: "Compliance Department", ar: "إدارة الامتثال", zh: "合规部" } },
-    { id: "cost", route: "reporting", name: { en: "Cost Management Department", ar: "إدارة التكاليف", zh: "成本管理部" } },
-    { id: "acct", route: "reporting", name: { en: "Accounting Department", ar: "إدارة المحاسبة", zh: "会计部" } } ] },
+    { id: "frep", route: "reports", name: { en: "Financial Reporting Department", ar: "إدارة التقارير المالية", zh: "财务报告部" } },
+    { id: "comp", route: "compmemo", name: { en: "Compliance Department", ar: "إدارة الامتثال", zh: "合规部" } },
+    { id: "cost", route: "csfunds", name: { en: "Cost Management Department", ar: "إدارة التكاليف", zh: "成本管理部" } },
+    { id: "acct", route: "acctwork", name: { en: "Accounting Department", ar: "إدارة المحاسبة", zh: "会计部" } } ] },
   { key: "g06", name: { en: "General Directorate of Revenues and Assets", ar: "الإدارة العامة للإيرادات والأصول", zh: "收入与资产总局" }, subs: [
     { id: "revcol", route: "rcwork", name: { en: "Revenue Collection Department", ar: "إدارة التحصيل", zh: "收入征收部" } },
     { id: "assets", route: "aswork", name: { en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" } } ] },
@@ -1236,7 +1237,7 @@ function Sidebar() {
         <div className={"dept-head" + (open ? " open" : "")} onClick={() => setOpenG(open ? "" : g.key)}>
           <span style={{ flex: 1 }}>{tr(g.name)}</span><span className="chev">{open ? "▾" : "▸"}</span>
         </div>
-        {open && <div className="dept-subs">{g.subs.map(s => { const on = s.id === "fpa" || s.id === "revcol" || s.id === "budexec" || s.id === "assets";
+        {open && <div className="dept-subs">{g.subs.map(s => { const on = s.id === "fpa" || s.id === "revcol" || s.id === "budexec" || s.id === "assets" || s.id === "audit" || s.id === "frep" || s.id === "comp" || s.id === "cost" || s.id === "plan" || s.id === "entitle" || s.id === "acct";
           return <div key={s.id} className={"dept-sub" + (deptSub === s.id ? " active" : "") + (on ? "" : " locked")} onClick={on ? () => { setBackRoute(null); setDeptSub(s.id); setRoute(s.route); } : undefined}>{tr(s.name)}{on ? null : <span className="lockic">🔒</span>}</div>;
         })}</div>}
       </div>);
@@ -2025,7 +2026,7 @@ const WB = {
   ],
   roles: [
     { name: { en: "Revenue Analytics Agent", ar: "وكيل تحليل الإيرادات", zh: "收入分析智能体" }, sub: { en: "Detects billing gaps, trends & overdue risk across revenue streams", ar: "يكشف فجوات الفوترة والاتجاهات ومخاطر التأخر عبر مصادر الإيراد", zh: "检测各收入流的开票缺口、趋势与逾期风险" }, status: "running", cls: "r-violet" },
-    { name: { en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" }, sub: { en: "Aggregates Tahseel, Etimad, Wusool & bank statement data", ar: "يجمّع بيانات تحصيل واعتماد ووصول وكشوف البنوك", zh: "聚合 Tahseel、Etimad、Wusool 与银行流水数据" }, status: "active", cls: "r-blue" },
+    { name: { en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" }, sub: { en: "Aggregates Tahseel, Makeen, Efaa, Etimad & bank-statement data", ar: "يجمّع بيانات تحصيل ومكين وإفاء واعتماد وكشوف البنوك", zh: "聚合 Tahseel、Makeen、Efaa、Etimad 与银行流水数据" }, status: "active", cls: "r-blue" },
     { name: { en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "前瞻洞察智能体" }, sub: { en: "Generates prioritized alerts & opportunity flags", ar: "يولّد تنبيهات مرتّبة وإشارات الفرص", zh: "生成排序告警与机会标记" }, status: "active", cls: "r-blue" },
   ],
   logs: [
@@ -2046,7 +2047,7 @@ const WB = {
     { en: "The top 5 contracts drive ~68% of overdue. CT-2025-0142 (Riyadh-East, SAR 32M) and CT-2025-0098 (Jeddah-Port, SAR 26M) lead, both aged beyond 60 days under Wusool lease terms.", ar: "أعلى 5 عقود تقود ~68% من التأخر. CT-2025-0142 (الرياض-شرق، 32) و CT-2025-0098 (جدة-الميناء، 26) في الصدارة، وكلاهما تجاوز 60 يوماً.", zh: "前 5 个合同造成约 68% 的逾期。CT-2025-0142(利雅得-东,32M)与 CT-2025-0098(吉达-港,26M)居首,均逾期超过 60 天(Wusool 租约条款)。" },
     { en: "Collection rate ranges 78%–94% across Amanat. Riyadh-East and Jeddah-Port lag near 80%, while Madinah-Central leads at 94%; lease-heavy Amanat collect ~10pp lower.", ar: "تتراوح نسبة التحصيل بين 78% و94% بين الأمانات. الرياض-شرق وجدة-الميناء قرب 80%، بينما المدينة-وسط الأعلى عند 94%.", zh: "各阿玛纳征收率介于 78%–94%。利雅得-东与吉达-港约 80% 偏低,麦地那-中以 94% 领先;租约占比高的阿玛纳低约 10 个百分点。" },
   ],
-  genAns: { en: "From UC-13 unified data: collection rate 87% (+2.1% QoQ), billing gap SAR 120M, and 62% of overdue aged beyond 60 days — lease contracts are the primary driver.", ar: "من بيانات UC-13 الموحّدة: نسبة التحصيل 87% (+2.1%)، فجوة الفوترة 120 مليون ريال، و62% من التأخر تجاوز 60 يوماً — عقود الإيجار هي المحرّك الرئيسي.", zh: "依据 UC-13 统一数据:征收率 87%(环比 +2.1%),开票缺口 SAR 120M,62% 逾期超过 60 天——租约合同是主要成因。" },
+  genAns: { en: "From UC-13 unified data: collection rate 87% (+2.1% QoQ), collection gap SAR 120M, and 50% of overdue aged beyond 60 days — lease contracts are the primary driver.", ar: "من بيانات UC-13 الموحّدة: نسبة التحصيل 87% (+2.1%)، فجوة التحصيل 120 مليون ريال، و50% من التأخر تجاوز 60 يوماً — عقود الإيجار هي المحرّك الرئيسي.", zh: "依据 UC-13 统一数据:征收率 87%(环比 +2.1%),征收缺口 SAR 120M,50% 逾期超过 60 天——租约合同是主要成因。" },
   focus: [
     { id: "CT-2025-0142", am: { en: "Riyadh-East", ar: "الرياض-شرق", zh: "利雅得-东" }, od: "SAR 32M", risk: "high" },
     { id: "CT-2025-0098", am: { en: "Jeddah-Port", ar: "جدة-الميناء", zh: "吉达-港" }, od: "SAR 26M", risk: "high" },
@@ -2062,9 +2063,9 @@ const WB = {
     { am: { en: "Madinah-Cent.", ar: "المدينة-وسط", zh: "麦地那-中" }, v: "SAR 9M", pct: 28, cls: "gray" },
   ],
   next: [
-    { en: "Prioritize follow-up on Amanah Riyadh-East (SAR 32M)", ar: "إعطاء أولوية لمتابعة أمانة الرياض-شرق (32 مليون ريال)", zh: "优先跟进利雅得-东阿玛纳(SAR 32M)" },
-    { en: "Review payment terms in Wusool template v2", ar: "مراجعة شروط الدفع في قالب وصول v2", zh: "复核 Wusool 模板 v2 的付款条款" },
-    { en: "Open targeted dunning workflow for >90d contracts", ar: "فتح مسار تحصيل موجّه للعقود >90 يوماً", zh: "对 >90 天合同启动定向催收流程" },
+    { t: { en: "Prioritize follow-up on Riyadh-East (SAR 32M)", ar: "أولوية متابعة الرياض-شرق (32 مليون)", zh: "优先跟进利雅得-东(SAR 32M)" }, d: { en: "Largest single gap — 27% of the SAR 120M total across 4 lease contracts aged > 60d. A focused 2-week dunning sprint recovers an est. SAR 18–22M this quarter.", ar: "أكبر فجوة مفردة — 27% من 120 مليون عبر 4 عقود إيجار > 60 يوماً؛ حملة مركّزة تسترد 18–22 مليون.", zh: "最大单点缺口——占 120M 的 27%,涉 4 份逾期>60天租约。集中 2 周催收本季可回收约 SAR 18–22M。" } },
+    { t: { en: "Renegotiate Wusool lease terms (template v2)", ar: "إعادة التفاوض على شروط وصول (قالب v2)", zh: "重谈 Wusool 租约条款(模板 v2)" }, d: { en: "Lease-heavy Amanat collect ~10pp lower. Shorter cycles + milestone-linked invoicing cut the structural gap ~SAR 8–12M/qtr and lower DSO from 74 to ~60 days.", ar: "الأمانات كثيفة الإيجار أقل 10 نقاط؛ دورات أقصر تخفض الفجوة 8–12 مليون ربعياً وDSO إلى ~60.", zh: "租约重的阿玛纳征收率低约 10pp。缩短账期+里程碑开票季度减缺口约 SAR 8–12M,DSO 由 74 降至约 60 天。" } },
+    { t: { en: "Open targeted dunning for > 90d contracts", ar: "فتح تحصيل موجّه للعقود > 90 يوماً", zh: "对 >90 天合同启动定向催收" }, d: { en: "50% of overdue is aged > 60d and 18 contracts crossed 90d. Auto-escalation + legal notice on the top 18 protects ~SAR 34M most at risk of write-off.", ar: "50% من التأخر > 60 يوماً و18 عقداً > 90؛ التصعيد يحمي ~34 مليون معرّضة للشطب.", zh: "50% 逾期超 60 天,18 个已过 90 天。对前 18 个自动升级+法律通知,保护最易核销的约 SAR 34M。" } },
   ],
   story: [
     { code: "UC-01", cap: { en: "Foundation", ar: "الأساس", zh: "基础" } },
@@ -2121,34 +2122,29 @@ const WB_AS = {
     { am: { en: "Other", ar: "أخرى", zh: "其他" }, v: "SAR 0.04B", pct: 5, cls: "gray" },
   ],
   next: [
-    { en: "Capitalize SAR 1.92B completed assets-under-construction", ar: "رسملة 1.92 مليار من الأصول تحت الإنشاء المكتملة", zh: "资本化 SAR 1.92B 已完工在建资产" },
-    { en: "Raise impairment memos for 3 equipment items (SAR 47M)", ar: "إصدار مذكرات انخفاض لـ 3 معدات (47 مليون)", zh: "为 3 项设备开具减值备忘(SAR 47M)" },
-    { en: "Schedule maintenance for road segments R-118 / R-204", ar: "جدولة صيانة لمقاطع الطرق R-118 / R-204", zh: "为路段 R-118 / R-204 安排维护" },
+    { t: { en: "Capitalize SAR 1.92B completed AUC", ar: "رسملة 1.92 مليار من الأصول المكتملة", zh: "资本化 SAR 1.92B 已完工在建资产" }, d: { en: "312 AUC items are past their in-service date. Capitalizing now corrects the depreciation base, avoids understated asset value, and clears the pre-close checklist.", ar: "312 بنداً تجاوزت تاريخ التشغيل؛ الرسملة تصحّح أساس الإهلاك وتغلق قائمة ما قبل الإقفال.", zh: "312 项在建资产已过投用日。立即资本化修正折旧基数、避免资产低估,并清空关账前清单。" } },
+    { t: { en: "Raise impairment memos — 3 equipment items (SAR 47M)", ar: "مذكرات انخفاض لـ 3 معدات (47 مليون)", zh: "为 3 项设备开具减值备忘(SAR 47M)" }, d: { en: "Idle utilization plus market value below the policy threshold. Timely impairment prevents an overstated SAR 47M NBV and a likely UC-03 audit finding at year-end.", ar: "تشغيل خامل وقيمة دون الحد؛ الانخفاض في وقته يمنع تضخّم 47 مليون وملاحظة تدقيق.", zh: "闲置利用+市值低于政策阈值。及时减值避免 SAR 47M 账面净值虚高及年末 UC-03 审计发现。" } },
+    { t: { en: "Schedule maintenance — road segments R-118 / R-204", ar: "جدولة صيانة R-118 / R-204", zh: "安排路段 R-118 / R-204 维护" }, d: { en: "Condition index is below threshold; deferring raises whole-life cost ~18%. Bundling into the Q3 plan protects return-on-asset and avoids emergency-repair premiums.", ar: "مؤشر الحالة دون الحد؛ التأجيل يرفع كلفة العمر ~18%؛ الدمج في خطة الربع الثالث يحمي العائد.", zh: "状态指数低于阈值;推迟使全生命周期成本升约 18%。并入 Q3 计划保护资产回报、规避抢修溢价。" } },
   ],
 };
-/* ===== UC-13 · Revenue Collection — Multi-Agent Flow (dataset & orchestration) ===== */
-const MF = {
+/* ===== v1 BACKUP — UC-13 Revenue Collection Multi-Agent Flow (kept as a separate page) ===== */
+const MF_V1 = {
   sources: [
-    { k: "F", n: "Furas", s: { en: "Contracts master", ar: "سجل العقود الرئيسي", zh: "合同主数据" } },
-    { k: "S", n: "SAP AR / Revenue", s: { en: "Invoicing, receipts", ar: "الفوترة والإيصالات", zh: "开票、回款" } },
-    { k: "W", n: "Wusool", s: { en: "Collection records", ar: "سجلات التحصيل", zh: "征收记录" } },
-    { k: "O", n: "Oqood", s: { en: "Lease / tenancy", ar: "الإيجار / الإشغال", zh: "租约 / 租赁" } },
+    { k: "E", n: "Etimad", s: { en: "Contracts, payment orders", ar: "العقود وأوامر الدفع", zh: "合同、付款单" } },
+    { k: "S", n: "SAP / Asas", s: { en: "Invoicing, receipts", ar: "الفوترة والإيصالات", zh: "开票、回款" } },
+    { k: "T", n: "Tahseel", s: { en: "Collection records", ar: "سجلات التحصيل", zh: "征收记录" } },
+    { k: "F", n: "Efaa", s: { en: "Exclusions, enforcement", ar: "الاستبعادات والتنفيذ", zh: "排除项、执行" } },
   ],
   agents: [
     { n: { en: "Document RAG Agent", ar: "وكيل استرجاع الوثائق", zh: "文档 RAG 智能体" }, d: { en: "Contracts, policies, credit notes retrieval", ar: "استرجاع العقود والسياسات والإشعارات الدائنة", zh: "检索合同、政策、贷项通知" }, tag: { en: "unstructured", ar: "غير منظّم", zh: "非结构化" } },
     { n: { en: "Numeric Query Agent", ar: "وكيل الاستعلام الرقمي", zh: "数值查询智能体" }, d: { en: "Billed vs collected, aging, KPIs", ar: "المفوتر مقابل المحصّل، التقادم، المؤشرات", zh: "已开票 vs 已收、账龄、KPI" }, tag: { en: "structured", ar: "منظّم", zh: "结构化" } },
-    { n: { en: "Join & Mapping Agent", ar: "وكيل الربط والمطابقة", zh: "联接与映射智能体" }, d: { en: "Link contracts ↔ doors ↔ services ↔ AR lines", ar: "ربط العقود ↔ الأبواب ↔ الخدمات ↔ سطور الذمم", zh: "关联 合同↔门类↔服务↔应收行" }, tag: { en: "relational", ar: "علائقي", zh: "关系型" } },
+    { n: { en: "Join & Mapping Agent", ar: "وكيل الربط والمطابقة", zh: "联接与映射智能体" }, d: { en: "Link contracts to doors, services, AR lines", ar: "ربط العقود بالأبواب والخدمات وسطور الذمم", zh: "关联 合同/门类/服务/应收行" }, tag: { en: "relational", ar: "علائقي", zh: "关系型" } },
   ],
   outputs: [
-    { t: { en: "Collection rate", ar: "نسبة التحصيل", zh: "征收率" }, s: { en: "% billed → collected", ar: "% المفوتر ← المحصّل", zh: "% 开票 → 已收" }, c: "#1B8354" },
-    { t: { en: "Billing Gap", ar: "فجوة الفوترة", zh: "开票缺口" }, s: { en: "expected − billed", ar: "المتوقّع − المفوتر", zh: "应开 − 已开" }, c: "#caa204" },
+    { t: { en: "Collection rate", ar: "نسبة التحصيل", zh: "征收率" }, s: { en: "% billed to collected", ar: "% المفوتر إلى المحصّل", zh: "% 开票 到 已收" }, c: "#1B8354" },
+    { t: { en: "Billing Gap", ar: "فجوة الفوترة", zh: "开票缺口" }, s: { en: "expected minus billed", ar: "المتوقّع ناقص المفوتر", zh: "应开 减 已开" }, c: "#caa204" },
     { t: { en: "Overdue risk", ar: "مخاطر التأخر", zh: "逾期风险" }, s: { en: "30 / 60 / 90+ buckets", ar: "فئات 30 / 60 / 90+", zh: "30 / 60 / 90+ 分桶" }, c: "#e0473c" },
     { t: { en: "Action Suggestions", ar: "اقتراحات الإجراءات", zh: "行动建议" }, s: { en: "prioritized next steps", ar: "خطوات تالية مرتّبة", zh: "排序的后续步骤" }, c: "#2563eb" },
-  ],
-  questions: [
-    { en: "“Where is today's billing gap?”", ar: "«أين فجوة الفوترة اليوم؟»", zh: "「今天的开票缺口在哪里?」" },
-    { en: "“Which contracts drive most of the overdue?”", ar: "«ما العقود التي تقود معظم التأخر؟»", zh: "「哪些合同造成大部分逾期?」" },
-    { en: "“Why did collection rate drop this week?”", ar: "«لماذا انخفضت نسبة التحصيل هذا الأسبوع؟»", zh: "「本周征收率为何下降?」" },
   ],
   down: [
     { code: "UC-06", n: { en: "Financial Performance Analysis", ar: "تحليل الأداء المالي", zh: "财务绩效分析" }, agents: [{ en: "Financial Reports Generation Agent", ar: "وكيل توليد التقارير المالية", zh: "财务报告生成智能体" }, { en: "Financial Narrative Commentary Agent", ar: "وكيل السرد والتعليق المالي", zh: "财务叙述评述智能体" }, { en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" }], cls: "green" },
@@ -2157,8 +2153,8 @@ const MF = {
     { code: "UC-10 / UC-03", n: { en: "Smart Query, Audit Log, and Permissions", ar: "الاستعلام الذكي وسجل التدقيق والصلاحيات", zh: "智能查询、审计日志与权限" }, agents: [{ en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" }, { en: "Orchestrator Agent", ar: "وكيل المنسّق", zh: "编排器智能体" }, { en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "前瞻洞察智能体" }], cls: "green" },
   ],
 };
-function RcDataFlow() {
-  const { tr, setRoute, pushLog } = useStore();
+function RcDataFlowV1() {
+  const { tr, setRoute } = useStore();
   const colh = (code, name) => (SHOW_UC && code ? code + " · " : "") + name;
   const wrapRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -2167,91 +2163,52 @@ function RcDataFlow() {
     calc(); window.addEventListener("resize", calc); return () => window.removeEventListener("resize", calc);
   }, []);
   return (<div className="fade mf">
-    <div className="ws-back" onClick={() => setRoute("rcwork")}>← {tr({ en: "Back to Revenue Collection workspace", ar: "العودة إلى مساحة عمل التحصيل", zh: "返回收入征收工作区" })}</div>
     <div className="card pad mf-frame">
-      <h1 style={{ fontSize: 21 }}>{colh("UC-13", tr({ en: "Revenue Collection Exclusions — Multi-Agent Flow", ar: "التحصيل والاستبعادات — تدفّق متعدد الوكلاء", zh: "收入征收与排除项 — 多智能体流程" }))}</h1>
-      <div className="sub muted" style={{ marginTop: 3 }}>{tr({ en: "G-06 Storyline · Orchestrated agents with human-in-the-loop · Left: data sources → Mid: agents → Right: outputs & downstream", ar: "مسار ج-06 · وكلاء منسّقون مع مراجعة بشرية · يسار: المصادر ← وسط: الوكلاء ← يمين: المخرجات واللاحق", zh: "G-06 故事线 · 带人工审批的编排智能体 · 左:数据源 → 中:智能体 → 右:输出与下游" })}</div>
-
+      <h1 style={{ fontSize: 21 }}><button className="pg-back" onClick={() => setRoute("rcdata")}>‹</button>{colh("UC-13", tr({ en: "Revenue Collection Exclusions — Multi-Agent Flow (v1)", ar: "التحصيل والاستبعادات — تدفّق متعدد الوكلاء (v1)", zh: "收入征收与排除项 — 多智能体流程 (v1)" }))}</h1>
+      <div className="sub muted" style={{ marginTop: 3 }}>{tr({ en: "Archived previous version · UC-13 centric · sources to agents to outputs and downstream", ar: "نسخة محفوظة سابقة · محورها UC-13", zh: "已归档旧版 · 以 UC-13 为中心 · 数据源 到 智能体 到 输出与下游" })}</div>
       <div className="mf-canvas-wrap" ref={wrapRef} style={{ height: Math.ceil(880 * scale) }}><div className="mf-canvas" style={{ transform: "scale(" + scale + ")", transformOrigin: "top left" }}>
         <svg className="mf-svg" width="1640" height="880" viewBox="0 0 1640 880" fill="none">
           <defs>
             <marker id="mfag" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#9aa7b5" strokeWidth="1.6" /></marker>
             <marker id="mfab" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#2563eb" strokeWidth="1.8" /></marker>
           </defs>
-          {/* sources -> UC-01 (gray curved) */}
           <path d="M190,93 C224,93 220,200 240,200" stroke="#9aa7b5" strokeWidth="1.7" markerEnd="url(#mfag)" />
           <path d="M190,179 C224,179 224,255 240,255" stroke="#9aa7b5" strokeWidth="1.7" markerEnd="url(#mfag)" />
           <path d="M190,265 C224,265 224,285 240,285" stroke="#9aa7b5" strokeWidth="1.7" markerEnd="url(#mfag)" />
           <path d="M190,351 C224,351 224,330 240,330" stroke="#9aa7b5" strokeWidth="1.7" markerEnd="url(#mfag)" />
-          {/* UC-01 -> Orchestrator (blue) */}
           <path d="M475,270 C520,270 516,158 540,158" stroke="#2563eb" strokeWidth="2.1" markerEnd="url(#mfab)" />
-          {/* dispatch (dashed, behind cards) */}
           <path d="M635,198 L635,531" stroke="#9aa7b5" strokeWidth="1.6" strokeDasharray="5 6" />
-          {/* agents -> Aggregator (gray) */}
           <path d="M730,317 C760,317 756,430 778,430" stroke="#9aa7b5" strokeWidth="1.7" markerEnd="url(#mfag)" />
           <path d="M730,455 C760,455 760,443 778,443" stroke="#9aa7b5" strokeWidth="1.7" markerEnd="url(#mfag)" />
           <path d="M730,593 C760,593 758,458 778,458" stroke="#9aa7b5" strokeWidth="1.7" markerEnd="url(#mfag)" />
-          {/* Aggregator -> UC-13 (blue) */}
           <path d="M896,443 C930,443 924,340 946,340" stroke="#2563eb" strokeWidth="2.1" markerEnd="url(#mfab)" />
-          {/* UC-13 -> downstream */}
           <path d="M1276,150 C1370,135 1410,120 1440,120" stroke="#2563eb" strokeWidth="2.1" markerEnd="url(#mfab)" />
           <path d="M1276,300 C1370,310 1410,320 1440,320" stroke="#2563eb" strokeWidth="2.1" markerEnd="url(#mfab)" />
           <path d="M1276,470 C1370,500 1410,520 1440,520" stroke="#9aa7b5" strokeWidth="1.7" strokeDasharray="5 5" markerEnd="url(#mfag)" />
           <path d="M1276,600 C1370,665 1410,720 1440,720" stroke="#9aa7b5" strokeWidth="1.7" strokeDasharray="5 5" markerEnd="url(#mfag)" />
-          {/* flowing data packets */}
-          <g>
-            <circle r="3" fill="#9aa7b5"><animateMotion dur="2.2s" repeatCount="indefinite" path="M190,93 C224,93 220,200 240,200" /></circle>
-            <circle r="3" fill="#9aa7b5"><animateMotion dur="2.2s" begin="0.3s" repeatCount="indefinite" path="M190,179 C224,179 224,255 240,255" /></circle>
-            <circle r="3" fill="#9aa7b5"><animateMotion dur="2.2s" begin="0.6s" repeatCount="indefinite" path="M190,265 C224,265 224,285 240,285" /></circle>
-            <circle r="3" fill="#9aa7b5"><animateMotion dur="2.2s" begin="0.9s" repeatCount="indefinite" path="M190,351 C224,351 224,330 240,330" /></circle>
-            <circle r="3.6" fill="#2563eb"><animateMotion dur="1.7s" repeatCount="indefinite" path="M475,270 C520,270 516,158 540,158" /></circle>
-            <circle r="2.8" fill="#9aa7b5"><animateMotion dur="2.4s" repeatCount="indefinite" path="M635,198 L635,531" /></circle>
-            <circle r="3" fill="#9aa7b5"><animateMotion dur="2s" repeatCount="indefinite" path="M730,317 C760,317 756,430 778,430" /></circle>
-            <circle r="3" fill="#9aa7b5"><animateMotion dur="2s" begin="0.4s" repeatCount="indefinite" path="M730,455 C760,455 760,443 778,443" /></circle>
-            <circle r="3" fill="#9aa7b5"><animateMotion dur="2s" begin="0.8s" repeatCount="indefinite" path="M730,593 C760,593 758,458 778,458" /></circle>
-            <circle r="3.6" fill="#2563eb"><animateMotion dur="1.6s" repeatCount="indefinite" path="M896,443 C930,443 924,340 946,340" /></circle>
-            <circle r="3.2" fill="#2563eb"><animateMotion dur="1.6s" repeatCount="indefinite" path="M1276,150 C1370,135 1410,120 1440,120" /></circle>
-            <circle r="3.2" fill="#2563eb"><animateMotion dur="1.6s" begin="0.4s" repeatCount="indefinite" path="M1276,300 C1370,310 1410,320 1440,320" /></circle>
-          </g>
         </svg>
-        {/* top layer: human feedback (from Ask) -> Aggregator, drawn above cards */}
-        <svg className="mf-svg-top" width="1640" height="880" viewBox="0 0 1640 880" fill="none">
-          <defs><marker id="mfap" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#7c5cff" strokeWidth="1.8" /></marker></defs>
-          <path d="M1150,492 C1040,524 920,514 830,492" stroke="#7c5cff" strokeWidth="1.8" strokeDasharray="6 6" markerEnd="url(#mfap)" />
-          <circle r="3.2" fill="#7c5cff"><animateMotion dur="2.6s" repeatCount="indefinite" path="M1150,492 C1040,524 920,514 830,492" /></circle>
-        </svg>
-
-        {/* column headers */}
         <div className="node mf-colh" style={{ left: 10, top: 14, width: 185 }}>{tr({ en: "UPSTREAM · DATA SOURCES", ar: "المنبع · مصادر البيانات", zh: "上游 · 数据源" })}</div>
         <div className="node mf-colh" style={{ left: 240, top: 14, width: 235, textAlign: "center" }}>{colh("UC-01", tr({ en: "UNIFICATION", ar: "التوحيد", zh: "统一" }))}</div>
         <div className="node mf-colh" style={{ left: 540, top: 14, width: 230 }}>{tr({ en: "ORCHESTRATOR · PARALLEL AGENTS", ar: "المنسّق · وكلاء متوازون", zh: "编排器 · 并行智能体" })}</div>
         <div className="node mf-colh" style={{ left: 946, top: 14, width: 330, textAlign: "center" }}>{colh("UC-13", tr({ en: "REVENUE COLLECTION AGENTS", ar: "وكلاء تحصيل الإيرادات", zh: "收入征收智能体" }))}</div>
         <div className="node mf-colh" style={{ left: 1440, top: 14, width: 185, textAlign: "center" }}>{tr({ en: "DOWNSTREAM", ar: "اللاحق", zh: "下游" })}</div>
-
-        {/* COL 1 — sources */}
-        {MF.sources.map((s, i) => (<div className="node mf-src" style={{ left: 10, top: 60 + i * 86, width: 180 }} key={i}><span className="mf-badge">{s.k}</span><div><div className="t">{s.n}</div><div className="d">{tr(s.s)}</div></div></div>))}
-
-        {/* COL 2 — UC-01 */}
+        {MF_V1.sources.map((s, i) => (<div className="node mf-src" style={{ left: 10, top: 60 + i * 86, width: 180 }} key={i}><span className="mf-badge">{s.k}</span><div><div className="t">{s.n}</div><div className="d">{tr(s.s)}</div></div></div>))}
         <div className="node mf-card u01" style={{ left: 240, top: 110, width: 235 }}>
           <div className="hd"><b>{colh("UC-01", tr({ en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" }))}</b><span className="chip">{tr({ en: "Data Foundation", ar: "أساس البيانات", zh: "数据基础" })}</span></div>
           <div className="row"><div className="k">{tr({ en: "Unification", ar: "التوحيد", zh: "统一" })}</div><div className="v">{tr({ en: "Cross-source entity resolution", ar: "حلّ الكيانات عبر المصادر", zh: "跨源实体解析" })}</div></div>
           <div className="row"><div className="k">{tr({ en: "Deduplication", ar: "إزالة التكرار", zh: "去重" })}</div><div className="v">{tr({ en: "Remove duplicate invoices/receipts", ar: "إزالة الفواتير/الإيصالات المكرّرة", zh: "去除重复发票/回款" })}</div></div>
-          <div className="row"><div className="k">{tr({ en: "Mapping", ar: "المطابقة", zh: "映射" })}</div><div className="v">{tr({ en: "Furas Contract ID ↔ SAP AR/Revenue ↔ Doors / Services", ar: "معرّف عقد فرص ↔ SAP AR ↔ الأبواب / الخدمات", zh: "Furas 合同ID ↔ SAP AR ↔ 门类/服务" })}</div></div>
-          <div className="foot">→ {tr({ en: "Unified Revenue & Collection View", ar: "عرض موحّد للإيراد والتحصيل", zh: "统一收入与征收视图" })}</div>
+          <div className="row"><div className="k">{tr({ en: "Mapping", ar: "المطابقة", zh: "映射" })}</div><div className="v">{tr({ en: "Furas to SAP AR to Doors / Services", ar: "فرص إلى SAP AR إلى الأبواب / الخدمات", zh: "Furas 到 SAP AR 到 门类/服务" })}</div></div>
+          <div className="foot">{tr({ en: "Unified Revenue & Collection View", ar: "عرض موحّد للإيراد والتحصيل", zh: "统一收入与征收视图" })}</div>
         </div>
-
-        {/* COL 3 — orchestrator + agents + aggregator */}
         <div className="node mf-orch" style={{ left: 540, top: 120, width: 190 }}><b>{tr({ en: "Orchestrator Agent", ar: "وكيل المنسّق", zh: "编排器智能体" })}</b><span>{tr({ en: "Plan · Route · Aggregate", ar: "خطّط · وجّه · جمّع", zh: "规划 · 路由 · 汇聚" })}</span></div>
         <div className="node mf-dispatch" style={{ left: 645, top: 206 }}>{tr({ en: "dispatch", ar: "إرسال", zh: "派发" })}</div>
-        {MF.agents.map((a, i) => (<div className="node mf-card pa" style={{ left: 540, top: 255 + i * 138, width: 190 }} key={i}><div className="hd"><span className="pdot" /><b>{tr(a.n)}</b></div><div className="pd">{tr(a.d)}</div><span className="ptag">{tr(a.tag)}</span></div>))}
+        {MF_V1.agents.map((a, i) => (<div className="node mf-card pa" style={{ left: 540, top: 255 + i * 138, width: 190 }} key={i}><div className="hd"><span className="pdot" /><b>{tr(a.n)}</b></div><div className="pd">{tr(a.d)}</div><span className="ptag">{tr(a.tag)}</span></div>))}
         <div className="node mf-aggr" style={{ left: 778, top: 408, width: 118 }}><b>{tr({ en: "Aggregator", ar: "المُجمِّع", zh: "汇聚器" })}</b><span>{tr({ en: "Merge · Validate · Reduce", ar: "دمج · تحقّق · اختزال", zh: "合并 · 校验 · 归约" })}</span></div>
-
-        {/* COL 4 — UC-13 */}
         <div className="node mf-uc13" style={{ left: 946, top: 95, width: 330 }}>
           <div className="hd"><b>{colh("UC-13", tr({ en: "Revenue Analytics Agent", ar: "وكيل تحليلات الإيرادات", zh: "收入分析智能体" }))}</b><span className="core">CORE</span></div>
           <div className="mf-narr"><div className="mf-narr-body">
             <div className="sct2">{tr({ en: "OUTPUTS", ar: "المخرجات", zh: "输出" })}</div>
-            <div className="mf-outs">{MF.outputs.map((o, i) => (<div className="mf-out" key={i}><div className="t"><span className="od" /> {tr(o.t)}</div><div className="s">{tr(o.s)}</div></div>))}</div>
+            <div className="mf-outs">{MF_V1.outputs.map((o, i) => (<div className="mf-out" key={i}><div className="t"><span className="od" /> {tr(o.t)}</div><div className="s">{tr(o.s)}</div></div>))}</div>
           </div></div>
           <div className="mf-narr"><b>{tr({ en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" })}<span className="core">CORE</span></b>
             <div className="mf-narr-body">
@@ -2273,20 +2230,124 @@ function RcDataFlow() {
             </div>
           </div>
         </div>
-
-        {/* COL 5 — downstream */}
-        {MF.down.map((d, i) => (<div className={"node mf-down " + d.cls} style={{ left: 1440, top: [30, 230, 430, 632][i], width: 185 }} key={i}><div className="t">{colh(d.code, tr(d.n))}</div>{d.agents ? <div className="mf-sublist">{d.agents.map((a, j) => (<div className="mf-subitem" key={j}><span className="sd" />{tr(a)}</div>))}</div> : <div className="s">{tr(d.s)}</div>}</div>))}
-        <div className="node mf-legend" style={{ left: 1440, top: 840, width: 195 }}>{tr({ en: "solid = primary · dashed = related", ar: "متصل = أساسي · متقطّع = ذو صلة", zh: "实线 = 主要 · 虚线 = 相关" })}</div>
-
-        {/* labels */}
+        {MF_V1.down.map((d, i) => (<div className={"node mf-down " + d.cls} style={{ left: 1440, top: [30, 230, 430, 632][i], width: 185 }} key={i}><div className="t">{colh(d.code, tr(d.n))}</div>{d.agents ? <div className="mf-sublist">{d.agents.map((a, j) => (<div className="mf-subitem" key={j}><span className="sd" />{tr(a)}</div>))}</div> : <div className="s">{tr(d.s)}</div>}</div>))}
         <div className="node mf-edgelab" style={{ left: 480, top: 210 }}>{tr({ en: "unified data", ar: "بيانات موحّدة", zh: "统一数据" })}</div>
-        <div className="node mf-feedback" style={{ left: 712, top: 516, width: 250, zIndex: 3, textAlign: "center" }}>{tr({ en: "human feedback → re-plan", ar: "تغذية راجعة بشرية ← إعادة التخطيط", zh: "人工反馈 → 重新规划" })}</div>
       </div></div>
     </div>
   </div>);
 }
+/* ===== UC-13 · Revenue Collection — Multi-Agent Flow ===== (rebuilt as full G-06 directorate flow) */
+const F6_AG = {
+  orch: { en: "Orchestrator Agent", ar: "وكيل المنسّق", zh: "编排器代理" },
+  dataq: { en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询代理" },
+  insight: { en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "主动洞察代理" },
+  revan: { en: "Revenue Analysis Agent", ar: "وكيل تحليل الإيرادات", zh: "收入分析代理" },
+  repgen: { en: "Financial Reports Generation Agent", ar: "وكيل توليد التقارير المالية", zh: "财务报告生成代理" },
+  narr: { en: "Financial Narrative Commentary Agent", ar: "وكيل السرد المالي", zh: "财务叙述评论代理" },
+  anom: { en: "Anomaly Detection Agent", ar: "وكيل كشف الشذوذ", zh: "异常检测代理" },
+  market: { en: "Market Trends Detection Agent", ar: "وكيل اتجاهات السوق", zh: "市场趋势检测代理" },
+  comp: { en: "Compliance / Rules Agent", ar: "وكيل الامتثال/القواعد", zh: "合规/规则代理" },
+};
+const F6_SRC = ["SAP / Asas", "Etimad", "Esnad", "Tahseel", "Makeen", "Efaa", "Sanad", "Balady", "GRP", "BI", { en: "Local files", ar: "ملفات محلية", zh: "本地文件" }, { en: "Bank statements", ar: "كشوف بنكية", zh: "银行对账单" }, "Excel / PDF"];
+const F6 = {
+  uc01: { code: "UC-01", x: 300, y: 132, w: 236, h: 168, title: { en: "Financial Data Unification & Data Quality", ar: "توحيد البيانات المالية وجودتها", zh: "财务数据统一 & 数据质量" }, ags: ["orch", "dataq", "insight"] },
+  uc13: { code: "UC-13", x: 700, y: 132, w: 236, h: 168, title: { en: "Revenue, Collection & Exclusions", ar: "الإيرادات والتحصيل والاستبعادات", zh: "收入、收款 & 排除项" }, ags: ["revan", "dataq", "insight"] },
+  uc06: { code: "UC-06", x: 1100, y: 40, w: 236, h: 168, title: { en: "Financial Performance — Spend Analysis & Reporting", ar: "الأداء المالي — تحليل الإنفاق والتقارير", zh: "财务表现 — 支出分析与报告" }, ags: ["repgen", "narr", "dataq"] },
+  uc02: { code: "UC-02", x: 1100, y: 250, w: 236, h: 168, title: { en: "Anomaly Detection — Alerts & Exceptions", ar: "كشف الشذوذ — التنبيهات والاستثناءات", zh: "异常检测 — 警报与异常" }, ags: ["anom", "insight", "orch"] },
+  uc14: { code: "UC-14", x: 1474, y: 132, w: 230, h: 168, title: { en: "Assets — Classification, Capitalization, Returns & Maintenance", ar: "الأصول — التصنيف والرسملة والعوائد والصيانة", zh: "资产 — 分类、资本化、回报与维护" }, ags: ["dataq", "market", "comp"] },
+  uc12: { code: "UC-12", x: 300, y: 524, w: 236, h: 168, title: { en: "Costs, Assignment Orders & Funds", ar: "التكاليف وأوامر الإسناد والصناديق", zh: "成本、分配订单 & 资金" }, ags: ["dataq", "repgen", "anom"] },
+  uc11: { code: "UC-11", x: 300, y: 732, w: 236, h: 168, title: { en: "Compliance, Policies & Accounting Memos", ar: "الامتثال والسياسات والمذكرات المحاسبية", zh: "合规性、政策 & 会计备忘" }, ags: ["comp", "repgen", "dataq"] },
+  uc10: { code: "UC-10", x: 700, y: 524, w: 236, h: 168, title: { en: "Reports & Dashboards (Periodic / Executive)", ar: "التقارير ولوحات المعلومات (دوري/تنفيذي)", zh: "报告与仪表盘 (定期/执行)" }, ags: ["repgen", "narr", "dataq"] },
+  uc03: { code: "UC-03", x: 700, y: 732, w: 236, h: 140, title: { en: "Smart Query, Audit Log & Permissions", ar: "الاستعلام الذكي وسجل التدقيق والصلاحيات", zh: "智能查询、审计日志 & 权限" }, ags: ["dataq", "insight"] },
+};
+const F6_GATE = { x: 1100, y: 606, w: 236, h: 188 };
+const F6_DEL = { x: 1474, y: 620, w: 230, h: 152 };
+function RcDataFlow() {
+  const { tr, setRoute } = useStore();
+  const colh = (code, name) => (SHOW_UC && code ? code + " · " : "") + name;
+  const wrapRef = useRef(null);
+  const [scale, setScale] = useState(1);
+  const CW = 1716, CH = 920;
+  useEffect(() => {
+    const calc = () => { const w = wrapRef.current ? wrapRef.current.clientWidth : CW; setScale(Math.min(1.3, w / CW)); };
+    calc(); window.addEventListener("resize", calc); return () => window.removeEventListener("resize", calc);
+  }, []);
+  const aR = n => ({ x: n.x + n.w, y: n.y + n.h / 2 });
+  const aL = n => ({ x: n.x, y: n.y + n.h / 2 });
+  const aT = n => ({ x: n.x + n.w / 2, y: n.y });
+  const aB = n => ({ x: n.x + n.w / 2, y: n.y + n.h });
+  const o = (p, q) => { const mx = (p.x + q.x) / 2; return "M" + p.x + "," + p.y + " L" + mx + "," + p.y + " L" + mx + "," + q.y + " L" + q.x + "," + q.y; };
+  const mid = (p, q) => ({ x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 });
+  const plen = (d) => { const pts = d.replace(/[ML]/g, "").trim().split(/\s+/).map(p => p.split(",").map(Number)); let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return L; };
+  const flyDur = (d) => Math.min(9, Math.max(1.8, plen(d) / 170));
+  const F = F6, SRC = { x: 10, y: 64, w: 184, h: 300 };
+  const b14 = aB(F.uc14);
+  const w12 = "M" + b14.x + "," + b14.y + " L" + b14.x + ",462 L96,462 L96," + aL(F.uc12).y + " L" + aL(F.uc12).x + "," + aL(F.uc12).y;
+  const w11 = "M" + (b14.x + 22) + "," + b14.y + " L" + (b14.x + 22) + ",488 L72,488 L72," + aL(F.uc11).y + " L" + aL(F.uc11).x + "," + aL(F.uc11).y;
+  const E = [
+    { d: o(aR(SRC), aL(F.uc01)), c: "g", lp: mid(aR(SRC), aL(F.uc01)), t: { en: "Raw revenue, asset feeds", ar: "بيانات خام", zh: "原始/资产数据" } },
+    { d: o(aR(F.uc01), aL(F.uc13)), c: "b", lp: mid(aR(F.uc01), aL(F.uc13)), t: { en: "Unified revenue/collection data + DQ flags", ar: "موحّد + الجودة", zh: "统一+DQ标志" } },
+    { d: o(aR(F.uc13), aL(F.uc06)), c: "b", lp: mid(aR(F.uc13), aL(F.uc06)), t: { en: "Net billed, collection rate & exclusions", ar: "الإنفاق والنسب", zh: "净开支/费率" } },
+    { d: o(aR(F.uc13), aL(F.uc02)), c: "b", lp: mid(aR(F.uc13), aL(F.uc02)), t: { en: "Collection gaps & objection signals", ar: "الفجوات", zh: "缺口&异议" } },
+    { d: o(aR(F.uc06), aL(F.uc14)), c: "b", lp: mid(aR(F.uc06), aL(F.uc14)), t: { en: "Spend & performance metrics", ar: "مؤشرات الأداء", zh: "支出绩效指标" } },
+    { d: o(aR(F.uc02), aL(F.uc14)), c: "b", lp: mid(aR(F.uc02), aL(F.uc14)), t: { en: "Anomalies & exception list", ar: "الاستثناءات", zh: "异常列表" } },
+    { d: w12, c: "b", lp: { x: 760, y: 452 }, t: { en: "Asset register, capitalization & cost", ar: "سجل الأصول والتكلفة", zh: "资产登记 / 资本化成本" } },
+    { d: w11, c: "b", lp: { x: 360, y: 500 }, t: { en: "Asset classification & guide references", ar: "تصنيف الأصول والمراجع", zh: "资产分类 / 指标参考" } },
+    { d: o(aR(F.uc12), aL(F.uc10)), c: "b", lp: mid(aR(F.uc12), aL(F.uc10)), t: { en: "Costs, assignment orders & fund balances", ar: "التكاليف والأرصدة", zh: "成本&资金余额" } },
+    { d: o(aB(F.uc12), aT(F.uc11)), c: "b", lp: mid(aB(F.uc12), aT(F.uc11)), t: { en: "Compliance findings & memos", ar: "النتائج والمذكرات", zh: "合规结果&备忘" } },
+    { d: o({ x: aR(F.uc11).x, y: aR(F.uc11).y + 16 }, aL(F.uc03)), c: "b", lp: mid(aR(F.uc11), aL(F.uc03)), t: { en: "Policy refs & audit traceability", ar: "السياسات والتدقيق", zh: "政策&审计追溯" } },
+    { d: o({ x: aR(F.uc11).x, y: aR(F.uc11).y - 24 }, aL(F.uc10)), c: "b", lp: { x: 618, y: 690 }, t: { en: "Cost queries & lineage", ar: "استعلام التكلفة", zh: "成本查询&谱系" } },
+    { d: o(aR(F.uc10), aL(F6_GATE)), c: "b", lp: mid(aR(F.uc10), aL(F6_GATE)), t: { en: "Draft executive & periodic reports", ar: "المسودات والتقارير", zh: "草案&双周报告" } },
+    { d: o(aR(F.uc03), { x: F6_GATE.x, y: F6_GATE.y + F6_GATE.h - 44 }), c: "b", lp: mid(aR(F.uc03), aL(F6_GATE)), t: { en: "Query answers, audit trail & permissioned exports", ar: "الإجابات والتدقيق", zh: "答案/审计/许可" } },
+    { d: o(aR(F6_GATE), aL(F6_DEL)), c: "o", lp: mid(aR(F6_GATE), aL(F6_DEL)), t: { en: "Approved Revenue & Asset Reports", ar: "تقارير معتمدة", zh: "已批准报告" } },
+  ];
+  const stroke = c => c === "g" ? "#9aa7b5" : c === "o" ? "#d98324" : "#2563eb";
+  const marker = c => c === "g" ? "url(#mfag)" : c === "o" ? "url(#mfao)" : "url(#mfab)";
+  const ucBox = (n) => (<div className="node mf-down green f6uc" style={{ left: n.x, top: n.y, width: n.w, minHeight: n.h }} key={n.code}>
+    <div className="t"><span className="od" />{colh(n.code, tr(n.title))}</div>
+    <div className="mf-sublist">{n.ags.map((k, i) => (<div className="mf-subitem" key={i}><span className="sd" />{tr(F6_AG[k])}</div>))}</div>
+  </div>);
+  return (<div className="fade mf">
+    <div className="card pad mf-frame">
+      <h1 style={{ fontSize: 21 }}><button className="pg-back" onClick={() => setRoute("rcwork")}>‹</button>{tr({ en: "G-06 Revenue & Assets Directorate — Use-case storyline & agent I/O flow", ar: "مديرية الإيرادات والأصول ج-06 — قصة حالات الاستخدام وتدفّق الوكلاء", zh: "G-06 收入与资产总局 — 使用案例故事情节及代理/输入输出流程" })}</h1>
+      <div className="sub muted" style={{ marginTop: 3 }}>{tr({ en: "Full directorate flow · sources → UC chain (agents & I/O) → mandatory human gate → deliverables · wraps to a second row", ar: "تدفّق المديرية الكامل · المصادر ← سلسلة الحالات ← البوابة البشرية ← المخرجات", zh: "总局完整流程 · 数据源 → 各 UC(代理与输入/输出)→ 强制人工关卡 → 可交付成果 · 连线换行至第二排" })} · <span style={{ color: "#2563eb", cursor: "pointer", fontWeight: 700 }} onClick={() => setRoute("rcdatav1")}>{tr({ en: "view v1", ar: "النسخة v1", zh: "查看旧版 v1" })} ↗</span></div>
+      <div className="f6-legend"><span className="f6lg f6lg-main">{tr({ en: "Main flow", ar: "التدفّق الرئيسي", zh: "主流程" })}</span><span className="f6lg f6lg-gate">{tr({ en: "Mandatory human gate", ar: "بوابة بشرية إلزامية", zh: "强制人工关卡" })}</span><span className="f6lg f6lg-chip">{tr({ en: "Agent chip", ar: "شريحة وكيل", zh: "代理芯片" })}</span><span className="f6lg f6lg-src">{tr({ en: "Sources / deliverables", ar: "المصادر/المخرجات", zh: "数据源 / 成果" })}</span></div>
+
+      <div className="mf-canvas-wrap" ref={wrapRef} style={{ height: Math.ceil(CH * scale) }}><div className="mf-canvas" style={{ width: CW, height: CH, transform: "scale(" + scale + ")", transformOrigin: "top left" }}>
+        <svg className="mf-svg" width={CW} height={CH} viewBox={"0 0 " + CW + " " + CH} fill="none">
+          <defs>
+            <marker id="mfag" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#9aa7b5" strokeWidth="1.6" /></marker>
+            <marker id="mfab" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#2563eb" strokeWidth="1.8" /></marker>
+            <marker id="mfao" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="7" refY="5" orient="auto"><path d="M0,1 L8,5 L0,9" fill="none" stroke="#d98324" strokeWidth="1.8" /></marker>
+          </defs>
+          {E.map((e, i) => (<path key={i} d={e.d} stroke={stroke(e.c)} strokeWidth={e.c === "g" ? 1.7 : 2} fill="none" markerEnd={marker(e.c)} />))}
+          {E.map((e, i) => (<circle key={"fly" + i} r="3.4" fill={stroke(e.c)}><animateMotion dur={flyDur(e.d) + "s"} begin={(i * 0.13) + "s"} repeatCount="indefinite" path={e.d} /></circle>))}
+        </svg>
+
+        <div className="node mf-down gray" style={{ left: SRC.x, top: SRC.y, width: SRC.w, minHeight: SRC.h }}>
+          <div className="t">{tr({ en: "Data Sources", ar: "مصادر البيانات", zh: "数据源" })}</div>
+          <div className="f6-srclist">{F6_SRC.map((s, i) => (<div key={i}>{typeof s === "string" ? s : tr(s)}</div>))}</div>
+        </div>
+
+        {Object.keys(F6).map(k => ucBox(F6[k]))}
+
+        <div className="node mf-down gold" style={{ left: F6_GATE.x, top: F6_GATE.y, width: F6_GATE.w, minHeight: F6_GATE.h }}>
+          <div className="t">⚖ {tr({ en: "Human Review · Mandatory Gate", ar: "مراجعة بشرية · بوابة إلزامية", zh: "人工审核 · 强制门" })}</div>
+          <div className="s">{tr({ en: "Validate & approve · draft reports · query answers · authorize export", ar: "تحقّق واعتمد · المسودات · الإجابات · تفويض التصدير", zh: "验证并批准 · 草稿报告 · 查询答案 · 授权出口" })}</div>
+        </div>
+        <div className="node mf-down gray" style={{ left: F6_DEL.x, top: F6_DEL.y, width: F6_DEL.w, minHeight: F6_DEL.h }}>
+          <div className="t">📦 {tr({ en: "Deliverables", ar: "المخرجات", zh: "可交付成果" })}</div>
+          <div className="s">{tr({ en: "Revenue & Asset Reports · periodic / bi-weekly · approved & authorized", ar: "تقارير الإيرادات والأصول · دورية · معتمدة", zh: "收入 & 资产报告 · 定期 / 双周 · 已批准 & 授权" })}</div>
+        </div>
+
+        {E.map((e, i) => (<div className="node mf-edgelab" style={{ left: e.lp.x - 54, top: e.lp.y, width: 108, textAlign: "center", transform: "translateY(-50%)" }} key={"l" + i}>{tr(e.t)}</div>))}
+      </div></div>
+    </div>
+  </div>);
+}
+
 function RcWorkbench() {
-  const { t, tr, setRoute, pushLog, setPerfJump, setBackRoute, setDeptSub } = useStore();
+  const { t, tr, setRoute, pushLog, setPerfJump, setBackRoute, setDeptSub, setAlertsOpen } = useStore();
   const [ask, setAsk] = useState("");
   const [feed, setFeed] = useState(WB.logs);
   const logRef = useRef(null);
@@ -2295,7 +2356,7 @@ function RcWorkbench() {
   const [showSugs, setShowSugs] = useState(false);
   const qaRef = useRef(null);
   const [fsel, setFsel] = useState([2, 0, 0, 0]);
-  const DEFAULT_SUMMARY = { en: "For FY 2025 Q2, overall collection rate is 87%, with SAR 120M billing gap concentrated in 3 high-risk Amanat. Lease contracts drive ~62% of overdue.", ar: "للربع الثاني 2025، معدل التحصيل الإجمالي 87%، مع فجوة فوترة 120 مليون ريال مركّزة في 3 أمانات عالية الخطورة. عقود الإيجار تقود ~62% من التأخر.", zh: "FY2025 Q2,整体征收率 87%,SAR 120M 开票缺口集中于 3 个高风险阿玛纳。租约合同造成约 62% 的逾期。" };
+  const DEFAULT_SUMMARY = { en: "FY 2025 Q2 · collection rate held at **87%** (+2.1pp QoQ), but a ~~SAR 120M collection gap~~ persists — **65%** of it sits in just **3 Amanat** (Riyadh-East 32M · Jeddah-Port 26M · Dammam-Ind. 20M). Lease contracts drive **~50% of overdue**, and ~~18 contracts now exceed 90 days~~ — **SAR 34M at write-off risk** without dunning this quarter.", ar: "الربع الثاني 2025 · معدل التحصيل **87%** (+2.1)، لكن تبقى ~~فجوة تحصيل 120 مليون~~ — **65%** في **3 أمانات** (الرياض-شرق 32 · جدة 26 · الدمام 20). عقود الإيجار **~50% من التأخر**، و~~18 عقداً تجاوزت 90 يوماً~~ — **34 مليون معرّضة للشطب** دون تحصيل هذا الربع.", zh: "FY2025 Q2 · 征收率维持 **87%**(环比 +2.1pp),但仍有 ~~SAR 120M 征收缺口~~——其中 **65%** 集中在 **3 个阿玛纳**(利雅得-东 32M · 吉达-港 26M · 达曼-工业 20M)。租约合同造成 **约 50% 的逾期**,且 ~~18 个合同已逾期超 90 天~~——若本季不催收,**SAR 34M 面临核销风险**。" };
   const [summary, setSummary] = useState(DEFAULT_SUMMARY);
   const [qaOpen, setQaOpen] = useState(false);
   const WB_CHAIN = [
@@ -2307,25 +2368,38 @@ function RcWorkbench() {
     { code: "UC-10 / UC-03", pos: { en: "CONVERGE ★", ar: "تقارب ★", zh: "汇聚 ★" }, name: { en: "Reporting & Dashboards / Smart Query & Audit", ar: "التقارير / الاستعلام والتدقيق", zh: "报告与仪表盘 / 智能查询与审计" } },
   ];
   const WB_SOURCES = [
-    { n: "Tahseel", s: "synced" }, { n: "Makin / Balady", s: "synced" }, { n: "Wusool", s: "loading" }, { n: "Etimad", s: "synced" }, { n: "Bank Statements", s: "synced" },
+    { n: "Tahseel", s: "synced" }, { n: "Makeen", s: "synced" }, { n: "Efaa", s: "loading" }, { n: "Sanad", s: "synced" }, { n: "Etimad", s: "synced" },
     { n: "Revenue Sources", s: "synced" }, { n: "Invoices", s: "synced" }, { n: "Objections", s: "synced" }, { n: "Executions", s: "synced" }, { n: "White Land Files", s: "synced" },
   ];
   const WB_OUTPUTS = [
-    { l: { en: "Net Billed Amount", ar: "صافي المفوتر", zh: "净开票额" }, v: "SAR 920M", s: { en: "Gross billed − exclusions", ar: "إجمالي المفوتر − الاستبعادات", zh: "总开票 − 排除项" } },
-    { l: { en: "Exclusion Reports", ar: "تقارير الاستبعاد", zh: "排除项报告" }, v: "3 cat.", s: { en: "Judgment · objection · written-off", ar: "حكم · اعتراض · شطب", zh: "判决 · 异议 · 核销" } },
-    { l: { en: "Revenue Opportunity Alerts", ar: "تنبيهات فرص الإيراد", zh: "收入机会告警" }, v: "5", s: { en: "Under-billed / missed coverage", ar: "نقص فوترة / تغطية مفقودة", zh: "少开票 / 漏覆盖" } },
+    { l: { en: "Net Billed Amount", ar: "صافي المفوتر", zh: "净开票额" }, v: "SAR 920M", s: { en: "Gross billed − exclusions", ar: "إجمالي المفوتر − الاستبعادات", zh: "总开票 − 排除项" }, tag: { en: "+2.1% QoQ", ar: "+2.1%", zh: "环比 +2.1%" }, rows: [
+      { k: { en: "Gross billed", ar: "إجمالي المفوتر", zh: "总开票" }, v: "SAR 1.06B", pct: 100 },
+      { k: { en: "− Judgment excl.", ar: "− استبعاد حكم", zh: "− 判决排除" }, v: "SAR 78M", pct: 7 },
+      { k: { en: "− Objection holds", ar: "− تعليق اعتراض", zh: "− 异议挂起" }, v: "SAR 42M", pct: 4 },
+      { k: { en: "− Written-off", ar: "− مشطوب", zh: "− 核销" }, v: "SAR 20M", pct: 2 },
+    ] },
+    { l: { en: "Exclusion Reports", ar: "تقارير الاستبعاد", zh: "排除项报告" }, v: "3 cat. · SAR 140M", s: { en: "Judgment · objection · written-off", ar: "حكم · اعتراض · شطب", zh: "判决 · 异议 · 核销" }, rows: [
+      { k: { en: "Judgment (12 cases)", ar: "حكم (12)", zh: "判决(12 件)" }, v: "SAR 78M" },
+      { k: { en: "Objection (9 cases)", ar: "اعتراض (9)", zh: "异议(9 件)" }, v: "SAR 42M" },
+      { k: { en: "Written-off (21 cases)", ar: "مشطوب (21)", zh: "核销(21 件)" }, v: "SAR 20M" },
+    ] },
+    { l: { en: "Revenue Opportunity Alerts", ar: "تنبيهات فرص الإيراد", zh: "收入机会告警" }, v: "5 · SAR 23M", s: { en: "Under-billed / missed coverage", ar: "نقص فوترة / تغطية مفقودة", zh: "少开票 / 漏覆盖" }, rows: [
+      { k: { en: "Under-billed leases (3)", ar: "إيجارات ناقصة (3)", zh: "少开票租约(3)" }, v: "SAR 12M" },
+      { k: { en: "Missed fee coverage (2)", ar: "تغطية رسوم مفقودة (2)", zh: "漏收费覆盖(2)" }, v: "SAR 7M" },
+      { k: { en: "Indexation gap (1)", ar: "فجوة الفهرسة (1)", zh: "指数化缺口(1)" }, v: "SAR 4M" },
+    ] },
   ];
   const cyc = (i) => setFsel(s => s.map((v, j) => j === i ? (v + 1) % WB.filters[i].opts.length : v));
   const applyFilters = () => {
     const period = WB.filters[0].opts[fsel[0]], amanah = WB.filters[1].opts[fsel[1]];
-    setSummary({ en: `For ${period}, ${amanah}: collection 87%, SAR 120M billing gap across high-risk Amanat; leases drive ~62% of overdue.`, ar: `لـ ${period}، ${amanah}: التحصيل 87%، فجوة 120 مليون ريال في الأمانات عالية الخطورة؛ الإيجارات ~62% من التأخر.`, zh: `${period} · ${amanah}:征收率 87%,SAR 120M 开票缺口集中于高风险阿玛纳;租约造成约 62% 逾期。` });
+    setSummary({ en: `For ${period}, ${amanah}: collection 87%, SAR 120M collection gap across high-risk Amanat; leases drive ~50% of overdue.`, ar: `لـ ${period}، ${amanah}: التحصيل 87%، فجوة 120 مليون ريال في الأمانات عالية الخطورة؛ الإيجارات ~50% من التأخر.`, zh: `${period} · ${amanah}:征收率 87%,SAR 120M 征收缺口集中于高风险阿玛纳;租约造成约 50% 逾期。` });
     pushLog({ en: "Filters applied — " + period + " · " + amanah, ar: "تم تطبيق عوامل التصفية — " + period, zh: "已应用筛选 — " + period + " · " + amanah });
   };
   const SCOPE_K = [{ en: "Period", ar: "الفترة", zh: "期间" }, { en: "Amanah", ar: "الأمانة", zh: "阿玛纳" }, { en: "Revenue", ar: "الإيراد", zh: "收入" }, { en: "Tags", ar: "وسوم", zh: "标签" }];
   const cycleScope = (i) => {
     const ns = fsel.map((v, j) => j === i ? (v + 1) % WB.filters[i].opts.length : v); setFsel(ns);
     const period = WB.filters[0].opts[ns[0]], amanah = WB.filters[1].opts[ns[1]];
-    setSummary({ en: `For ${period}, ${amanah}: collection 87%, SAR 120M billing gap across high-risk Amanat; leases drive ~62% of overdue.`, ar: `لـ ${period}، ${amanah}: التحصيل 87%، فجوة 120 مليون ريال؛ الإيجارات ~62% من التأخر.`, zh: `${period} · ${amanah}:征收率 87%,SAR 120M 开票缺口集中于高风险阿玛纳;租约造成约 62% 逾期。` });
+    setSummary({ en: `For ${period}, ${amanah}: collection 87%, SAR 120M collection gap across high-risk Amanat; leases drive ~50% of overdue.`, ar: `لـ ${period}، ${amanah}: التحصيل 87%، فجوة 120 مليون ريال؛ الإيجارات ~50% من التأخر.`, zh: `${period} · ${amanah}:征收率 87%,SAR 120M 征收缺口集中于高风险阿玛纳;租约造成约 50% 逾期。` });
     pushLog({ en: "Scope changed — " + period + " · " + amanah, ar: "تغيّر النطاق — " + period, zh: "作用域已更改 — " + period + " · " + amanah });
   };
   useEffect(() => {
@@ -2358,11 +2432,10 @@ function RcWorkbench() {
     zh: row.id + "(" + tr(row.am) + ")逾期 " + row.od + ",风险 " + row.risk + "。主因:Wusool 模板下租约欠款逾期超过 60 天。建议:定向催收并与法务复核升级条款。",
   });
   return (<div className="fade wb">
-    <div className="ws-back" onClick={() => setRoute("rcwork")}>← {tr({ en: "Back to Revenue Collection workspace", ar: "العودة إلى مساحة عمل التحصيل", zh: "返回收入征收工作区" })}</div>
     <div className="card pad wb-frame">
     {/* HEADER */}
     <div className="card pad wb-head">
-      <div><div className="wb-title"><span className="wb-dot blue" /> {tr({ en: "Revenue Collection Department", ar: "إدارة التحصيل", zh: "收入征收部" })} · {tr({ en: "Analysis Workbench", ar: "منصة التحليل", zh: "分析工作台" })}</div>
+      <div><div className="wb-title"><button className="pg-back" onClick={() => setRoute("rcwork")}>‹</button><span className="wb-dot blue" /> {tr({ en: "Revenue Collection Department", ar: "إدارة التحصيل", zh: "收入征收部" })} · {tr({ en: "Analysis Workbench", ar: "منصة التحليل", zh: "分析工作台" })}<button className="al-bell" onClick={() => setAlertsOpen(true)} title={ucl("UC-02", tr({ en: "Alerts & Exceptions Center", ar: "مركز التنبيهات", zh: "告警与异常中心" }))}>🔔 <span>3</span></button></div>
         <div className="wb-subt">{ucl("UC-13", tr({ en: "Revenue Collection & Billing Gap", ar: "التحصيل وفجوة الفوترة", zh: "收入征收与开票缺口" }))}</div></div>
       <div className="wb-chain"><span className="wb-clab">{tr({ en: "G-06 CHAIN", ar: "سلسلة ج-06", zh: "G-06 链路" })}</span>{WB_CHAIN.map((c, i) => (<React.Fragment key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (c.here ? " here" : "")}>{c.pos && <span className="wb-cpos">{tr(c.pos)}</span>}{SHOW_UC ? c.code + " · " : ""}{tr(c.name)}</span></React.Fragment>))}</div>
     </div>
@@ -2372,19 +2445,19 @@ function RcWorkbench() {
         <div className="wb-ab-spark">✦</div>
         <div className="wb-ab-tt">
           <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء الاصطناعي والإجراءات", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">{SHOW_UC ? "UC-13 · " : ""}run #2041 · {tr({ en: "Revenue agent", ar: "وكيل الإيرادات", zh: "收入智能体" })} · {tr({ en: "scope", ar: "النطاق", zh: "作用域" })}: {WB.filters[0].opts[fsel[0]]} · {WB.filters[1].opts[fsel[1]]}</span></div>
-          <div className="wb-ab-insight"><Money v={tr(summary)} /></div>
+          <div className="wb-ab-insight"><Hi t={tr(summary)} /></div>
         </div>
       </div>
       <div className="wb-ab-rows">
         <div className="wb-ab-col">
           <div className="wb-ab-h">⚐ {tr({ en: "RECOMMENDED · prompts", ar: "موصى به · مقترحات", zh: "建议 · 提示(点击应用)" })}</div>
-          <div className="wb-sugs">{WB.next.map((n, i) => (<button className="wb-sug" key={i} onClick={() => { pushLog({ en: "Applied recommendation — " + tr(n), ar: "تطبيق توصية — " + tr(n), zh: "已应用建议 — " + tr(n) }); setQaOpen(true); }}><span className="pr">{i + 1}</span> {tr(n)}</button>))}</div>
+          <div className="wb-sugs">{WB.next.map((n, i) => (<button className="wb-sug" key={i} onClick={() => { pushLog({ en: "Applied recommendation — " + tr(n.t), ar: "تطبيق توصية — " + tr(n.t), zh: "已应用建议 — " + tr(n.t) }); setQaOpen(true); }}><span className="pr">{i + 1}</span><span className="wb-sug-tx"><b>{tr(n.t)}</b><i>{tr(n.d)}</i></span></button>))}</div>
         </div>
         <div className="wb-ab-col r">
           <div className="wb-ab-h">➜ {tr({ en: "HAND OFF DOWNSTREAM · actions", ar: "تسليم لاحق · إجراءات", zh: "下游交接 · 动作" })}</div>
           <div className="wb-ctas">
             <button className="wb-cta p" onClick={() => { setPerfJump({ tab: "dash", generate: true }); setBackRoute("rcbench"); setDeptSub("revcol"); setRoute("rcreports"); }}>{SHOW_UC && <span className="uc">UC-06</span>}{tr({ en: "Generate Executive Summary", ar: "إنشاء الملخص التنفيذي", zh: "生成执行摘要" })}<span className="ar">→</span></button>
-            <button className="wb-cta s" onClick={() => setRoute("monitor")}>{SHOW_UC && <span className="uc">UC-02</span>}{tr({ en: "Create Alert / Case", ar: "إنشاء تنبيه / حالة", zh: "创建告警 / 案例" })}<span className="ar">→</span></button>
+            <button className="wb-cta s" onClick={() => setAlertsOpen(true)}>{SHOW_UC && <span className="uc">UC-02</span>}{tr({ en: "Create Alert / Case", ar: "إنشاء تنبيه / حالة", zh: "创建告警 / 案例" })}<span className="ar">→</span></button>
           </div>
         </div>
       </div>
@@ -2397,7 +2470,7 @@ function RcWorkbench() {
         <span className="wb-auto">● {tr({ en: "auto-applied", ar: "تطبيق تلقائي", zh: "自动应用" })}</span>
       </div>
     </div>
-    <div className="wb-ogrid">{WB_OUTPUTS.map((o, i) => (<div className="wb-ocard" key={i}><div className="oc-h">{tr(o.l)}</div><div className="oc-b"><div className="oc-v"><Money v={o.v} /></div><div className="oc-s">{tr(o.s)}</div></div></div>))}</div>
+    <div className="wb-ogrid">{WB_OUTPUTS.map((o, i) => (<div className="wb-ocard" key={i}><div className="oc-h">{tr(o.l)}{o.tag && <span className="oc-tag">{tr(o.tag)}</span>}</div><div className="oc-b"><div className="oc-v"><Money v={o.v} /></div><div className="oc-s">{tr(o.s)}</div></div>{o.rows && <div className="oc-rows">{o.rows.map((r, j) => (<div className="oc-row" key={j}><span className="k">{tr(r.k)}</span>{typeof r.pct === "number" && <span className="ocbar"><i style={{ width: r.pct + "%" }} /></span>}<span className="ov">{r.v}</span></div>))}</div>}</div>))}</div>
     <div className="wb-cols3">
       <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Collection Overview", ar: "نظرة عامة على التحصيل", zh: "征收概览" })}</b></div>
         <div className="wb-pb">
@@ -2408,7 +2481,7 @@ function RcWorkbench() {
             <div className="wb-bar"><div className="bl">{tr({ en: "Collected", ar: "محصّل", zh: "已收" })}</div><div className="bt"><span className="bf coll" style={{ width: "87%" }} /></div><div className="bv"><Money v="SAR 800M" /></div></div>
             <div className="wb-bar"><div className="bl">{tr({ en: "Outstanding", ar: "مستحق", zh: "未收" })}</div><div className="bt"><span className="bf out" style={{ width: "13%" }} /></div><div className="bv"><Money v="SAR 120M" /></div></div>
           </div>
-          <div className="wb-kk"><span>{tr({ en: "Overdue share (>60d)", ar: "نسبة التأخر (>60 يوماً)", zh: "逾期占比 (>60天)" })}</span><b className="red">62%</b></div>
+          <div className="wb-kk"><span>{tr({ en: "Overdue share (>60d)", ar: "نسبة التأخر (>60 يوماً)", zh: "逾期占比 (>60天)" })}</span><b className="red">50%</b></div>
           <div className="wb-kk"><span>{tr({ en: "Avg DSO", ar: "متوسط أيام التحصيل", zh: "平均回款天数" })}</span><b>74 {tr({ en: "days", ar: "يوم", zh: "天" })}</b></div>
         </div></div>
       <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Billing Gap · Focus List", ar: "فجوة الفوترة · قائمة التركيز", zh: "开票缺口 · 重点清单" })}</b><span className="wb-pm">{tr({ en: "top 5 overdue", ar: "أعلى 5 متأخرة", zh: "前 5 逾期" })}</span></div>
@@ -2439,13 +2512,13 @@ function RcWorkbench() {
         <div className="wb-pb"><div className="wb-tl" ref={logRef}>{feed.map((e, i) => (<div className={"wb-ev" + (i === feed.length - 1 ? " live" : "")} key={i}><span className={"wb-dot2 " + e.dot} /><div className="wb-eh"><b>{e.tm}</b> · {e.code ? ucl(e.code, tr(e.h)) : tr(e.h)}</div><div className="wb-ed">{tr(e.d)}</div></div>))}</div></div></div>
     </div>
     <button className="wb-qfab" onClick={() => setQaOpen(o => !o)} aria-label="AI Narratives & Q&A" title={tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}>🤖</button>
-    {qaOpen && <div className="wb-qpanel">
+    {qaOpen && <div className="wb-qpanel qa">
       <div className="wb-qph"><span className="wb-dot violet" /> <b>{tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}</b><button className="wb-qx" onClick={() => setQaOpen(false)}>✕</button></div>
         <div className="wb-pb wb-qbody">
           {qa.length === 0 && !thinking && <div className="wb-narrwrap"><div className="wb-ntag">{ucl("UC-13", tr({ en: "NARRATIVE", ar: "السرد", zh: "叙述" }))}</div>
           <div className="wb-narr">
             <p>{tr({ en: "Collection performance is stable at 87% overall, but three Amanat (Riyadh-East, Jeddah-Port, Dammam-Industrial) account for SAR 78M of the SAR 120M gap.", ar: "أداء التحصيل مستقر عند 87% إجمالاً، لكن ثلاث أمانات (الرياض-شرق، جدة-الميناء، الدمام-الصناعية) تمثّل 78 مليون ريال من فجوة 120 مليون ريال.", zh: "整体征收表现稳定在 87%,但三个阿玛纳(利雅得-东、吉达-港、达曼-工业)占 SAR 120M 缺口中的 SAR 78M。" })}</p>
-            <p>{tr({ en: "Lease contracts dominate overdue balances, with 62% of arrears aged beyond 60 days. RAG analysis shows weak escalation clauses in Wusool template v2.", ar: "عقود الإيجار تهيمن على الأرصدة المتأخرة، مع تقادم 62% من المتأخرات أكثر من 60 يوماً. يُظهر تحليل RAG ضعف بنود التصعيد في قالب وصول v2.", zh: "租约合同主导逾期余额,62% 的欠款账龄超过 60 天。RAG 分析显示 Wusool 模板 v2 的升级条款较弱。" })}</p>
+            <p>{tr({ en: "Lease contracts dominate overdue balances, with 50% of arrears aged beyond 60 days. RAG analysis shows weak escalation clauses in Wusool template v2.", ar: "عقود الإيجار تهيمن على الأرصدة المتأخرة، مع تقادم 50% من المتأخرات أكثر من 60 يوماً. يُظهر تحليل RAG ضعف بنود التصعيد في قالب وصول v2.", zh: "租约合同主导逾期余额,50% 的欠款账龄超过 60 天。RAG 分析显示 Wusool 模板 v2 的升级条款较弱。" })}</p>
             <div className="wb-rp">{tr({ en: "Recommended priorities:", ar: "الأولويات الموصى بها:", zh: "建议优先事项:" })}</div>
             <ul><li>{tr({ en: "Targeted follow-up on top 3 Amanat (SAR 78M)", ar: "متابعة موجّهة لأعلى 3 أمانات (78 مليون ريال)", zh: "针对前 3 个阿玛纳的定向跟进(SAR 78M)" })}</li>
               <li>{tr({ en: "Review lease template terms with legal", ar: "مراجعة شروط قالب الإيجار مع القانونية", zh: "与法务复核租约模板条款" })}</li>
@@ -2469,9 +2542,9 @@ function RcWorkbench() {
 const RC_KPI_SLIDES = [
   [
     { lab: { en: "Collection Rate", ar: "معدل التحصيل", zh: "征收率" }, v: "87%", d: { en: "+2.1% QoQ", ar: "+2.1%", zh: "+2.1% 环比" }, up: true },
-    { lab: { en: "Billing Gap", ar: "فجوة الفوترة", zh: "开票缺口" }, v: "SAR 120M", d: { en: "unbilled coverage", ar: "تغطية غير مفوترة", zh: "未开票覆盖" } },
+    { lab: { en: "Collection Gap", ar: "فجوة التحصيل", zh: "征收缺口" }, v: "SAR 120M", d: { en: "net billed 920 − collected 800", ar: "صافي المفوتر 920 − المحصّل 800", zh: "净开票 920 − 已收 800" } },
     { lab: { en: "Overdue Risk (30/60/90+)", ar: "مخاطر التأخر (30/60/90+)", zh: "逾期风险 (30/60/90+)" }, aging: [["30d", 47, "SAR 28M"], ["60d", 53, "SAR 32M"], ["90+", 100, "SAR 60M"]] },
-    { lab: { en: "Prioritized Actions", ar: "إجراءات مرتّبة", zh: "优先行动" }, v: "14", d: { en: "5 escalations · by impact", ar: "5 تصعيدات", zh: "5 项升级 · 按影响" } },
+    { lab: { en: "Prioritized Actions", ar: "إجراءات مرتّبة", zh: "优先行动" }, act: true, esc: "5", total: "14", items: [ { t: { en: "Riyadh-East overdue", ar: "تأخر الرياض-شرق", zh: "利雅得-东逾期" }, s: { en: "escalate to Amanah finance", ar: "تصعيد لمالية الأمانة", zh: "上报阿玛纳财务" }, v: "SAR 32M" }, { t: { en: "Jeddah-Port overdue", ar: "تأخر جدة-الميناء", zh: "吉达-港逾期" }, s: { en: "dunning + legal notice", ar: "تحصيل + إشعار قانوني", zh: "催收 + 法律通知" }, v: "SAR 26M" }, { t: { en: "Contracts > 90 days (18)", ar: "عقود > 90 يوماً (18)", zh: "逾期 >90 天合同(18)" }, s: { en: "auto-escalation", ar: "تصعيد تلقائي", zh: "自动升级" }, v: "SAR 34M" }, { t: { en: "Duplicate invoice INV-4471", ar: "فاتورة مكررة INV-4471", zh: "重复发票 INV-4471" }, s: { en: "block & correct", ar: "حجب وتصحيح", zh: "拦截并更正" }, v: "SAR 1.86M" }, { t: { en: "Wusool template v2 clauses", ar: "بنود قالب وصول v2", zh: "Wusool 模板 v2 条款" }, s: { en: "legal review", ar: "مراجعة قانونية", zh: "法务复核" }, v: "—" } ] },
   ],
   [
     { lab: { en: "Net Billed Amount", ar: "صافي المفوتر", zh: "净开票额" }, v: "SAR 920M", d: { en: "gross − exclusions", ar: "إجمالي − استبعادات", zh: "总开票 − 排除项" } },
@@ -2480,7 +2553,7 @@ const RC_KPI_SLIDES = [
     { lab: { en: "Revenue Opportunity Alerts", ar: "تنبيهات الفرص", zh: "收入机会告警" }, v: "5", d: { en: "under-billed / missed", ar: "نقص فوترة", zh: "少开票 / 漏覆盖" } },
   ],
   [
-    { lab: { en: "Overdue Share (>60d)", ar: "نسبة التأخر (>60ي)", zh: "逾期占比 (>60天)" }, v: "62%", d: { en: "lease-driven", ar: "تقوده الإيجارات", zh: "租约主导" } },
+    { lab: { en: "Overdue Share (>60d)", ar: "نسبة التأخر (>60ي)", zh: "逾期占比 (>60天)" }, v: "50%", d: { en: "lease-driven", ar: "تقوده الإيجارات", zh: "租约主导" } },
     { lab: { en: "Avg DSO", ar: "متوسط أيام التحصيل", zh: "平均回款天数" }, v: "74", d: { en: "days outstanding", ar: "يوم تحصيل", zh: "天" } },
     { lab: { en: "Top-3 Amanat Gap", ar: "فجوة أعلى 3 أمانات", zh: "前3阿玛纳缺口" }, v: "SAR 78M", d: { en: "of SAR 120M total", ar: "من 120 مليون", zh: "占 SAR 120M" } },
     { lab: { en: "Actionable Recommendations", ar: "توصيات قابلة للتنفيذ", zh: "可执行建议" }, v: "14", d: { en: "ranked by impact", ar: "حسب الأثر", zh: "按影响排序" } },
@@ -2507,12 +2580,20 @@ const AS_KPI_SLIDES = [
   ],
 ];
 function KpiCarousel({ slides, tone }) {
-  const { tr } = useStore();
+  const { tr, setAlertsOpen } = useStore();
   const [idx, setIdx] = useState(0);
+  const [openAct, setOpenAct] = useState(false);
+  const actCard = slides.flat().find(c => c.act);
   useEffect(() => { const id = setInterval(() => setIdx(i => (i + 1) % slides.length), 5000); return () => clearInterval(id); }, [slides.length]);
   const card = (c, i) => c.aging
     ? (<div className="ws-kpi2 km kmrisk" key={i}><div className="lab">{tr(c.lab)}</div>
         <div className="km-aging">{c.aging.map((b, j) => (<div className="ab" key={j}><div className="abar"><i style={{ width: b[1] + "%" }} /></div><div className="at">{b[0]}</div><div className="av">{b[2]}</div></div>))}</div></div>)
+    : c.act
+    ? (<div className={"ws-kpi2 km kmact" + (openAct ? " on" : "")} key={i} onClick={() => setOpenAct(o => !o)} title={tr({ en: "View escalation details", ar: "عرض تفاصيل التصعيد", zh: "查看升级详情" })}>
+        <div className="lab">{tr(c.lab)} <span className="km-open">{openAct ? "▾" : "▸"}</span></div>
+        <div className="km-actrow"><b className="kmbig">{c.esc}</b><span className="kmesc">{tr({ en: "escalations", ar: "تصعيدات", zh: "项升级" })}</span></div>
+        <div className="kmsub">{tr({ en: "of " + c.total + " actions · by impact", ar: "من " + c.total + " إجراءً · حسب الأثر", zh: "共 " + c.total + " 项行动 · 按影响排序" })}</div>
+      </div>)
     : (<div className="ws-kpi2 km" key={i}><div className="lab">{tr(c.lab)}</div><div className="v"><Money v={c.v} /> <span className={"d" + (c.up ? " up" : "")}>{typeof c.d === "string" ? c.d : tr(c.d)}</span></div></div>);
   return (<div className={"kpi-carousel " + (tone || "green")}>
     <div className="kpi-viewport">
@@ -2521,15 +2602,106 @@ function KpiCarousel({ slides, tone }) {
       </div>
     </div>
     <div className="kpi-dots">{slides.map((_, i) => (<button key={i} className={"kpi-dot" + (i === idx ? " on" : "")} onClick={() => setIdx(i)} aria-label={"slide " + (i + 1)} />))}</div>
+    {openAct && actCard && <div className="km-pop">
+      <div className="km-poph"><b>{tr({ en: "5 escalations · prioritized by impact", ar: "5 تصعيدات · حسب الأثر", zh: "5 项升级 · 按影响排序" })}</b><button className="km-popx" onClick={(e) => { e.stopPropagation(); setOpenAct(false); }}>✕</button></div>
+      {actCard.items.map((it, j) => (<div className="km-popr" key={j} onClick={() => { setOpenAct(false); setAlertsOpen(true); }}><span className="r">{j + 1}</span><div className="m"><div className="t">{tr(it.t)}</div><div className="s">{tr(it.s)}</div></div><span className="v">{it.v}</span></div>))}
+      <div className="km-popf" onClick={() => { setOpenAct(false); setAlertsOpen(true); }}>{tr({ en: "Open Alerts & Exceptions Center →", ar: "فتح مركز التنبيهات →", zh: "打开告警与异常中心 →" })}</div>
+    </div>}
   </div>);
 }
 
+// ===== Shared floating Smart Query (every workspace) =====
+const SQ_GEN = { en: "Within the current scope, the agent cross-checked the linked records and source systems. Read: most indicators are within expected ranges except the items flagged above — open a highlighted row to see the contributing contracts/assets, then use a downstream hand-off action to route any approval. (Demo response; wire live data for exact figures.)", ar: "ضمن النطاق الحالي، راجع الوكيل السجلات والأنظمة المصدرية. النتيجة: معظم المؤشرات ضمن النطاقات المتوقعة عدا البنود المُعلَّمة أعلاه — افتح صفاً مميزاً لعرض العقود/الأصول، ثم استخدم إجراء تسليم لاحق للاعتماد. (إجابة عرض.)", zh: "在当前作用域内,智能体已交叉核对关联记录与源系统。结论:除上方标记项外,多数指标处于预期范围;点击任一高亮行可查看相关合同/资产,再用下游交接动作发起审批。(演示回答;接入实时数据后给出精确数值。)" };
+function SmartQueryFab({ scope, prompts }) {
+  const { tr, pushLog } = useStore();
+  const [open, setOpen] = useState(false);
+  const [ask, setAsk] = useState("");
+  const [qa, setQa] = useState([]);
+  const [thinking, setThinking] = useState(false);
+  const [showSugs, setShowSugs] = useState(false);
+  const tRef = useRef(null);
+  useEffect(() => { const el = tRef.current; if (el) el.scrollTop = el.scrollHeight; }, [qa, thinking]);
+  const send = (q) => {
+    const v = (q || ask).trim(); if (!v || thinking) return;
+    pushLog({ en: "Smart query → " + v, ar: "استعلام ذكي → " + v, zh: "智能查询 → " + v });
+    setQa(p => [...p, { role: "u", text: v }]); setAsk(""); setThinking(true); setShowSugs(false);
+    setTimeout(() => { setQa(p => [...p, { role: "a", text: tr(SQ_GEN) }]); setThinking(false); }, 800);
+  };
+  return (<React.Fragment>
+    <button className="wb-qfab" onClick={() => setOpen(o => !o)} title={tr({ en: "Smart query", ar: "استعلام ذكي", zh: "智能查询" })}>🤖</button>
+    {open && <div className="wb-qpanel qa">
+      <div className="wb-qph"><span className="wb-dot violet" /> <b>{tr({ en: "Smart query", ar: "استعلام ذكي", zh: "智能查询" })}</b>{SHOW_UC && <span style={{ fontSize: 9, fontWeight: 800, color: "#6d28d9", background: "#f5effe", borderRadius: 6, padding: "1px 6px", marginInlineStart: 6 }}>UC-03</span>}<button className="wb-qx" onClick={() => setOpen(false)}>✕</button></div>
+      <div className="wb-pb wb-qbody">
+        {scope && <div className="wb-src" style={{ marginBottom: 8 }}>{tr(scope)}</div>}
+        <div className="wb-qa sq-conv" ref={tRef}>
+          {qa.length === 0 && !thinking && <div className="sq-empty">{tr({ en: "Ask the department agent anything within this scope — or tap a suggested question below.", ar: "اسأل وكيل الإدارة ضمن هذا النطاق — أو اختر سؤالاً مقترحاً أدناه.", zh: "在此作用域内向部门智能体提问——或点击下方的建议问题。" })}</div>}
+          {qa.map((m, i) => (<div className={"wb-qm " + m.role} key={i}><div className="bb">{m.text}</div></div>))}
+          {thinking && <div className="wb-qm a"><div className="bb think"><span className="wb-typing"><i /><i /><i /></span></div></div>}
+        </div>
+        <div className={"wb-sqh" + (qa.length > 0 ? " tog" : "")} onClick={() => { if (qa.length > 0) setShowSugs(v => !v); }}>{tr({ en: "SUGGESTED QUESTIONS", ar: "أسئلة مقترحة", zh: "建议问题" })}{qa.length > 0 && <span className="sqtg">{showSugs ? "▾" : "▸"}</span>}</div>
+        {(qa.length === 0 || showSugs) && (prompts || []).map((q, i) => (<div className="wb-sq" key={i} onClick={() => send(tr(q))}>{tr(q)} <span className="ar">→</span></div>))}
+        <div className="wb-askh">{tr({ en: "Ask the department agent…", ar: "اسأل وكيل الإدارة…", zh: "向部门智能体提问…" })}</div>
+        <div className="wb-ask"><input value={ask} onChange={e => setAsk(e.target.value)} placeholder={tr({ en: "Type your question…", ar: "اكتب سؤالك…", zh: "输入你的问题…" })} onKeyDown={e => e.key === "Enter" && send()} /><button className="btn sm" onClick={() => send()}>{tr({ en: "Send", ar: "إرسال", zh: "发送" })}</button></div>
+      </div>
+    </div>}
+  </React.Fragment>);
+}
+
 // ===== Shared Business Plaza · two-lane overview (Revenue × Assets) =====
+const NEXT_ACTIONS_RC = [
+  { act: { en: "Approve & route 14 billing corrections to collections", ar: "اعتماد وتوجيه 14 تصحيحاً للتحصيل", zh: "批准并下发 14 项开票更正至征收" }, owner: "Layla Al-Harbi", role: { en: "Revenue Collection Lead", ar: "قائدة التحصيل", zh: "收入征收负责人" }, phone: "+966 55 014 2207" },
+  { act: { en: "Launch dunning on top 18 contracts > 90d", ar: "بدء التحصيل على أعلى 18 عقداً > 90 يوماً", zh: "对逾期>90天的前18个合同启动催收" }, owner: "Omar Al-Qahtani", role: { en: "Collections Officer", ar: "مسؤول التحصيل", zh: "催收专员" }, phone: "+966 50 663 1180" },
+  { act: { en: "Escalate Riyadh-East gap to Amanah finance", ar: "تصعيد فجوة الرياض-شرق لمالية الأمانة", zh: "将利雅得-东缺口上报阿玛纳财务" }, owner: "Faisal Al-Dossari", role: { en: "Riyadh-East Finance Mgr", ar: "مدير مالية الرياض-شرق", zh: "利雅得-东财务经理" }, phone: "+966 53 991 4472" },
+];
+const NEXT_ACTIONS_AS = [
+  { act: { en: "Post SAR 1.92B AUC capitalization for review", ar: "ترحيل رسملة 1.92 مليار للمراجعة", zh: "提交 SAR 1.92B 在建资产资本化待复核" }, owner: "Noura Al-Otaibi", role: { en: "Asset Accounting Lead", ar: "قائدة محاسبة الأصول", zh: "资产会计负责人" }, phone: "+966 55 207 3318" },
+  { act: { en: "Issue impairment memos — 3 equipment items", ar: "إصدار مذكرات انخفاض لـ 3 معدات", zh: "为 3 项设备开具减值备忘" }, owner: "Khalid Al-Mutairi", role: { en: "Compliance Officer", ar: "مسؤول الامتثال", zh: "合规专员" }, phone: "+966 50 118 9043" },
+  { act: { en: "Schedule R-118 / R-204 maintenance", ar: "جدولة صيانة R-118 / R-204", zh: "安排 R-118 / R-204 维护" }, owner: "Sara Al-Ghamdi", role: { en: "Facilities & Maintenance", ar: "المرافق والصيانة", zh: "设施与维护" }, phone: "+966 53 442 7765" },
+];
+function SyncBadge() {
+  const { tr } = useStore();
+  const [sec, setSec] = useState(7);
+  useEffect(() => { const id = setInterval(() => setSec(s => (s >= 95 ? 0 : s + 1)), 1000); return () => clearInterval(id); }, []);
+  const ago = sec < 3 ? { en: "just now", ar: "الآن", zh: "刚刚" }
+    : sec < 60 ? { en: sec + "s ago", ar: "قبل " + sec + " ث", zh: sec + " 秒前" }
+    : { en: Math.floor(sec / 60) + "m ago", ar: "قبل " + Math.floor(sec / 60) + " د", zh: Math.floor(sec / 60) + " 分钟前" };
+  return (<span className="sync-badge" title={tr({ en: "Live data sync from source systems", ar: "مزامنة بيانات حية من الأنظمة المصدرية", zh: "源系统实时数据同步" })}><span className="sync-ic">⟳</span><b>{tr({ en: "Data sync", ar: "مزامنة البيانات", zh: "数据同步" })}</b> · {tr(ago)}</span>);
+}
+function DwActions({ buttons }) {
+  const { tr, pushLog } = useStore();
+  const [done, setDone] = useState(null);
+  if (done) return (<div className="dw-pbtns done"><span className="dw-confirm">✓ {tr(done)}</span><button className="dw-btn ghost" onClick={() => setDone(null)}>{tr({ en: "Undo", ar: "تراجع", zh: "撤销" })}</button></div>);
+  return (<div className="dw-pbtns">{buttons.map((b, i) => (<button key={i} className={"dw-btn " + (b.cls || "")} onClick={b.go ? b.go : () => { pushLog(b.confirm); setDone(b.confirm); }}>{tr(b.label)}{b.arrow ? " →" : ""}</button>))}</div>);
+}
+function Hi({ t }) {
+  if (!t) return t;
+  const out = []; const re = /(\*\*[^*]+\*\*|~~[^~]+~~)/g; let last = 0, m, k = 0;
+  while ((m = re.exec(t)) !== null) {
+    if (m.index > last) out.push(t.slice(last, m.index));
+    const seg = m[0];
+    if (seg.slice(0, 2) === "**") out.push(<b className="hi-b" key={k++}>{seg.slice(2, -2)}</b>);
+    else out.push(<mark className="hi-m" key={k++}>{seg.slice(2, -2)}</mark>);
+    last = m.index + seg.length;
+  }
+  if (last < t.length) out.push(t.slice(last));
+  return <React.Fragment>{out}</React.Fragment>;
+}
+function OrchNext({ items }) {
+  const { tr } = useStore();
+  return (<div className="orch-next">
+    <div className="onh">⚐ {tr({ en: "Next actions · owners", ar: "الإجراءات التالية · المسؤولون", zh: "下一步动作 · 负责人" })}</div>
+    {items.map((a, i) => (<div className="ona" key={i}>
+      <span className="ona-i">{i + 1}</span>
+      <div className="ona-m"><div className="ona-t">{tr(a.act)}</div><div className="ona-o">👤 {a.owner} · {tr(a.role)}</div></div>
+      <a className="ona-tel" href={"tel:" + a.phone.replace(/[^+\d]/g, "")} onClick={e => e.stopPropagation()}>📞 {a.phone}</a>
+    </div>))}
+  </div>);
+}
 function BusinessPlaza({ defaultSel }) {
   const { tr, setRoute, setPerfJump, setDeptSub, setBackRoute } = useStore();
   const plazaWrapRef = useRef(null);
   const [plazaBox, setPlazaBox] = useState({ w: 0, h: 0 });
-  const [plazaSel, setPlazaSel] = useState(defaultSel || null);
+  const [plazaSel, setPlazaSel] = useState(null); // diagram opens as a clean overview; detail panel below defaults to defaultSel (UC-13/UC-14)
   const [plazaModal, setPlazaModal] = useState(false);
   useEffect(() => {
     const el = plazaWrapRef.current; if (!el || typeof ResizeObserver === "undefined") return;
@@ -2545,6 +2717,7 @@ function BusinessPlaza({ defaultSel }) {
     else if (n.open === "report") { setPerfJump({ tab: "params" }); setBackRoute("rcwork"); setDeptSub("revcol"); setRoute("rcreports"); }
   };
   const ovScale = (plazaBox.w || 480) / PZ.W;
+  const dScale = Math.min(1.12, ((typeof window !== "undefined" ? Math.min(840, window.innerWidth * 0.94) : 800) - 44) / PZ.W);
   const renderPlaza = (full, scale, sel) => {
     const astTop = full ? 424 : 280;
     const H = full ? 536 : PZ.H;
@@ -2566,11 +2739,11 @@ function BusinessPlaza({ defaultSel }) {
         <rect x="2" y={astTop - 30} width="716" height="132" rx="14" fill="#f7f3fc" />
         <text x="14" y="51" className="pz-lane rev">REVENUE COLLECTION DEPARTMENT</text>
         <text x="14" y={astTop - 12} className="pz-lane ast">ASSETS DEPARTMENT</text>
-        {PLAZA_INTRA.map(([a, b], i) => { const y = cy(a); const x1 = PZ.colX[pzById[a].col] + PZ.NW, x2 = PZ.colX[pzById[b].col]; const c = pzById[a].lane === "rev" ? "#1f3a8a" : "#5b3a9e"; return <path key={i} d={`M${x1},${y} L${x2 - 3},${y}`} stroke={c} strokeWidth="2" fill="none" markerEnd={`url(#${mid})`} opacity={(!full && sel) ? 0.3 : 0.85} />; })}
+        {PLAZA_INTRA.map(([a, b], i) => { const y = cy(a); const x1 = PZ.colX[pzById[a].col] + PZ.NW, x2 = PZ.colX[pzById[b].col]; const c = pzById[a].lane === "rev" ? "#1f3a8a" : "#5b3a9e"; return <path key={i} d={`M${x1},${y} L${x2 - 3},${y}`} stroke={c} strokeWidth="2" fill="none" markerEnd={`url(#${mid})`} opacity={0.85} />; })}
         {PLAZA_CROSS.map((e, i) => { if (!(full || (sel && (e.from === sel || e.to === sel)))) return null; const p = cross(e, i); return <path key={"c" + i} d={p.d} stroke="#e0524a" strokeWidth="1.7" strokeDasharray="5 4" fill="none" markerEnd={`url(#${mid})`} />; })}
       </svg>
-      {PLAZA_UCS.map(n => { const dim = !full && sel && sel !== n.id && !pzRelated(sel, n.id); return (
-        <div key={n.id} className={"pz-node " + n.lane + (sel === n.id ? " on" : "") + (dim ? " dim" : "")} style={{ left: PZ.colX[n.col], top: top(n.id), width: PZ.NW, height: PZ.NH }} onClick={full ? undefined : (ev) => { ev.stopPropagation(); setPlazaSel(s => s === n.id ? null : n.id); }}>
+      {PLAZA_UCS.map(n => { const dim = false; return (
+        <div key={n.id} className={"pz-node " + n.lane + (sel === n.id ? " on" : "") + (dim ? " dim" : "")} style={{ left: PZ.colX[n.col], top: top(n.id), width: PZ.NW, height: PZ.NH }} onClick={full ? undefined : (ev) => { ev.stopPropagation(); setPlazaSel(n.id); }}>
           <div className="pz-code">{n.star ? <span className="pz-star">★</span> : null}{n.code}</div>
           <div className="pz-ttl">{tr(n.title)}</div>
           <div className="pz-ag">{full ? n.agents.join(" · ") : n.agents.length + " agents"}</div>
@@ -2582,12 +2755,12 @@ function BusinessPlaza({ defaultSel }) {
     <div className="ws-plaza">
       <div className="plaza-head">
         <div><h2 style={{ fontSize: 16 }}>{tr({ en: "Business Plaza", ar: "ساحة الأعمال", zh: "业务广场" })}</h2><div className="sub muted">{tr({ en: "Two-lane overview · click a UC for its cross-department I/O", ar: "نظرة عامة على مسارين · انقر على حالة لعرض التبادل بين الإدارات", zh: "双泳道概览 · 点击 UC 查看其跨部门 I/O" })}</div></div>
-        <div className="pz-tools">{plazaSel && <button className="btn secondary sm" onClick={() => setPlazaSel(null)}>{tr({ en: "Overview", ar: "نظرة عامة", zh: "概览" })}</button>}<button className="btn sm pz-expand" onClick={() => setPlazaModal(true)}>{tr({ en: "Expand", ar: "توسيع", zh: "展开" })} ↗</button></div>
+        <div className="pz-tools"><button className="btn sm pz-expand" onClick={() => setPlazaModal(true)}>{tr({ en: "Expand", ar: "توسيع", zh: "展开" })} ↗</button></div>
       </div>
-      <div className="ws-flowwrap pz-wrap" ref={plazaWrapRef} style={{ height: Math.ceil(PZ.H * ovScale) }} onClick={() => setPlazaSel(null)}>
+      <div className="ws-flowwrap pz-wrap" ref={plazaWrapRef} style={{ height: Math.ceil(PZ.H * ovScale) }}>
         {renderPlaza(false, ovScale, plazaSel)}
       </div>
-      {plazaSel && (() => { const n = pzById[plazaSel]; const ios = PLAZA_CROSS.filter(e => e.from === plazaSel || e.to === plazaSel).map(e => ({ out: e.from === plazaSel, code: pzById[e.from === plazaSel ? e.to : e.from].code, label: e.label }));
+      {(() => { const cur = plazaSel || defaultSel; const n = pzById[cur]; if (!n) return null; const ios = PLAZA_CROSS.filter(e => e.from === cur || e.to === cur).map(e => ({ out: e.from === cur, code: pzById[e.from === cur ? e.to : e.from].code, label: e.label }));
         return (<div className="pz-detail">
           <div className="pz-dhead"><span className={"pz-dcode " + n.lane}>{n.star ? "★ " : ""}{n.code}</span><b>{tr(n.title)}</b>{n.open && <button className="btn sm pz-openb" onClick={() => pzOpen(n)}>{tr({ en: "Open", ar: "فتح", zh: "打开" })} ↗</button>}</div>
           <div className="pz-drow">
@@ -2596,10 +2769,10 @@ function BusinessPlaza({ defaultSel }) {
           </div>
         </div>); })()}
     </div>
-    {plazaModal && <div className="pz-overlay" onClick={() => setPlazaModal(false)}>
-      <div className="pz-modal" onClick={(e) => e.stopPropagation()}>
+    {plazaModal && <div className="al-overlay" onClick={() => setPlazaModal(false)}>
+      <div className="pz-drawer" onClick={(e) => e.stopPropagation()}>
         <div className="pz-mhead"><b>{tr({ en: "Full flow — Revenue Collection × Assets", ar: "المسار الكامل — التحصيل × الأصول", zh: "完整流程 — 收入征收 × 资产" })}</b><button className="pz-x" onClick={() => setPlazaModal(false)}>✕</button></div>
-        <div className="pz-mscroll"><div className="pz-mcanvas" style={{ width: PZ.W * ovScale, height: 536 * ovScale }}>{renderPlaza(true, ovScale, null)}</div></div>
+        <div className="pz-mscroll"><div className="pz-mcanvas" style={{ width: PZ.W * dScale, height: 536 * dScale }}>{renderPlaza(true, dScale, null)}</div></div>
         <div className="pz-legend"><span><i className="ln rev" />{tr({ en: "Revenue intra-lane", ar: "تدفّق التحصيل", zh: "收入同泳道" })}</span><span><i className="ln ast" />{tr({ en: "Assets intra-lane", ar: "تدفّق الأصول", zh: "资产同泳道" })}</span><span><i className="ln cross" />{tr({ en: "Cross-department I/O", ar: "التبادل بين الإدارات", zh: "跨部门 I/O" })}</span><span>★ {tr({ en: "shared convergence (UC-10 / UC-11)", ar: "تقارب مشترك (UC-10 / UC-11)", zh: "汇聚目标 (UC-10 / UC-11)" })}</span></div>
       </div>
     </div>}
@@ -2666,9 +2839,9 @@ function RcWorkspace() {
   ];
   return (<div className="fade"><div className="card pad ws-frame">
     <div className="ws-head">
-      <div className="ws-ava">RC</div>
+      <SmartQueryFab scope={{ en: "Scope: Revenue Collection · read-only", ar: "النطاق: التحصيل · للقراءة", zh: "范围:收入征收 · 只读" }} prompts={[{ en: "Where is today's billing gap?", ar: "أين فجوة الفوترة اليوم؟", zh: "今天的开票缺口在哪里?" }, { en: "Which contracts drive most of the overdue?", ar: "ما العقود التي تقود معظم التأخر؟", zh: "哪些合同造成大部分逾期?" }, { en: "Draft a collection note for review", ar: "صياغة مذكرة تحصيل", zh: "起草供复核的征收说明" }]} />
       <div className="ws-htext"><h1 style={{ fontSize: 22 }}>{tr({ en: "Revenue Collection Department", ar: "إدارة التحصيل", zh: "收入征收部" })}</h1>
-        <div className="sub muted">{tr({ en: "Multi-Agent Workspace — focus on billing gap, collection rate and overdue risk", ar: "مساحة عمل متعددة الوكلاء — التركيز على فجوة الفوترة والتحصيل والتأخر", zh: "多智能体工作区 — 聚焦开票缺口、征收率与逾期风险" })}{SHOW_UC ? " · UC-13 focused" : ""}</div></div>
+        <div className="sub muted">{tr({ en: "Mandate: billing, collections & exclusions (UC-13). Workspace — operating type: KPI metrics + Business Plaza for cross-dept hand-off + floating Smart Query.", ar: "المهمة: الفوترة والتحصيل والاستبعادات (UC-13). مساحة العمل — نوع تشغيلي: مؤشرات + ساحة الأعمال للتسليم بين الإدارات + استعلام ذكي عائم.", zh: "职责:开票、征收与排除项(UC-13)。Workspace — 运营生产型:关键指标 + Business Plaza 跨部门协同交付 + 浮动智能查询。" })}{SHOW_UC ? " · UC-13" : ""}</div></div>
       {/* compact downstream storyline (demo note) — right of header, no border */}
       <div className="ws-story-r">
         <div className="ws-story-h">{tr({ en: "G-06 storyline · downstream evolution", ar: "مسار ج-06 · التطور اللاحق", zh: "G-06 故事线 · 下游演进" })}</div>
@@ -2686,7 +2859,7 @@ function RcWorkspace() {
       {/* RIGHT (50%) — Smart query (top) + Multi-Agent Flow (below) */}
       <div className="ws-right">
       <div className="orch-cell"><div className="orch orch-chat">
-        <div className="orch-h">{tr({ en: "Smart query", ar: "استعلام ذكي", zh: "智能查询" })} {phase === "running" && <span className="pulse" style={{ marginInlineStart: 2 }} />} <span style={{ fontSize: 12, color: PH[phase].c, fontWeight: 600, marginInlineStart: 4 }}>{tr(PH[phase].t)}</span></div>
+        <div className="orch-h">{tr({ en: "Orchestrator", ar: "المنسّق", zh: "编排器" })} {phase === "running" && <span className="pulse" style={{ marginInlineStart: 2 }} />} <span style={{ fontSize: 12, color: PH[phase].c, fontWeight: 600, marginInlineStart: 4 }}>{tr(PH[phase].t)}</span></div>
         <div className="orch-sub">{SHOW_UC ? "UC-13 · " : ""}run #2041 · {tr({ en: "Revenue Collection agent", ar: "وكيل التحصيل", zh: "收入征收智能体" })}</div>
         <div className="ctx-chips" style={{ marginBottom: 4 }}><span className="chip gray">scope: Q3/2026</span><span className="chip gray">dept: RC only</span><span className="chip gray">policy: BRD WL</span></div>
         <div className="orch-body" ref={bodyRef}>
@@ -2727,6 +2900,7 @@ function RcWorkspace() {
               <div className="hh">↺ {tr({ en: "RETURNED FOR FIX", ar: "أُعيد للتصحيح", zh: "已退回修正" })}</div>
               <div className="hb">{tr({ en: "Corrections sent back to the Revenue agent. Edit the prompt and run again.", ar: "أُعيدت التصحيحات لوكيل الإيرادات. عدّل الطلب وأعد التشغيل.", zh: "更正已退回收入智能体。请修改提示后重新运行。" })}</div>
             </div>}
+            {(phase === "review" || phase === "approved") && <OrchNext items={NEXT_ACTIONS_RC} />}
           </div>}
         </div>
         <div className="orch-bar">
@@ -2735,7 +2909,7 @@ function RcWorkspace() {
         </div>
       </div></div>
       <div className="ws-flowcard" onClick={() => setRoute("rcdata")} title={tr({ en: "Open Multi-Agent Flow", ar: "فتح تدفّق الوكلاء", zh: "打开多智能体流程" })}>
-        <div className="ws-flowcard-h"><span>{tr({ en: "Multi-Agent Flow", ar: "تدفّق متعدد الوكلاء", zh: "多智能体流程" })}</span><span className="ws-flowcard-hr"><span className="at-tip at-tip-r" onClick={(e) => e.stopPropagation()} aria-label={ucl("UC-13", tr({ en: "Revenue Collection Exclusions — Multi-Agent Flow", ar: "التحصيل والاستبعادات — تدفّق متعدد الوكلاء", zh: "收入征收与排除项 — 多智能体流程" }))} tabIndex={0}>i<span className="at-tip-pop">{ucl("UC-13", tr({ en: "Revenue Collection Exclusions — Multi-Agent Flow", ar: "التحصيل والاستبعادات — تدفّق متعدد الوكلاء", zh: "收入征收与排除项 — 多智能体流程" }))}</span></span><span className="open">↗</span></span></div>
+        <div className="ws-flowcard-h"><span>{tr({ en: "Multi-Agent Flow", ar: "تدفّق متعدد الوكلاء", zh: "多智能体流程" })}</span><span className="ws-flowcard-hr"><span className="at-tip at-tip-r" onClick={(e) => e.stopPropagation()} aria-label={tr({ en: "G-06 Revenue & Assets Directorate — Multi-Agent Flow", ar: "مديرية الإيرادات والأصول ج-06 — تدفّق الوكلاء", zh: "G-06 收入与资产总局 — 多智能体流程" })} tabIndex={0}>i<span className="at-tip-pop">{tr({ en: "G-06 Revenue & Assets Directorate — Multi-Agent Flow", ar: "مديرية الإيرادات والأصول ج-06 — تدفّق الوكلاء", zh: "G-06 收入与资产总局 — 多智能体流程" })}</span></span><span className="open">↗</span></span></div>
         <svg className="ws-flowthumb" viewBox="0 0 300 44" fill="none" preserveAspectRatio="xMidYMid meet">
           <rect x="4" y="5" width="20" height="7" rx="2" fill="#eef2f7" /><rect x="4" y="14" width="20" height="7" rx="2" fill="#eef2f7" /><rect x="4" y="23" width="20" height="7" rx="2" fill="#eef2f7" /><rect x="4" y="32" width="20" height="7" rx="2" fill="#eef2f7" />
           <rect x="40" y="12" width="28" height="20" rx="4" fill="#fff" stroke="#2563eb" strokeWidth="1.4" />
@@ -2753,7 +2927,7 @@ function RcWorkspace() {
 
 /* ======= Assets Department — Analysis Workbench (UC-14) ======= */
 function AssetsWorkbench() {
-  const { tr, setRoute, pushLog, setDeptSub } = useStore();
+  const { tr, setRoute, pushLog, setDeptSub, setBackRoute } = useStore();
   const [ask, setAsk] = useState("");
   const [feed, setFeed] = useState(WB_AS.logs);
   const logRef = useRef(null);
@@ -2762,7 +2936,7 @@ function AssetsWorkbench() {
   const [showSugs, setShowSugs] = useState(false);
   const qaRef = useRef(null);
   const [fsel, setFsel] = useState([2, 0, 0, 0]);
-  const DEFAULT_SUMMARY = { en: "For FY 2026 Q1, SAR 1.92B of completed assets-under-construction is ready for capitalization; 3 equipment items are flagged for impairment (SAR 47M NBV) and 5 infrastructure assets are due for maintenance.", ar: "للربع الأول 2026، 1.92 مليار ريال من الأصول تحت الإنشاء المكتملة جاهزة للرسملة؛ 3 معدات مرصودة للانخفاض (47 مليون) و5 أصول بنية تحتية مستحقة للصيانة.", zh: "FY2026 Q1,SAR 1.92B 已完工在建资产可资本化;3 项设备标记减值(账面净值 SAR 47M),5 项基础设施待维护。" };
+  const DEFAULT_SUMMARY = { en: "FY 2026 Q1 · ~~SAR 1.92B~~ of completed AUC (**312 items** past in-service date) is ready to capitalize — delaying it understates asset value before close. ~~3 equipment items (SAR 47M NBV)~~ breach the impairment threshold; **5 infrastructure assets** are maintenance-due, and deferring raises whole-life cost **~18%**. Data-quality **96%** — cost is traceable from assignment order to register.", ar: "الربع الأول 2026 · ~~1.92 مليار~~ من الأصول المكتملة (**312 بنداً**) جاهزة للرسملة — التأجيل يقلّل القيمة قبل الإقفال. ~~3 معدات (47 مليون)~~ تتجاوز حد الانخفاض؛ **5 أصول** مستحقة للصيانة، والتأجيل يرفع الكلفة **~18%**. جودة البيانات **96%**.", zh: "FY2026 Q1 · ~~SAR 1.92B~~ 已完工在建资产(**312 项**已过投用日)可资本化——拖延将在关账前低估资产价值。~~3 项设备(账面净值 SAR 47M)~~ 触及减值阈值;**5 项基础设施**待维护,推迟将使全生命周期成本上升 **约 18%**。数据质量 **96%**——成本从派工单到台账可追溯。" };
   const [summary, setSummary] = useState(DEFAULT_SUMMARY);
   const [qaOpen, setQaOpen] = useState(false);
   const UP = { en: "UPSTREAM", ar: "منبع", zh: "上游" }, PARA = { en: "PARALLEL", ar: "متوازٍ", zh: "并行" }, DOWN = { en: "DOWNSTREAM", ar: "المصب", zh: "下游" }, THIS = { en: "THIS", ar: "هذه", zh: "本环节" };
@@ -2779,11 +2953,31 @@ function AssetsWorkbench() {
     { n: "Comprehensive Guide", s: "synced" }, { n: "Coordinates", s: "synced" }, { n: "Investment & Maint. Data", s: "synced" }, { n: "Secretariats Data", s: "synced" },
   ];
   const WB_OUTPUTS = [
-    { l: { en: "Improved Asset Registry", ar: "سجل أصول محسّن", zh: "改进的资产台账" }, v: "8,640", s: { en: "records cleansed · 96% quality", ar: "سجلات منقّحة · جودة 96%", zh: "记录清洗 · 质量 96%" } },
-    { l: { en: "Capitalization Recommendations", ar: "توصيات الرسملة", zh: "资本化建议" }, v: "SAR 1.92B", s: { en: "312 AUC items ready", ar: "312 بنداً جاهزاً", zh: "312 项在建资产就绪" } },
-    { l: { en: "Asset Cost Tracking", ar: "تتبّع تكلفة الأصل", zh: "资产成本追踪" }, v: "100%", s: { en: "invoice → register traceable", ar: "الفاتورة ← السجل قابل للتتبع", zh: "发票 → 台账可追溯" } },
-    { l: { en: "Investment Opportunities", ar: "فرص استثمارية", zh: "投资机会" }, v: "5", s: { en: "reuse / disposal flags", ar: "إعادة استخدام / تصرّف", zh: "复用 / 处置标记" } },
-    { l: { en: "Maintenance Alerts", ar: "تنبيهات الصيانة", zh: "维护告警" }, v: "5", s: { en: "infra-led · ≤60 days", ar: "بنية تحتية · ≤60 يوماً", zh: "基础设施 · ≤60 天" } },
+    { l: { en: "Improved Asset Registry", ar: "سجل أصول محسّن", zh: "改进的资产台账" }, v: "8,640", s: { en: "records cleansed · 96% quality", ar: "سجلات منقّحة · جودة 96%", zh: "记录清洗 · 质量 96%" }, tag: { en: "DQ 96%", ar: "الجودة 96%", zh: "质量 96%" }, rows: [
+      { k: { en: "Duplicates merged", ar: "تكرارات مدمجة", zh: "合并重复" }, v: "214" },
+      { k: { en: "Fields filled", ar: "حقول مكمّلة", zh: "补全字段" }, v: "1,308" },
+      { k: { en: "Class corrections", ar: "تصحيح التصنيف", zh: "分类更正" }, v: "96" },
+    ] },
+    { l: { en: "Capitalization Recommendations", ar: "توصيات الرسملة", zh: "资本化建议" }, v: "SAR 1.92B", s: { en: "312 AUC items ready", ar: "312 بنداً جاهزاً", zh: "312 项在建资产就绪" }, rows: [
+      { k: { en: "Buildings (142)", ar: "مبانٍ (142)", zh: "建筑(142)" }, v: "SAR 1.12B", pct: 58 },
+      { k: { en: "Infrastructure (121)", ar: "بنية تحتية (121)", zh: "基础设施(121)" }, v: "SAR 0.58B", pct: 30 },
+      { k: { en: "Equipment (49)", ar: "معدات (49)", zh: "设备(49)" }, v: "SAR 0.22B", pct: 12 },
+    ] },
+    { l: { en: "Asset Cost Tracking", ar: "تتبّع تكلفة الأصل", zh: "资产成本追踪" }, v: "100%", s: { en: "invoice → register traceable", ar: "الفاتورة ← السجل قابل للتتبع", zh: "发票 → 台账可追溯" }, rows: [
+      { k: { en: "Orders linked", ar: "أوامر مرتبطة", zh: "已关联派工单" }, v: "1,204" },
+      { k: { en: "Invoices matched", ar: "فواتير مطابقة", zh: "已匹配发票" }, v: "3,310" },
+      { k: { en: "Unmatched", ar: "غير مطابق", zh: "未匹配" }, v: "0" },
+    ] },
+    { l: { en: "Investment Opportunities", ar: "فرص استثمارية", zh: "投资机会" }, v: "5 · SAR 86M", s: { en: "reuse / disposal flags", ar: "إعادة استخدام / تصرّف", zh: "复用 / 处置标记" }, rows: [
+      { k: { en: "Idle land reuse (2)", ar: "إعادة استخدام أرض (2)", zh: "闲置土地复用(2)" }, v: "SAR 54M" },
+      { k: { en: "Equipment disposal (2)", ar: "تصرّف معدات (2)", zh: "设备处置(2)" }, v: "SAR 21M" },
+      { k: { en: "Sublease (1)", ar: "إيجار فرعي (1)", zh: "转租(1)" }, v: "SAR 11M" },
+    ] },
+    { l: { en: "Maintenance Alerts", ar: "تنبيهات الصيانة", zh: "维护告警" }, v: "5", s: { en: "infra-led · ≤60 days", ar: "بنية تحتية · ≤60 يوماً", zh: "基础设施 · ≤60 天" }, rows: [
+      { k: { en: "Roads R-118 / R-204", ar: "طرق R-118 / R-204", zh: "道路 R-118 / R-204" }, v: "≤30d" },
+      { k: { en: "Buildings (2)", ar: "مبانٍ (2)", zh: "建筑(2)" }, v: "≤45d" },
+      { k: { en: "Equipment (1)", ar: "معدات (1)", zh: "设备(1)" }, v: "≤60d" },
+    ] },
   ];
   const cyc = (i) => setFsel(s => s.map((v, j) => j === i ? (v + 1) % WB_AS.filters[i].opts.length : v));
   const applyFilters = () => {
@@ -2828,11 +3022,10 @@ function AssetsWorkbench() {
     zh: row.id + "(" + tr(row.am) + ",账面净值 " + row.od + ")被标记为" + tr(row.flag) + ",风险 " + row.risk + "。主因:利用率下降与市场价值跌破政策阈值。建议:开具会计备忘并转合规复核。",
   });
   return (<div className="fade wb">
-    <div className="ws-back" onClick={() => { setDeptSub("assets"); setRoute("aswork"); }}>← {tr({ en: "Back to Assets workspace", ar: "العودة إلى مساحة عمل الأصول", zh: "返回资产工作区" })}</div>
     <div className="card pad wb-frame">
     {/* HEADER */}
     <div className="card pad wb-head">
-      <div><div className="wb-title"><span className="wb-dot violet" /> {tr({ en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" })} · {tr({ en: "Analysis Workbench", ar: "منصة التحليل", zh: "分析工作台" })}</div>
+      <div><div className="wb-title"><button className="pg-back" onClick={() => { setDeptSub("assets"); setRoute("aswork"); }}>‹</button><span className="wb-dot violet" /> {tr({ en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" })} · {tr({ en: "Analysis Workbench", ar: "منصة التحليل", zh: "分析工作台" })}</div>
         <div className="wb-subt">{ucl("UC-14", tr({ en: "Assets, Classification, Capitalization, Returns & Maintenance", ar: "الأصول والتصنيف والرسملة والعوائد والصيانة", zh: "资产、分类、资本化、收益与维护" }))}</div></div>
       <div className="wb-chain"><span className="wb-clab">{tr({ en: "G-06 CHAIN", ar: "سلسلة ج-06", zh: "G-06 链路" })}</span>{WB_CHAIN.map((c, i) => (<React.Fragment key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (c.here ? " here" : "")}>{c.pos && <span className="wb-cpos">{tr(c.pos)}</span>}{SHOW_UC ? c.code + " · " : ""}{tr(c.name)}</span></React.Fragment>))}</div>
     </div>
@@ -2842,19 +3035,19 @@ function AssetsWorkbench() {
         <div className="wb-ab-spark">✦</div>
         <div className="wb-ab-tt">
           <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء الاصطناعي والإجراءات", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">{SHOW_UC ? "UC-14 · " : ""}run #3107 · {tr({ en: "Assets agent", ar: "وكيل الأصول", zh: "资产智能体" })} · {tr({ en: "scope", ar: "النطاق", zh: "作用域" })}: {WB_AS.filters[0].opts[fsel[0]]} · {WB_AS.filters[2].opts[fsel[2]]}</span></div>
-          <div className="wb-ab-insight"><Money v={tr(summary)} /></div>
+          <div className="wb-ab-insight"><Hi t={tr(summary)} /></div>
         </div>
       </div>
       <div className="wb-ab-rows">
         <div className="wb-ab-col">
           <div className="wb-ab-h">⚐ {tr({ en: "RECOMMENDED · prompts", ar: "موصى به · مقترحات", zh: "建议 · 提示(点击应用)" })}</div>
-          <div className="wb-sugs">{WB_AS.next.map((n, i) => (<button className="wb-sug" key={i} onClick={() => { pushLog({ en: "Applied recommendation — " + tr(n), ar: "تطبيق توصية — " + tr(n), zh: "已应用建议 — " + tr(n) }); setQaOpen(true); }}><span className="pr">{i + 1}</span> {tr(n)}</button>))}</div>
+          <div className="wb-sugs">{WB_AS.next.map((n, i) => (<button className="wb-sug" key={i} onClick={() => { pushLog({ en: "Applied recommendation — " + tr(n.t), ar: "تطبيق توصية — " + tr(n.t), zh: "已应用建议 — " + tr(n.t) }); setQaOpen(true); }}><span className="pr">{i + 1}</span><span className="wb-sug-tx"><b>{tr(n.t)}</b><i>{tr(n.d)}</i></span></button>))}</div>
         </div>
         <div className="wb-ab-col r">
           <div className="wb-ab-h">➜ {tr({ en: "HAND OFF DOWNSTREAM · actions", ar: "تسليم لاحق · إجراءات", zh: "下游交接 · 动作" })}</div>
           <div className="wb-ctas">
-            <button className="wb-cta p" onClick={() => setRoute("csfunds")}>{SHOW_UC && <span className="uc">UC-12</span>}{tr({ en: "Send to Costs & Funds Close", ar: "إرسال إلى إقفال التكاليف والصناديق", zh: "推送至成本与资金结账" })}<span className="ar">→</span></button>
-            <button className="wb-cta s" onClick={() => setRoute("compmemo")}>{SHOW_UC && <span className="uc">UC-11</span>}{tr({ en: "Raise Compliance / Accounting Memo", ar: "إصدار مذكرة امتثال / محاسبية", zh: "发起合规 / 会计备忘" })}<span className="ar">→</span></button>
+            <button className="wb-cta p" onClick={() => { setBackRoute("asbench"); setRoute("csfunds"); }}>{SHOW_UC && <span className="uc">UC-12</span>}{tr({ en: "Send to Costs & Funds Close", ar: "إرسال إلى إقفال التكاليف والصناديق", zh: "推送至成本与资金结账" })}<span className="ar">→</span></button>
+            <button className="wb-cta s" onClick={() => { setBackRoute("asbench"); setRoute("compmemo"); }}>{SHOW_UC && <span className="uc">UC-11</span>}{tr({ en: "Raise Compliance / Accounting Memo", ar: "إصدار مذكرة امتثال / محاسبية", zh: "发起合规 / 会计备忘" })}<span className="ar">→</span></button>
           </div>
         </div>
       </div>
@@ -2867,7 +3060,7 @@ function AssetsWorkbench() {
         <span className="wb-auto">● {tr({ en: "auto-applied", ar: "تطبيق تلقائي", zh: "自动应用" })}</span>
       </div>
     </div>
-    <div className="wb-ogrid">{WB_OUTPUTS.map((o, i) => (<div className="wb-ocard" key={i}><div className="oc-h">{tr(o.l)}</div><div className="oc-b"><div className="oc-v"><Money v={o.v} /></div><div className="oc-s">{tr(o.s)}</div></div></div>))}</div>
+    <div className="wb-ogrid">{WB_OUTPUTS.map((o, i) => (<div className="wb-ocard" key={i}><div className="oc-h">{tr(o.l)}{o.tag && <span className="oc-tag">{tr(o.tag)}</span>}</div><div className="oc-b"><div className="oc-v"><Money v={o.v} /></div><div className="oc-s">{tr(o.s)}</div></div>{o.rows && <div className="oc-rows">{o.rows.map((r, j) => (<div className="oc-row" key={j}><span className="k">{tr(r.k)}</span>{typeof r.pct === "number" && <span className="ocbar"><i style={{ width: r.pct + "%" }} /></span>}<span className="ov">{r.v}</span></div>))}</div>}</div>))}</div>
     <div className="wb-cols3">
       <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Capitalization Overview", ar: "نظرة عامة على الرسملة", zh: "资本化概览" })}</b></div>
         <div className="wb-pb">
@@ -2875,7 +3068,7 @@ function AssetsWorkbench() {
           <div className="wb-krow"><span className="wb-big">62%</span><span className="chip">SAR 1.92B</span></div>
           <div className="wb-bars">
             <div className="wb-bar"><div className="bl">{tr({ en: "AUC opening", ar: "تحت الإنشاء (افتتاحي)", zh: "在建期初" })}</div><div className="bt"><span className="bf plan" style={{ width: "100%" }} /></div><div className="bv"><Money v="SAR 3.10B" /></div></div>
-            <div className="wb-bar"><div className="bl">{tr({ en: "Capitalized", ar: "مرسمل", zh: "已资本化" })}</div><div className="bt"><span className="bf coll" style={{ width: "62%" }} /></div><div className="bv"><Money v="SAR 1.92B" /></div></div>
+            <div className="wb-bar"><div className="bl">{tr({ en: "Capitalized", ar: "مرسمل", zh: "已资本化" })}</div><div className="bt"><span className="bf coll" style={{ width: "50%" }} /></div><div className="bv"><Money v="SAR 1.92B" /></div></div>
             <div className="wb-bar"><div className="bl">{tr({ en: "Remaining AUC", ar: "متبقٍ تحت الإنشاء", zh: "剩余在建" })}</div><div className="bt"><span className="bf out" style={{ width: "38%" }} /></div><div className="bv"><Money v="SAR 1.18B" /></div></div>
           </div>
           <div className="wb-kk"><span>{tr({ en: "Avg useful life", ar: "متوسط العمر الإنتاجي", zh: "平均使用年限" })}</span><b>28 {tr({ en: "yr", ar: "سنة", zh: "年" })}</b></div>
@@ -2907,7 +3100,7 @@ function AssetsWorkbench() {
         <div className="wb-pb"><div className="wb-tl" ref={logRef}>{feed.map((e, i) => (<div className={"wb-ev" + (i === feed.length - 1 ? " live" : "")} key={i}><span className={"wb-dot2 " + e.dot} /><div className="wb-eh"><b>{e.tm}</b> · {e.code ? ucl(e.code, tr(e.h)) : tr(e.h)}</div><div className="wb-ed">{tr(e.d)}</div></div>))}</div></div></div>
     </div>
     <button className="wb-qfab" onClick={() => setQaOpen(o => !o)} aria-label="AI Narratives & Q&A" title={tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}>🤖</button>
-    {qaOpen && <div className="wb-qpanel">
+    {qaOpen && <div className="wb-qpanel qa">
       <div className="wb-qph"><span className="wb-dot violet" /> <b>{tr({ en: "AI Narratives & Q&A", ar: "السرد الذكي والأسئلة", zh: "AI 叙述与问答" })}</b><button className="wb-qx" onClick={() => setQaOpen(false)}>✕</button></div>
         <div className="wb-pb wb-qbody">
           {qa.length === 0 && !thinking && <div className="wb-narrwrap"><div className="wb-ntag">{ucl("UC-14", tr({ en: "NARRATIVE", ar: "السرد", zh: "叙述" }))}</div>
@@ -2998,9 +3191,9 @@ function AssetsWorkspace() {
   ];
   return (<div className="fade"><div className="card pad ws-frame">
     <div className="ws-head">
-      <div className="ws-ava" style={{ background: "#5b3a9e" }}>AS</div>
+      <SmartQueryFab scope={{ en: "Scope: Assets · read-only", ar: "النطاق: الأصول · للقراءة", zh: "范围:资产 · 只读" }} prompts={[{ en: "Which assets are due for capitalization?", ar: "ما الأصول المستحقة للرسملة؟", zh: "哪些资产应予资本化?" }, { en: "Where are impairment risks concentrated?", ar: "أين تتركّز مخاطر الانخفاض؟", zh: "减值风险集中在哪里?" }, { en: "Which assets need maintenance soon?", ar: "ما الأصول التي تحتاج صيانة قريباً؟", zh: "哪些资产即将需要维护?" }]} />
       <div className="ws-htext"><h1 style={{ fontSize: 22 }}>{tr({ en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" })}</h1>
-        <div className="sub muted">{tr({ en: "Multi-Agent Workspace — classification, capitalization, returns & maintenance", ar: "مساحة عمل متعددة الوكلاء — التصنيف والرسملة والعوائد والصيانة", zh: "多智能体工作区 — 分类、资本化、回报与维护" })}{SHOW_UC ? " · UC-14 focused" : ""}</div></div>
+        <div className="sub muted">{tr({ en: "Mandate: asset classification, capitalization, returns & maintenance (UC-14). Workspace — operating type: KPI metrics + Business Plaza hand-off to cost/compliance/reporting + floating Smart Query.", ar: "المهمة: تصنيف الأصول والرسملة والعوائد والصيانة (UC-14). مساحة العمل — نوع تشغيلي: مؤشرات + ساحة الأعمال + استعلام ذكي عائم.", zh: "职责:资产分类、资本化、回报与维护(UC-14)。Workspace — 运营生产型:关键指标 + Business Plaza 向成本/合规/报告交付 + 浮动智能查询。" })}{SHOW_UC ? " · UC-14" : ""}</div></div>
       <div className="ws-story-r">
         <div className="ws-story-h">{tr({ en: "G-06 storyline · downstream evolution", ar: "مسار ج-06 · التطور اللاحق", zh: "G-06 故事线 · 下游演进" })}</div>
         <div className="flowstrip mini">{RC_FLOW.map((f, i) => (<React.Fragment key={i}>{i > 0 && <span className="farr">➜</span>}
@@ -3017,7 +3210,7 @@ function AssetsWorkspace() {
       {/* RIGHT (50%) — Smart query (top) + Analysis Workbench entry (below) */}
       <div className="ws-right">
       <div className="orch-cell"><div className="orch orch-chat">
-        <div className="orch-h">{tr({ en: "Smart query", ar: "استعلام ذكي", zh: "智能查询" })} {phase === "running" && <span className="pulse" style={{ marginInlineStart: 2 }} />} <span style={{ fontSize: 12, color: PH[phase].c, fontWeight: 600, marginInlineStart: 4 }}>{tr(PH[phase].t)}</span></div>
+        <div className="orch-h">{tr({ en: "Orchestrator", ar: "المنسّق", zh: "编排器" })} {phase === "running" && <span className="pulse" style={{ marginInlineStart: 2 }} />} <span style={{ fontSize: 12, color: PH[phase].c, fontWeight: 600, marginInlineStart: 4 }}>{tr(PH[phase].t)}</span></div>
         <div className="orch-sub">{SHOW_UC ? "UC-14 · " : ""}run #3107 · {tr({ en: "Assets agent", ar: "وكيل الأصول", zh: "资产智能体" })}</div>
         <div className="ctx-chips" style={{ marginBottom: 4 }}><span className="chip gray">scope: FY26 Q1</span><span className="chip gray">dept: Assets only</span><span className="chip gray">policy: IPSAS · useful-life</span></div>
         <div className="orch-body" ref={bodyRef}>
@@ -3058,6 +3251,7 @@ function AssetsWorkspace() {
               <div className="hh">↺ {tr({ en: "RETURNED FOR FIX", ar: "أُعيد للتصحيح", zh: "已退回修正" })}</div>
               <div className="hb">{tr({ en: "Entries sent back to the Assets agent. Edit the prompt and run again.", ar: "أُعيدت القيود لوكيل الأصول. عدّل الطلب وأعد التشغيل.", zh: "分录已退回资产智能体。请修改提示后重新运行。" })}</div>
             </div>}
+            {(phase === "review" || phase === "approved") && <OrchNext items={NEXT_ACTIONS_AS} />}
           </div>}
         </div>
         <div className="orch-bar">
@@ -3065,8 +3259,8 @@ function AssetsWorkspace() {
           <button className="orch-send" disabled={phase === "running" || !prompt.trim()} onClick={runOrch}>{phase === "running" ? "…" : "SEND"}</button>
         </div>
       </div></div>
-      <div className="ws-flowcard" onClick={() => setRoute("asbench")} title={tr({ en: "Open Analysis Workbench", ar: "فتح منصة التحليل", zh: "打开分析工作台" })}>
-        <div className="ws-flowcard-h"><span>{tr({ en: "Analysis Workbench", ar: "منصة التحليل", zh: "分析工作台" })}</span><span className="ws-flowcard-hr"><span className="at-tip at-tip-r" onClick={(e) => e.stopPropagation()} aria-label={ucl("UC-14", tr({ en: "Assets, Classification & Capitalization — Analysis Workbench", ar: "الأصول والتصنيف والرسملة — منصة التحليل", zh: "资产、分类与资本化 — 分析工作台" }))} tabIndex={0}>i<span className="at-tip-pop">{ucl("UC-14", tr({ en: "Assets, Classification & Capitalization — Analysis Workbench", ar: "الأصول والتصنيف والرسملة — منصة التحليل", zh: "资产、分类与资本化 — 分析工作台" }))}</span></span><span className="open">↗</span></span></div>
+      <div className="ws-flowcard" onClick={() => setRoute("rcdata")} title={tr({ en: "Open Multi-Agent Flow", ar: "فتح تدفّق الوكلاء", zh: "打开多智能体流程" })}>
+        <div className="ws-flowcard-h"><span>{tr({ en: "Multi-Agent Flow", ar: "تدفّق متعدد الوكلاء", zh: "多智能体流程" })}</span><span className="ws-flowcard-hr"><span className="at-tip at-tip-r" onClick={(e) => e.stopPropagation()} aria-label={tr({ en: "G-06 Revenue & Assets Directorate — Multi-Agent Flow", ar: "مديرية الإيرادات والأصول ج-06 — تدفّق الوكلاء", zh: "G-06 收入与资产总局 — 多智能体流程" })} tabIndex={0}>i<span className="at-tip-pop">{tr({ en: "G-06 Revenue & Assets Directorate — Multi-Agent Flow", ar: "مديرية الإيرادات والأصول ج-06 — تدفّق الوكلاء", zh: "G-06 收入与资产总局 — 多智能体流程" })}</span></span><span className="open">↗</span></span></div>
         <svg className="ws-flowthumb" viewBox="0 0 300 44" fill="none" preserveAspectRatio="xMidYMid meet">
           <rect x="4" y="5" width="20" height="7" rx="2" fill="#f1ecfa" /><rect x="4" y="14" width="20" height="7" rx="2" fill="#f1ecfa" /><rect x="4" y="23" width="20" height="7" rx="2" fill="#f1ecfa" /><rect x="4" y="32" width="20" height="7" rx="2" fill="#f1ecfa" />
           <rect x="40" y="12" width="28" height="20" rx="4" fill="#fff" stroke="#5b3a9e" strokeWidth="1.4" />
@@ -3092,12 +3286,12 @@ const CF_LOGS = [
   { tm: "10:06", h: { en: "Orchestrator", ar: "المنسّق", zh: "编排器" }, d: { en: "Awaiting user follow-up question", ar: "بانتظار سؤال متابعة", zh: "等待用户追问" }, dot: "gray" },
 ];
 const CF_REC = [
-  { en: "Release SAR 85M idle surplus (AO-2207)", ar: "الإفراج عن فائض خامل 85 مليون (AO-2207)", zh: "释放 SAR 85M 闲置结余(AO-2207)" },
-  { en: "Request completion certificate for INV-3410", ar: "طلب شهادة إنجاز لـ INV-3410", zh: "为 INV-3410 申请完工证明" },
-  { en: "Resolve CR-5533 amount mismatch", ar: "حل عدم تطابق مبلغ CR-5533", zh: "解决 CR-5533 金额不一致" },
+  { t: { en: "Release SAR 85M idle surplus (AO-2207)", ar: "الإفراج عن فائض خامل 85 مليون (AO-2207)", zh: "释放 SAR 85M 闲置结余(AO-2207)" }, d: { en: "120 days with no disbursement and the milestone delivered. Releasing returns liquidity to the Real-Estate Dev. Fund and clears the open UC-03 audit flag on the order.", ar: "120 يوماً بلا صرف والمرحلة منجزة؛ الإفراج يعيد السيولة ويغلق ملاحظة التدقيق.", zh: "120 天无支付且里程碑已交付。释放将流动性返还房地产开发基金,并清除该单 UC-03 审计标记。" } },
+  { t: { en: "Chase completion certificates — 9 aged orders (> 90d)", ar: "متابعة شهادات إنجاز لـ 9 أوامر (> 90 يوماً)", zh: "催办 9 个逾期(>90天)派工单完工证明" }, d: { en: "Missing certificates block final payment and capitalization. Closing them out unblocks ~SAR 60M in pending closeouts and prevents a quarter-end backlog.", ar: "غياب الشهادات يعيق الدفع والرسملة؛ إغلاقها يفكّ نحو 60 مليون معلّقة.", zh: "缺证阻塞尾款与资本化。结清释放约 SAR 60M 待结算项,避免季末积压。" } },
+  { t: { en: "Resolve the 2% SAP↔Etimad mismatch (SAR 25M)", ar: "حل عدم تطابق ساب↔اعتماد 2% (25 مليون)", zh: "解决 2% SAP↔Etimad 差异(SAR 25M)" }, d: { en: "Two reconciliation items — Esnad assignment (+SAR 15M) and Tahseel revenue (−SAR 12M). Proposed adjusting entries align book-to-system within tolerance before close.", ar: "بندان — إسناد (+15) وتحصيل (−12)؛ القيود المقترحة توائم الدفتري مع النظام قبل الإقفال.", zh: "两项差异——Esnad 派工(+SAR 15M)与 Tahseel 收入(−SAR 12M)。建议调整分录关账前于容差内对齐。" } },
 ];
 function CostFundsConsole() {
-  const { tr, setRoute, pushLog, setDeptSub } = useStore();
+  const { tr, setRoute, pushLog, setDeptSub, setAlertsOpen, backRoute, setBackRoute } = useStore();
   const [mode, setMode] = useState("ao");
   const [qaOpen, setQaOpen] = useState(false);
   const [feed, setFeed] = useState(CF_LOGS);
@@ -3136,12 +3330,12 @@ function CostFundsConsole() {
   const rbadge = (st) => st === "running" ? <span className="wb-badge run">{tr({ en: "running", ar: "يعمل", zh: "运行中" })}</span> : <span className="wb-badge act">{tr({ en: "active", ar: "نشط", zh: "活动" })}</span>;
   const cst = (k) => ({ ok: { en: "matched", ar: "مطابق", zh: "已匹配" }, ver: { en: "verified", ar: "مُتحقق", zh: "已核验" }, blk: { en: "blocked · no cert", ar: "محظور · لا شهادة", zh: "阻断 · 缺证" }, nc: { en: "non-compliant · Δ amount", ar: "غير مطابق · فرق مبلغ", zh: "不合规 · 金额差" } }[k]);
   return (<div className="fade wb">
-    <div className="ws-back" onClick={() => { setDeptSub("assets"); setRoute("asbench"); }}>← {tr({ en: "Back to Assets · Analysis Workbench", ar: "العودة إلى منصة تحليل الأصول", zh: "返回 资产部 · 分析工作台" })}</div>
     <div className="card pad wb-frame">
     {/* HEADER */}
-    <div className="card pad wb-head">
-      <div><div className="wb-title"><span className="wb-dot violet" /> {tr({ en: "Cost Management Department", ar: "إدارة التكاليف", zh: "成本管理部" })} · {tr({ en: "Costs & Funds Console", ar: "وحدة التكاليف والصناديق", zh: "成本与资金控制台" })}</div>
-        <div className="wb-subt">{ucl("UC-12", tr({ en: "Costs, Assignment Orders & Funds", ar: "التكاليف وأوامر الإسناد والصناديق", zh: "成本、派工单与资金" }))}</div></div>
+    <div className={backRoute ? "card pad wb-head" : "wb-head"}>
+      <div><div className="dw-eyebrow g" style={{ marginBottom: 4 }}>{tr({ en: "Department Workspace · operating", ar: "مساحة عمل الإدارة · تشغيلي", zh: "部门工作区 · 运营" })}</div><div className="wb-title" style={{ fontSize: 21 }}>{backRoute && <button className="pg-back" onClick={() => { const b = backRoute; setBackRoute(null); setDeptSub("assets"); setRoute(b); }}>‹</button>}<span className="wb-dot violet" /> {tr({ en: "Cost Management Department", ar: "إدارة التكاليف", zh: "成本管理部" })} · {tr({ en: "Costs & Funds Console", ar: "وحدة التكاليف والصناديق", zh: "成本与资金控制台" })}<button className="al-bell" onClick={() => setAlertsOpen(true)} title={ucl("UC-02", tr({ en: "Alerts & Exceptions Center", ar: "مركز التنبيهات", zh: "告警与异常中心" }))}>🔔 <span>1</span></button></div>
+        <div className="wb-subt">{ucl("UC-12", tr({ en: "Costs, Assignment Orders & Funds", ar: "التكاليف وأوامر الإسناد والصناديق", zh: "成本、派工单与资金" }))} · {tr({ en: "Operating type — matching & calculation + cross-dept hand-off", ar: "نوع تشغيلي — مطابقة واحتساب + تسليم بين الإدارات", zh: "运营生产型 — 匹配核算 + 跨部门交付" })}</div></div>
+      <SmartQueryFab scope={{ en: "Scope: Cost & Funds · read-only", ar: "النطاق: التكاليف · للقراءة", zh: "范围:成本与资金 · 只读" }} prompts={[{ en: "Why is AO-2207 surplus idle?", ar: "لماذا فائض AO-2207 خامل؟", zh: "AO-2207 结余为何闲置?" }, { en: "Which AOs lack completion certificates?", ar: "ما الأوامر بلا شهادات إنجاز؟", zh: "哪些派工单缺完工证明?" }, { en: "Resolve the SAP ↔ Etimad difference", ar: "تسوية فرق ساب↔اعتماد", zh: "对平 SAP↔Etimad 差异" }]} />
       <div className="wb-chain"><span className="wb-clab">{tr({ en: "G-06 CHAIN", ar: "سلسلة ج-06", zh: "G-06 链路" })}</span>{CF_CHAIN.map((c, i) => (<React.Fragment key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (c.here ? " here" : "")}>{c.pos && <span className="wb-cpos">{tr(c.pos)}</span>}{SHOW_UC ? c.code + " · " : ""}{tr(c.name)}</span></React.Fragment>))}</div>
     </div>
     {/* INSIGHT & NEXT ACTIONS */}
@@ -3150,19 +3344,19 @@ function CostFundsConsole() {
         <div className="wb-ab-spark">✦</div>
         <div className="wb-ab-tt">
           <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء الاصطناعي والإجراءات", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">{SHOW_UC ? "UC-12 · " : ""}run #3402 · {tr({ en: "Costs & Funds agent", ar: "وكيل التكاليف والصناديق", zh: "成本与资金智能体" })}</span></div>
-          <div className="wb-ab-insight">{tr({ en: "SAR 85M idle surplus traced to AO-2207 (Real-Estate Dev. Fund); SAP↔Etimad matching at 98%; 9 assignment orders aged > 90 days lack completion certificates.", ar: "فائض خامل 85 مليون يُعزى إلى AO-2207؛ مطابقة ساب↔اعتماد 98%؛ 9 أوامر إسناد تجاوزت 90 يوماً دون شهادات إنجاز.", zh: "SAR 85M 闲置结余追溯至 AO-2207(房地产开发基金);SAP↔Etimad 对账率 98%;9 个派工单逾期 >90 天缺完工证明。" })}</div>
+          <div className="wb-ab-insight"><Hi t={tr({ en: "A ~~SAR 85M idle surplus~~ traces to **AO-2207** (Real-Estate Dev. Fund) — **120 days** without disbursement despite a delivered milestone, eligible for release. SAP↔Etimad matching is **98%**, leaving a ~~SAR 25M (2%) reconciliation gap~~ over 2 items (Esnad +15M · Tahseel −12M). **9 assignment orders > 90 days** still lack completion certificates, blocking **~SAR 60M** in closeouts.", ar: "~~فائض خامل 85 مليون~~ يُعزى إلى **AO-2207** — **120 يوماً** بلا صرف رغم إنجاز المرحلة. مطابقة ساب↔اعتماد **98%**، وتبقى ~~فجوة تسوية 25 مليون (2%)~~ عبر بندين (إسناد +15 · تحصيل −12). **9 أوامر إسناد > 90 يوماً** بلا شهادات إنجاز، ما يعيق **~60 مليون**.", zh: "~~SAR 85M 闲置结余~~ 追溯至 **AO-2207**(房地产开发基金)——**120 天** 无支付但里程碑已交付,可释放。SAP↔Etimad 对账率 **98%**,尚余 ~~SAR 25M(2%)对账差异~~,涉 2 项(Esnad +15M · Tahseel −12M)。**9 个派工单逾期 >90 天** 仍缺完工证明,阻塞 **约 SAR 60M** 结算。" })} /></div>
         </div>
       </div>
       <div className="wb-ab-rows">
         <div className="wb-ab-col">
           <div className="wb-ab-h">⚐ {tr({ en: "RECOMMENDED · prompts", ar: "موصى به · مقترحات", zh: "建议 · 提示(点击应用)" })}</div>
-          <div className="wb-sugs">{CF_REC.map((n, i) => (<button className="wb-sug" key={i} onClick={() => { pushLog({ en: "Applied recommendation — " + tr(n), ar: "تطبيق توصية — " + tr(n), zh: "已应用建议 — " + tr(n) }); setQaOpen(true); }}><span className="pr">{i + 1}</span> {tr(n)}</button>))}</div>
+          <div className="wb-sugs">{CF_REC.map((n, i) => (<button className="wb-sug" key={i} onClick={() => { pushLog({ en: "Applied recommendation — " + tr(n.t), ar: "تطبيق توصية — " + tr(n.t), zh: "已应用建议 — " + tr(n.t) }); setQaOpen(true); }}><span className="pr">{i + 1}</span><span className="wb-sug-tx"><b>{tr(n.t)}</b><i>{tr(n.d)}</i></span></button>))}</div>
         </div>
         <div className="wb-ab-col r">
           <div className="wb-ab-h">➜ {tr({ en: "HAND OFF DOWNSTREAM · actions", ar: "تسليم لاحق · إجراءات", zh: "下游交接 · 动作" })}</div>
           <div className="wb-ctas">
-            <button className="wb-cta p" onClick={() => setRoute("reports")}>{SHOW_UC && <span className="uc">UC-10</span>}{tr({ en: "Open Fund & Cost Report", ar: "فتح تقرير التكاليف والصناديق", zh: "打开成本与资金报告" })}<span className="ar">→</span></button>
-            <button className="wb-cta s" onClick={() => setRoute("compmemo")}>{SHOW_UC && <span className="uc">UC-11</span>}{tr({ en: "Raise Compliance / Accounting Memo", ar: "إصدار مذكرة امتثال / محاسبية", zh: "发起合规 / 会计备忘" })}<span className="ar">→</span></button>
+            <button className="wb-cta p" onClick={() => { setBackRoute("csfunds"); setRoute("reports"); }}>{SHOW_UC && <span className="uc">UC-10</span>}{tr({ en: "Open Fund & Cost Report", ar: "فتح تقرير التكاليف والصناديق", zh: "打开成本与资金报告" })}<span className="ar">→</span></button>
+            <button className="wb-cta s" onClick={() => { setBackRoute("csfunds"); setRoute("compmemo"); }}>{SHOW_UC && <span className="uc">UC-11</span>}{tr({ en: "Raise Compliance / Accounting Memo", ar: "إصدار مذكرة امتثال / محاسبية", zh: "发起合规 / 会计备忘" })}<span className="ar">→</span></button>
           </div>
         </div>
       </div>
@@ -3271,28 +3465,13 @@ function CostFundsConsole() {
     {/* KEY PRINCIPLE */}
     <div className="wb-keyp"><div className="wb-keyp-tag">!</div><div><div className="wb-keyp-h">{tr({ en: "Surplus traced from the original assignment order to the beneficiary project", ar: "الفائض يُتتبع من أمر الإسناد الأصلي إلى المشروع المستفيد", zh: "结余须从原派工单追溯到受益项目" })}</div><div className="wb-keyp-s">{tr({ en: "Project cost = Σ unit/land cost after adjustments; fund reports reconcile to bank statements, SAP & supporting documents (BR-02 / BR-03 / BR-04).", ar: "تكلفة المشروع = مجموع تكاليف الوحدات بعد التعديلات؛ وتقارير الصناديق تطابق كشوف البنوك وساب والمستندات.", zh: "项目成本 = 调整后各单元/地块成本之和;基金报告须与银行流水、SAP 及单据对账(BR-02 / BR-03 / BR-04)。" })}</div></div></div>
 
-    <button className="wb-qfab" onClick={() => setQaOpen(o => !o)} title={tr({ en: "AI Narratives & Q&A", ar: "السرد والأسئلة", zh: "AI 叙述与问答" })}>🤖</button>
-    {qaOpen && <div className="wb-qpanel">
-      <div className="wb-qph"><span className="wb-dot violet" /> <b>{tr({ en: "AI Narratives & Q&A", ar: "السرد والأسئلة", zh: "AI 叙述与问答" })}</b><button className="wb-qx" onClick={() => setQaOpen(false)}>✕</button></div>
-      <div className="wb-pb wb-qbody">
-        <div className="wb-narrwrap"><div className="wb-ntag">{ucl("UC-12", tr({ en: "NARRATIVE", ar: "السرد", zh: "叙述" }))}</div>
-        <div className="wb-narr">
-          <p>{tr({ en: "AO-2207 has SAR 85M idle for 120 days with its milestone delivered — a release candidate. Three-way matching is clean except CR-5530/INV-3410 (missing completion certificate) and CR-5533 (amount mismatch).", ar: "AO-2207 لديه 85 مليون خامل منذ 120 يوماً مع إنجاز المرحلة. المطابقة الثلاثية سليمة عدا INV-3410 (بلا شهادة) و CR-5533 (فرق مبلغ).", zh: "AO-2207 已闲置 SAR 85M 达 120 天且里程碑已交付,可释放。三方匹配除 CR-5530/INV-3410(缺完工证明)与 CR-5533(金额不一致)外均干净。" })}</p>
-          <div className="wb-rp">{tr({ en: "Recommended priorities:", ar: "الأولويات الموصى بها:", zh: "建议优先事项:" })}</div>
-          <ul><li>{tr({ en: "Release SAR 85M idle surplus (AO-2207)", ar: "الإفراج عن فائض 85 مليون", zh: "释放 SAR 85M 闲置结余" })}</li>
-            <li>{tr({ en: "Obtain completion cert for INV-3410", ar: "الحصول على شهادة لـ INV-3410", zh: "为 INV-3410 取得完工证明" })}</li>
-            <li>{tr({ en: "Reconcile 2 SAP↔document differences", ar: "تسوية فرقي ساب↔المستندات", zh: "对平 2 项 SAP↔单据差异" })}</li></ul>
-          <div className="wb-src">{ucl("UC-01", tr({ en: "Source: Esnad · Etimad · SAP · Data Querying Agent", ar: "المصدر: إسناد · اعتماد · ساب", zh: "来源:Esnad · Etimad · SAP · 数据查询智能体" }))}</div>
-        </div></div>
-      </div>
-    </div>}
     </div>
   </div>);
 }
 
 /* ======= UC-11 · Compliance, Policies & Accounting Memos — Accounting Ruling ======= */
 function ComplianceRuling() {
-  const { tr, setRoute, pushLog, setDeptSub } = useStore();
+  const { tr, setRoute, pushLog, setDeptSub, backRoute, setBackRoute, setAlertsOpen } = useStore();
   const [caseType, setCaseType] = useState("memo");
   const [pick, setPick] = useState(null);
   const [approved, setApproved] = useState(false);
@@ -3313,11 +3492,15 @@ function ComplianceRuling() {
   const opt = (i, sel, rec, title, desc) => (
     <div className={"cr-opt" + (sel ? " sel" : "")} onClick={() => setPick(i)}>{rec && <span className="rec">{tr({ en: "AI suggests", ar: "اقتراح AI", zh: "AI 推荐" })}</span>}
       <div className="ot"><span className="rb" /> {tr(title)}</div><div className="od">{tr(desc)}</div></div>);
-  return (<div className="fade wb">
-    <div className="ws-back" onClick={() => { setDeptSub("assets"); setRoute("asbench"); }}>← {tr({ en: "Back to Assets · Analysis Workbench", ar: "العودة إلى منصة تحليل الأصول", zh: "返回 资产部 · 分析工作台" })}</div>
-    <div className="wb-chain" style={{ marginTop: 0, marginBottom: 14 }}><span className="wb-clab">{tr({ en: "G-06 CHAIN", ar: "سلسلة ج-06", zh: "G-06 链路" })}</span>{CHAIN.map((c, i) => (<React.Fragment key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (c.here ? " here" : "")}>{c.pos && <span className="wb-cpos">{tr(c.pos)}</span>}{SHOW_UC ? c.code + " · " : ""}{tr(c.name)}</span></React.Fragment>))}</div>
-
-    <div className="cr-eyebrow">{tr({ en: "Accounting Ruling", ar: "قرار محاسبي", zh: "会计裁定" })}{SHOW_UC ? " · UC-11" : ""}</div>
+  return (<div className="fade wb ws-page">
+    <div className="rp-libhd">
+      <div className="rp-libL">
+      <div className="rp-libtitle">{backRoute && <button className="rp-backbtn" title={tr({ en: "Back", ar: "رجوع", zh: "返回" })} onClick={() => { const b = backRoute; setBackRoute(null); setDeptSub("assets"); setRoute(b); }}>‹</button>}<div><div className="dw-eyebrow g" style={{ marginBottom: 2 }}>{tr({ en: "Department Workspace · ruling", ar: "مساحة عمل الإدارة · تحكيم", zh: "部门工作区 · 裁决" })}</div><h1 className="rp-h1">{tr({ en: "Accounting Ruling", ar: "قرار محاسبي", zh: "会计裁定" })}{SHOW_UC ? " · UC-11" : ""}</h1></div></div>
+      <div className="sub muted" style={{ fontSize: 12.5, marginTop: 3 }}>{tr({ en: "Mandate: compliance, policies & accounting memos (UC-11). Workspace — oversight/ruling type: receives upstream cases, rules with cited basis, human sign-off.", ar: "المهمة: الامتثال والسياسات والمذكرات المحاسبية (UC-11). مساحة العمل — نوع رقابي/تحكيمي.", zh: "职责:合规、政策与会计备忘(UC-11)。Workspace — 监督裁决型:接收上游事项、带依据裁决、人工签核。" })}</div>
+      </div>
+      <div className="wb-chain rp-headchain"><span className="wb-clab">{tr({ en: "G-06 CHAIN", ar: "سلسلة ج-06", zh: "G-06 链路" })}</span>{CHAIN.map((c, i) => (<span className="wb-cseg" key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (c.here ? " here" : "")}>{c.pos && <span className="wb-cpos">{tr(c.pos)}</span>}{SHOW_UC ? c.code + " · " : ""}{tr(c.name)}</span></span>))}</div>
+    </div>
+    <SmartQueryFab scope={{ en: "Scope: Compliance · standards & policies", ar: "النطاق: الامتثال · المعايير", zh: "范围:合规 · 标准与政策" }} prompts={[{ en: "Which IPSAS clause supports this treatment?", ar: "أي بند IPSAS يدعم هذه المعالجة؟", zh: "哪条 IPSAS 支持此处理?" }, { en: "Resolve the useful-life policy conflict", ar: "حل تعارض سياسة العمر الإنتاجي", zh: "解决使用年限政策冲突" }, { en: "Draft a response to the audit observation", ar: "صياغة رد على ملاحظة التدقيق", zh: "起草审计观察回应" }]} />
     <div className="cr-seg">
       <button className={caseType === "memo" ? "on" : ""} onClick={() => switchCase("memo")}>{tr({ en: "Accounting memo · capitalization", ar: "مذكرة محاسبية · رسملة", zh: "会计备忘 · 资本化" })}</button>
       <button className={caseType === "obs" ? "on" : ""} onClick={() => switchCase("obs")}>{tr({ en: "Response to audit observation", ar: "الرد على ملاحظة تدقيق", zh: "回应审计观察" })}</button>
@@ -3326,7 +3509,7 @@ function ComplianceRuling() {
     <div className="cr-hdr">
       <div className="cr-hl">
         <h1>{caseType === "memo" ? tr({ en: "Capitalize completed AUC — SAR 1.92B", ar: "رسملة الأصول المكتملة — 1.92 مليار", zh: "已完工在建资产资本化 — SAR 1.92B" }) : tr({ en: "Audit observation AO-22 — AUC depreciation basis", ar: "ملاحظة تدقيق AO-22 — أساس الإهلاك", zh: "审计观察 AO-22 — 在建资产折旧依据" })}</h1>
-        <span className="cr-src">📎 {tr({ en: "Raised from", ar: "وارد من", zh: "来自" })} <b>Assets · UC-14</b> · {tr({ en: "auto-prefilled", ar: "تعبئة تلقائية", zh: "自动预填" })}</span>
+        <span className="cr-src">📎 {tr({ en: "Raised from", ar: "وارد من", zh: "来自" })} <b>Assets · UC-14</b> · {tr({ en: "auto-prefilled", ar: "تعبئة تلقائية", zh: "自动预填" })}</span><button className="al-bell" onClick={() => setAlertsOpen(true)} title={ucl("UC-02", tr({ en: "Raise / view alert", ar: "رفع / عرض تنبيه", zh: "上报 / 查看告警" }))}>🔔 {tr({ en: "Raise alert", ar: "رفع تنبيه", zh: "上报告警" })}</button>
       </div>
       <div className="cr-trust">
         <div className="cr-tw"><div className="l">{tr({ en: "Verdict", ar: "القرار", zh: "判定" })}</div><div className={"v cr-verdict" + (approved ? " ok" : "")}><span className="d" /> {tr(vText)}</div></div>
@@ -3413,7 +3596,7 @@ function ComplianceRuling() {
             <div className="cr-hand">
               <div className="hl2">{tr({ en: "After approval · hand off downstream", ar: "بعد الاعتماد · التسليم اللاحق", zh: "批准后 · 下游交接" })}</div>
               <div className="hb">
-                <span className={"cr-dbtn" + (approved ? " on" : "")} onClick={approved ? () => { setDeptSub("frep"); setRoute("reports"); } : undefined}><span className="uc">UC-10</span> {tr({ en: "Attach to Financial Report", ar: "إرفاق بالتقرير المالي", zh: "附入财务报告" })} →</span>
+                <span className={"cr-dbtn" + (approved ? " on" : "")} onClick={approved ? () => { setBackRoute("compmemo"); setRoute("reports"); } : undefined}><span className="uc">UC-10</span> {tr({ en: "Attach to Financial Report", ar: "إرفاق بالتقرير المالي", zh: "附入财务报告" })} →</span>
                 <span className={"cr-dbtn" + (approved ? " on" : "")} onClick={approved ? () => setRoute("chat") : undefined}><span className="uc">UC-03</span> {tr({ en: "File to Audit Log", ar: "حفظ في سجل التدقيق", zh: "归入审计日志" })} →</span>
               </div>
             </div>
@@ -3427,6 +3610,488 @@ function ComplianceRuling() {
           <div className="cr-ag"><span className="bd act" /><div><div className="an">Data Querying Agent</div><div className="as">{tr({ en: "Pulled AUC schedule, certs & observations from SAP / Esnad", ar: "سحب الجدول والشهادات والملاحظات من ساب / إسناد", zh: "从 SAP / Esnad 拉取折旧表、证明与观察" })}</div></div></div>
         </div>
       </div>
+    </div>
+  </div>);
+}
+
+/* ======= UC-02 · Alerts & Exceptions Center (shared service — no menu entry) ======= */
+const UC02_ALERTS = [
+  { id: "a1", uc: "UC-13", ucc: "uc13", sev: "crit", risk: { en: "Critical", ar: "حرج", zh: "严重" }, age: "2h", title: { en: "Overdue spike — Riyadh-East", ar: "ارتفاع التأخر — الرياض-شرق", zh: "逾期激增 — 利雅得-东" }, type: { en: "Abnormal balance · collection −9pp", ar: "رصيد شاذ · التحصيل −9", zh: "异常余额 · 征收 −9pp" }, from: { en: "UC-13 · Revenue Collection", ar: "UC-13 · التحصيل", zh: "UC-13 · 收入征收" }, rec: "CT-2025-0142", view: "rcbench", cause: { en: "Collection rate dropped 9pp; SAR 32M overdue beyond 60 days is concentrated in lease contracts under the Wusool template.", ar: "انخفض معدل التحصيل 9 نقاط؛ 32 مليون متأخرة >60 يوماً في عقود الإيجار.", zh: "征收率下降 9 个百分点;SAR 32M 逾期>60天集中在租约(Wusool 模板)。" }, proc: 2 },
+  { id: "a2", uc: "UC-11", ucc: "uc11", sev: "high", risk: { en: "High", ar: "مرتفع", zh: "高" }, age: "1h", title: { en: "Useful-life policy conflict", ar: "تعارض سياسة العمر الإنتاجي", zh: "使用年限政策冲突" }, type: { en: "System / policy difference", ar: "فرق سياسة/نظام", zh: "系统 / 政策差异" }, from: { en: "UC-11 · Compliance & Memos", ar: "UC-11 · الامتثال", zh: "UC-11 · 合规与备忘" }, rec: "MEMO-1142", view: "compmemo", cause: { en: "Capitalized AUC uses a single useful life; IPSAS 17 componentization not applied — flagged during the compliance memo review.", ar: "الأصل المرسمل بعمر واحد دون إهلاك المكوّنات — رُصد أثناء مراجعة المذكرة.", zh: "资本化在建资产用单一年限,未应用 IPSAS 17 组件折旧——合规备忘复核时标记。" }, proc: 1 },
+  { id: "a3", uc: "UC-14", ucc: "uc14", sev: "high", risk: { en: "High", ar: "مرتفع", zh: "高" }, age: "5h", title: { en: "Impairment indicator — 3 equipment items", ar: "مؤشر انخفاض — 3 معدات", zh: "减值指标 — 3 项设备" }, type: { en: "Abnormal balance · SAR 47M NBV", ar: "رصيد شاذ · 47 مليون", zh: "异常余额 · 账面净值 SAR 47M" }, from: { en: "UC-14 · Assets", ar: "UC-14 · الأصول", zh: "UC-14 · 资产" }, rec: "EQ-2024-0471", view: "asbench", cause: { en: "Idle utilization plus market-value decline beyond the policy threshold; SAR 47M net book value at risk.", ar: "تشغيل خامل وتراجع سوقي يتجاوز الحد؛ 47 مليون قيمة دفترية معرضة.", zh: "闲置利用 + 市场价值跌破政策阈值;SAR 47M 账面净值承压。" }, proc: 0 },
+  { id: "a4", uc: "UC-12", ucc: "uc12", sev: "med", risk: { en: "Medium", ar: "متوسط", zh: "中" }, age: "1d", title: { en: "Dormant assignment order AO-2207", ar: "أمر إسناد خامل AO-2207", zh: "休眠派工单 AO-2207" }, type: { en: "Dormant contract · 120d no disbursement", ar: "عقد خامل · 120 يوماً بلا صرف", zh: "休眠合同 · 120天无支付" }, from: { en: "UC-12 · Costs & Funds", ar: "UC-12 · التكاليف والصناديق", zh: "UC-12 · 成本与资金" }, rec: "AO-2207", view: "csfunds", cause: { en: "120 days with no disbursement and milestone delivered — SAR 85M idle surplus eligible for release.", ar: "120 يوماً بلا صرف مع إنجاز المرحلة — 85 مليون فائض خامل قابل للإفراج.", zh: "120 天无支付且里程碑已交付——SAR 85M 闲置结余可释放。" }, proc: 2 },
+  { id: "a5", uc: "SYS", ucc: "sys", sev: "med", risk: { en: "Medium", ar: "متوسط", zh: "中" }, age: "3h", title: { en: "SAP ↔ Etimad discrepancy", ar: "فرق ساب ↔ اعتماد", zh: "SAP ↔ Etimad 差异" }, type: { en: "System difference · SAR 25M net", ar: "فرق نظام · 25 مليون", zh: "系统差异 · 净 SAR 25M" }, from: { en: "UC-01 · Data Consolidation", ar: "UC-01 · توحيد البيانات", zh: "UC-01 · 数据整合" }, rec: "RB-0925", view: "rcdata", cause: { en: "SAR 25M net difference across 2 reconciliation items between SAP and Etimad payment orders.", ar: "فرق صافٍ 25 مليون عبر بندي تسوية بين ساب واعتماد.", zh: "SAP 与 Etimad 付款单间 2 项对账差异,净 SAR 25M。" }, proc: 1 },
+  { id: "a6", uc: "UC-13", ucc: "uc13", sev: "low", risk: { en: "Low", ar: "منخفض", zh: "低" }, age: "6h", title: { en: "Duplicate invoice suspected", ar: "اشتباه فاتورة مكررة", zh: "疑似重复发票" }, type: { en: "Duplicate bills · INV-4471", ar: "فواتير مكررة · INV-4471", zh: "重复开票 · INV-4471" }, from: { en: "UC-13 · Revenue Collection", ar: "UC-13 · التحصيل", zh: "UC-13 · 收入征收" }, rec: "INV-4471", view: "rcbench", cause: { en: "INV-4471 matches a prior billing key for the same period — likely duplicate, pending confirmation.", ar: "INV-4471 يطابق مفتاح فوترة سابقاً لنفس الفترة — على الأرجح مكرر.", zh: "INV-4471 与同期既有开票主键匹配——疑似重复,待确认。" }, proc: 3 },
+];
+function AlertsCenter({ drawer, onClose }) {
+  const { tr, setRoute, backRoute, setBackRoute, pushLog } = useStore();
+  const [sel, setSel] = useState("a1");
+  const a = UC02_ALERTS.find(x => x.id === sel) || UC02_ALERTS[0];
+  const PROC = [{ en: "Complete", ar: "إكمال", zh: "补全" }, { en: "Correct", ar: "تصحيح", zh: "更正" }, { en: "Escalate", ar: "تصعيد", zh: "升级" }, { en: "Close", ar: "إغلاق", zh: "关闭" }];
+  const back = () => { const b = backRoute || "rcbench"; setBackRoute(null); setRoute(b); };
+  const UP = { en: "UPSTREAM", ar: "منبع", zh: "上游" }, FD = { en: "FEEDS ↓", ar: "يغذّي", zh: "馈入↓" }, FU = { en: "FEEDS ↑", ar: "يغذّي", zh: "馈入↑" }, THISP = { en: "THIS", ar: "هذه", zh: "本环节" };
+  const CHAIN = [
+    { code: "UC-01", pos: UP, name: { en: "Data Consolidation", ar: "توحيد البيانات", zh: "数据整合" } },
+    { code: "UC-13", pos: FD, name: { en: "Revenue & Collections", ar: "الإيرادات والتحصيل", zh: "收入与征收" } },
+    { code: "UC-02", here: true, pos: THISP, name: { en: "Alerts & Exceptions", ar: "التنبيهات والاستثناءات", zh: "告警与异常" } },
+    { code: "UC-06", name: { en: "Performance", ar: "الأداء", zh: "绩效" } },
+    { code: "UC-14", name: { en: "Assets", ar: "الأصول", zh: "资产" } },
+    { code: "UC-12 / UC-11", pos: FU, name: { en: "Costs / Compliance", ar: "التكاليف / الامتثال", zh: "成本 / 合规" } },
+    { code: "UC-10 / UC-03", name: { en: "Reporting / Smart Query", ar: "التقارير / الاستعلام", zh: "报告 / 智能查询" } },
+  ];
+  return (<div className="fade wb">
+    {!drawer && <div className="ws-back" onClick={back}>← {tr({ en: "Back", ar: "رجوع", zh: "返回" })}</div>}
+    <div className="al-hd">
+      <div>
+        <div className="al-eyebrow">{ucl("UC-02", tr({ en: "Alerts & Exceptions Center", ar: "مركز التنبيهات والاستثناءات", zh: "告警与异常中心" }))}</div>
+        <h1 className="al-h1">{tr({ en: "6 open alerts · 1 critical needs action", ar: "6 تنبيهات مفتوحة · 1 حرج يتطلب إجراءً", zh: "6 条未决告警 · 1 条严重待处理" })}</h1>
+        <div className="al-inbound"><span className="al-inlab">{tr({ en: "Inbound from", ar: "وارد من", zh: "调用来源" })}</span>
+          <span className="al-feeder uc13">UC-13 {tr({ en: "Revenue", ar: "الإيرادات", zh: "收入" })} <span className="n">2</span></span>
+          <span className="al-feeder uc11">UC-11 {tr({ en: "Compliance", ar: "الامتثال", zh: "合规" })} <span className="n">1</span></span>
+          <span className="al-feeder uc14">UC-14 {tr({ en: "Assets", ar: "الأصول", zh: "资产" })} <span className="n">1</span></span>
+          <span className="al-feeder uc12">UC-12 {tr({ en: "Costs", ar: "التكاليف", zh: "成本" })} <span className="n">1</span></span>
+          <span className="al-feeder sys">{tr({ en: "System", ar: "النظام", zh: "系统" })} <span className="n">1</span></span>
+        </div>
+      </div>
+      <div className="al-sevsum">
+        <div className="al-sv crit"><div className="n">1</div><div className="l">{tr({ en: "Critical", ar: "حرج", zh: "严重" })}</div></div>
+        <div className="al-sv high"><div className="n">2</div><div className="l">{tr({ en: "High", ar: "مرتفع", zh: "高" })}</div></div>
+        <div className="al-sv med"><div className="n">2</div><div className="l">{tr({ en: "Medium", ar: "متوسط", zh: "中" })}</div></div>
+        <div className="al-sv"><div className="n">1</div><div className="l">{tr({ en: "Low", ar: "منخفض", zh: "低" })}</div></div>
+      </div>
+    </div>
+    <div className="al-feednote">{tr({ en: "Called by upstream use cases: UC-13 raises revenue/collection anomalies, UC-11 raises compliance findings; UC-14 & UC-12 raise asset/fund exceptions. Each alert keeps its source UC & lineage.", ar: "تُستدعى من الحالات الأعلى: UC-13 يرفع شذوذ الإيرادات، UC-11 يرفع نتائج الامتثال؛ ويحتفظ كل تنبيه بمصدره.", zh: "由上游用例调用:UC-13 报收入/征收异常,UC-11 报合规发现,UC-14 与 UC-12 报资产/资金异常;每条告警保留来源 UC 与可追溯链路。" })}</div>
+
+    <div className="al-grid">
+      <div className="al-panel">
+        <div className="al-ph">{tr({ en: "Exception queue", ar: "قائمة الاستثناءات", zh: "异常队列" })}<span className="pm">{tr({ en: "ranked by severity & age", ar: "مرتّبة حسب الخطورة والعمر", zh: "按严重度与时效排序" })}</span></div>
+        <div className="al-filters">
+          <div className="al-fchip"><div className="k">{tr({ en: "Alert type", ar: "نوع التنبيه", zh: "告警类型" })}</div><div className="v">{tr({ en: "All", ar: "الكل", zh: "全部" })} ▾</div></div>
+          <div className="al-fchip"><div className="k">{tr({ en: "Risk level", ar: "مستوى الخطر", zh: "风险等级" })}</div><div className="v">{tr({ en: "All", ar: "الكل", zh: "全部" })} ▾</div></div>
+          <div className="al-fchip"><div className="k">{tr({ en: "Department", ar: "الإدارة", zh: "部门" })}</div><div className="v">{tr({ en: "Revenue + Assets", ar: "الإيرادات + الأصول", zh: "收入 + 资产" })} ▾</div></div>
+        </div>
+        {UC02_ALERTS.map(x => (<div className={"al-alert" + (x.id === sel ? " sel" : "")} key={x.id} onClick={() => setSel(x.id)}>
+          <div className={"al-sevbar " + x.sev} />
+          <div className="al-main"><div className="al-t"><span className={"al-uc " + x.ucc}>{x.uc}</span> {tr(x.title)}</div><div className="al-s">{tr(x.type)}</div></div>
+          <span className={"al-risk " + x.sev}>{tr(x.risk)}</span><span className="al-age">{x.age}</span>
+        </div>))}
+      </div>
+
+      <div>
+        <div className="al-panel">
+          <div className="al-dhd">
+            <div className="al-drow"><span className={"al-risk " + a.sev}>{tr(a.risk)}</span><span className={"al-uc " + a.ucc}>{a.uc}</span></div>
+            <div className="al-dt">{tr(a.title)}</div>
+          </div>
+          <div className="al-db">
+            <div className="al-fld"><div className="al-fl">{tr({ en: "Source / lineage", ar: "المصدر / التتبع", zh: "来源 / 追溯" })}</div>
+              <div className="al-lineage">← <span className="from">{tr(a.from)}</span> · {a.rec}<span className="al-viewsrc" onClick={() => { if (drawer && onClose) onClose(); setRoute(a.view); }}>{tr({ en: "View source", ar: "عرض المصدر", zh: "查看来源" })} →</span></div>
+            </div>
+            <div className="al-fld"><div className="al-fl">{tr({ en: "Possible cause", ar: "السبب المحتمل", zh: "可能原因" })}</div>
+              <div className="al-cause"><span className="ai">AI</span>{tr(a.cause)}</div>
+            </div>
+            <div className="al-fld"><div className="al-fl">{tr({ en: "Proposed procedure", ar: "الإجراء المقترح", zh: "建议处置" })}</div>
+              <div className="al-procs">{PROC.map((p, i) => (<span className={"al-proc" + (i === a.proc ? " on" : "")} key={i}>{tr(p)}{i === a.proc && <span className="rec">AI</span>}</span>))}</div>
+            </div>
+            <div className="al-fld"><div className="al-fl">{tr({ en: "Assign official (required to escalate)", ar: "تعيين مسؤول (لازم للتصعيد)", zh: "指派负责人(升级必填)" })}</div>
+              <div className="al-picker"><span>👤 {tr({ en: "Default responsible party", ar: "المسؤول الافتراضي", zh: "默认负责人" })}</span><span style={{ color: "#b9a4e6" }}>▾</span></div>
+            </div>
+            <div className="al-fld"><div className="al-fl">{tr({ en: "Closing notes", ar: "ملاحظات الإغلاق", zh: "关闭说明" })} <span className="al-req">· {tr({ en: "justification required (BR-03)", ar: "يلزم تبرير (BR-03)", zh: "需理由(BR-03)" })}</span></div>
+              <textarea className="al-cause" style={{ minHeight: 54, fontFamily: "inherit" }} placeholder={tr({ en: "Document the justification before closing…", ar: "وثّق التبرير قبل الإغلاق…", zh: "关闭前记录理由…" })} />
+            </div>
+          </div>
+          <div className="al-acts">
+            <button className="al-btn esc" onClick={() => pushLog({ en: "Alert escalated to the assigned official", ar: "تم تصعيد التنبيه للمسؤول", zh: "告警已升级至指派负责人" })}>↑ {tr({ en: "Escalate", ar: "تصعيد", zh: "升级" })}</button>
+            <button className="al-btn primary" disabled>✓ {tr({ en: "Close alert", ar: "إغلاق التنبيه", zh: "关闭告警" })}</button>
+            <button className="al-btn ghost" onClick={() => pushLog({ en: "Alert marked as reviewed", ar: "تم وسم التنبيه كمراجَع", zh: "告警已标记为已复核" })}>{tr({ en: "Mark as reviewed", ar: "وسم كمراجَع", zh: "标记已复核" })}</button>
+            <span className="al-actnote">{tr({ en: "An alert is not a confirmed error — review & document the procedure (BR-02). Critical alerts cannot be closed without justification (BR-03).", ar: "التنبيه ليس خطأً مؤكداً — راجع ووثّق (BR-02). ولا تُغلق الحرجة دون تبرير (BR-03).", zh: "告警不等于确认错误——需复核并记录处置(BR-02);严重告警无理由不可关闭(BR-03)。" })}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>);
+}
+
+/* ======= UC-10 · Reporting Hub (Library + Composer drawer) ======= */
+const RP_REPORTS = [
+  { id: "q", name: { en: "G-06 · Revenue & Assets — Quarterly", ar: "ج-06 · الإيرادات والأصول — ربعي", zh: "G-06 · 收入与资产 — 季度" }, sub: { en: "Consolidated directorate report", ar: "تقرير موحّد للإدارة", zh: "总局综合报告" }, type: { en: "Periodic · Consolidated", ar: "دوري · موحّد", zh: "周期 · 综合" }, period: "Q2 2026", srcs: ["13", "14", "12", "11", "06"], status: "review", upd: "1h", title: { en: "G-06 · Revenue & Assets — Quarterly (FY 2026 · Q2)", ar: "ج-06 · الإيرادات والأصول — ربعي (2026 · ر2)", zh: "G-06 · 收入与资产 — 季度(FY 2026 · Q2)" } },
+  { id: "rev", name: { en: "Revenue & Collections Report", ar: "تقرير الإيرادات والتحصيل", zh: "收入与征收报告" }, sub: { en: "Billing, collection, exclusions", ar: "الفوترة والتحصيل والاستبعادات", zh: "开票、征收、排除项" }, type: { en: "Periodic · Dept", ar: "دوري · إدارة", zh: "周期 · 部门" }, period: "Q2 2026", srcs: ["13", "02", "06"], status: "appr", upd: "today", title: { en: "Revenue & Collections Report (FY 2026 · Q2)", ar: "تقرير الإيرادات والتحصيل (2026 · ر2)", zh: "收入与征收报告(FY 2026 · Q2)" } },
+  { id: "ast", name: { en: "Assets & Capitalization Report", ar: "تقرير الأصول والرسملة", zh: "资产与资本化报告" }, sub: { en: "Classification, capitalization, returns", ar: "التصنيف والرسملة والعوائد", zh: "分类、资本化、回报" }, type: { en: "Periodic · Dept", ar: "دوري · إدارة", zh: "周期 · 部门" }, period: "Q2 2026", srcs: ["14", "12", "11"], status: "draft", upd: "2h", title: { en: "Assets & Capitalization Report (FY 2026 · Q2)", ar: "تقرير الأصول والرسملة (2026 · ر2)", zh: "资产与资本化报告(FY 2026 · Q2)" } },
+  { id: "cost", name: { en: "Costs & Funds Report", ar: "تقرير التكاليف والصناديق", zh: "成本与资金报告" }, sub: { en: "Assignment orders, unit cost, funds", ar: "أوامر الإسناد وتكلفة الوحدة والصناديق", zh: "派工单、单元成本、资金" }, type: { en: "Periodic · Dept", ar: "دوري · إدارة", zh: "周期 · 部门" }, period: "Q2 2026", srcs: ["12", "14"], status: "draft", upd: "3h", title: { en: "Costs & Funds Report (FY 2026 · Q2)", ar: "تقرير التكاليف والصناديق (2026 · ر2)", zh: "成本与资金报告(FY 2026 · Q2)" } },
+  { id: "comp", name: { en: "Compliance & Accounting Memos Pack", ar: "حزمة الامتثال والمذكرات المحاسبية", zh: "合规与会计备忘汇编" }, sub: { en: "Memos, journal entries, references", ar: "مذكرات، قيود، مراجع", zh: "备忘、分录、依据" }, type: { en: "Compilation", ar: "تجميع", zh: "汇编" }, period: "Q2 2026", srcs: ["11", "09"], status: "review", upd: "1h", title: { en: "Compliance & Accounting Memos Pack (Q2)", ar: "حزمة الامتثال والمذكرات (ر2)", zh: "合规与会计备忘汇编(Q2)" } },
+  { id: "exec", name: { en: "Executive Summary — Leadership", ar: "الملخص التنفيذي — القيادة", zh: "执行摘要 — 领导层" }, sub: { en: "One-page KPI & deviations", ar: "صفحة واحدة: مؤشرات وانحرافات", zh: "一页 KPI 与偏差" }, type: { en: "Executive", ar: "تنفيذي", zh: "执行" }, period: "Jun 2026", srcs: ["06", "13", "14", "02"], status: "issued", upd: "Jun 28", title: { en: "Executive Summary — Leadership (Jun 2026)", ar: "الملخص التنفيذي — القيادة (يونيو 2026)", zh: "执行摘要 — 领导层(2026 年 6 月)" } },
+  { id: "adhoc", name: { en: "Ad-hoc · \"Overdue by Amanah\"", ar: "حسب الطلب · «التأخر حسب الأمانة»", zh: "即席 · 「按阿玛纳逾期」" }, sub: { en: "Natural-language query report", ar: "تقرير استعلام بلغة طبيعية", zh: "自然语言查询报告" }, type: { en: "Ad-hoc · NL", ar: "حسب الطلب · لغة طبيعية", zh: "即席 · 自然语言" }, period: "Q2 2026", srcs: ["13", "03"], status: "draft", upd: "10m", title: { en: "Ad-hoc · \"Overdue by Amanah\"", ar: "حسب الطلب · «التأخر حسب الأمانة»", zh: "即席 · 「按阿玛纳逾期」" } },
+];
+const RP_STEPS = { draft: 0, review: 1, appr: 2, issued: 3 };
+function ReportHub() {
+  const { tr, setRoute, backRoute, setBackRoute, pushLog } = useStore();
+  const [reports, setReports] = useState(RP_REPORTS);
+  const [open, setOpen] = useState(null);
+  const [nw, setNw] = useState(false);
+  const [nmode, setNmode] = useState("tmpl");
+  const [ntmpl, setNtmpl] = useState("q");
+  const [nnl, setNnl] = useState("");
+  const r = reports.find(x => x.id === open);
+  const TEMPLATES = [
+    { key: "q", name: { en: "G-06 Quarterly · Revenue & Assets", ar: "ج-06 ربعي · الإيرادات والأصول", zh: "G-06 季度 · 收入与资产" }, srcs: ["13", "14", "12", "11", "06"] },
+    { key: "rev", name: { en: "Revenue & Collections", ar: "الإيرادات والتحصيل", zh: "收入与征收" }, srcs: ["13", "02", "06"] },
+    { key: "ast", name: { en: "Assets & Capitalization", ar: "الأصول والرسملة", zh: "资产与资本化" }, srcs: ["14", "12", "11"] },
+    { key: "cost", name: { en: "Costs & Funds", ar: "التكاليف والصناديق", zh: "成本与资金" }, srcs: ["12", "14"] },
+    { key: "comp", name: { en: "Compliance & Memos", ar: "الامتثال والمذكرات", zh: "合规与备忘" }, srcs: ["11", "09"] },
+    { key: "exec", name: { en: "Executive Summary", ar: "ملخص تنفيذي", zh: "执行摘要" }, srcs: ["06", "13", "14", "02"] },
+  ];
+  const genReport = () => {
+    const id = "n" + Date.now();
+    let rep;
+    if (nmode === "nl") { const q = nnl.trim() || tr({ en: "Ad-hoc query", ar: "استعلام", zh: "即席查询" }); rep = { id, name: "Ad-hoc · " + q, sub: { en: "Natural-language query report", ar: "تقرير استعلام بلغة طبيعية", zh: "自然语言查询报告" }, type: { en: "Ad-hoc · NL", ar: "حسب الطلب", zh: "即席 · 自然语言" }, period: "Q2 2026", srcs: ["13", "03"], status: "draft", upd: tr({ en: "now", ar: "الآن", zh: "刚刚" }), title: "Ad-hoc · " + q }; }
+    else { const t = TEMPLATES.find(x => x.key === ntmpl); rep = { id, name: t.name, sub: { en: "Generated from template", ar: "مولّد من قالب", zh: "由模板生成" }, type: { en: "Periodic", ar: "دوري", zh: "周期" }, period: "Q2 2026", srcs: t.srcs, status: "draft", upd: tr({ en: "now", ar: "الآن", zh: "刚刚" }), title: tr(t.name) + " (FY 2026 · Q2)" }; }
+    setReports([rep, ...reports]); setNw(false); setNnl(""); setOpen(id);
+  };
+  const ucCls = (c) => "uc" + c;
+  const stLabel = (s) => ({ draft: { en: "Draft", ar: "مسودة", zh: "草稿" }, review: { en: "Under Review", ar: "قيد المراجعة", zh: "审核中" }, appr: { en: "Approved", ar: "معتمد", zh: "已批准" }, issued: { en: "Issued", ar: "صادر", zh: "已发布" } }[s]);
+  const STEPL = [{ en: "Draft", ar: "مسودة", zh: "草稿" }, { en: "Under Review", ar: "قيد المراجعة", zh: "审核中" }, { en: "Approved", ar: "معتمد", zh: "已批准" }, { en: "Issued", ar: "صادر", zh: "已发布" }];
+  const RP_PARENT = { csfunds: { en: "Costs & Funds Console", ar: "وحدة التكاليف والصناديق", zh: "成本与资金控制台" }, compmemo: { en: "Accounting Ruling", ar: "قرار محاسبي", zh: "会计裁定" }, rcwork: { en: "Revenue Collection Dept", ar: "إدارة التحصيل", zh: "收入征收部" }, aswork: { en: "Assets Department", ar: "إدارة الأصول", zh: "资产部" } };
+  const backTarget = backRoute || "rcwork";
+  const goBack = () => { setBackRoute(null); setRoute(backTarget); };
+  return (<div className="fade ws-page">
+    <div className="rp-libhd">
+      <div className="rp-libL">
+      <div className="rp-libtitle">{backRoute && <button className="rp-backbtn" title={tr({ en: "Back", ar: "رجوع", zh: "返回" })} onClick={goBack}>‹</button>}<div><div className="dw-eyebrow g" style={{ marginBottom: 2 }}>{tr({ en: "Department Workspace · convergence", ar: "مساحة عمل الإدارة · تجميعي", zh: "部门工作区 · 汇聚" })}</div><h1 className="rp-h1">{tr({ en: "Report Library", ar: "مكتبة التقارير", zh: "报告库" })}{SHOW_UC ? " · UC-10" : ""}</h1></div></div>
+        <div className="sub muted" style={{ fontSize: 12.5, marginTop: 3 }}>{tr({ en: "Mandate: generate financial/administrative reports & narrative commentary (UC-10). Workspace — convergence type: report library + contributions inbox from all departments.", ar: "المهمة: إنشاء التقارير والتعليق السردي (UC-10). مساحة العمل — نوع تجميعي: مكتبة + صندوق مساهمات.", zh: "职责:生成财务/行政报告与叙述评述(UC-10)。Workspace — 汇聚型:报告库 + 各部门贡献 inbox。" })}</div>
+      </div>
+        <SmartQueryFab scope={{ en: "Scope: Reporting · all sources", ar: "النطاق: التقارير · كل المصادر", zh: "范围:报告 · 全部来源" }} prompts={[{ en: "Which reports are pending approval?", ar: "ما التقارير بانتظار الاعتماد؟", zh: "哪些报告待审批?" }, { en: "What feeds the G-06 quarterly report?", ar: "ما الذي يغذّي تقرير ج-06 الربعي؟", zh: "G-06 季度报告由谁汇入?" }, { en: "Show overdue report sections", ar: "إظهار أقسام التقارير المتأخرة", zh: "显示逾期的报告章节" }]} />
+      <div className="wb-chain rp-headchain"><span className="wb-clab">{tr({ en: "G-06 CHAIN", ar: "سلسلة ج-06", zh: "G-06 链路" })}</span>
+        {[{ c: "UC-01" }, { c: "UC-13" }, { c: "UC-06/02" }, { c: "UC-14" }, { c: "UC-12/11" }, { c: "UC-10", here: true, pos: { en: "CONVERGE ★", ar: "تقارب ★", zh: "汇聚 ★" } }].map((n, i) => (<span className="wb-cseg" key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (n.here ? " here" : "")}>{n.pos && <span className="wb-cpos">{tr(n.pos)}</span>}{n.c}</span></span>))}
+      </div>
+    </div>
+    <div className="rp-contrib">
+      <div className="ch">{tr({ en: "Recent contributions · pushed from upstream UCs into reports", ar: "مساهمات حديثة · مدفوعة من الحالات الأعلى إلى التقارير", zh: "最近贡献 · 由上游 UC 推入报告" })}</div>
+      <div className="row"><span className="rp-uc uc11">UC-11</span><span className="arr">→</span> {tr({ en: "attached", ar: "أرفق", zh: "附入" })} <b>memo MEMO-1142</b> {tr({ en: "to", ar: "إلى", zh: "→" })} <span className="tgt">G-06 Quarterly</span><span className="age">1h</span></div>
+      <div className="row"><span className="rp-uc uc12">UC-12</span><span className="arr">→</span> {tr({ en: "sent", ar: "أرسل", zh: "推送" })} <b>{tr({ en: "costs & funds data", ar: "بيانات التكاليف والصناديق", zh: "成本与资金数据" })}</b> {tr({ en: "to", ar: "إلى", zh: "→" })} <span className="tgt">Costs & Funds Report</span><span className="age">3h</span></div>
+      <div className="row"><span className="rp-uc uc13">UC-13</span><span className="arr">→</span> {tr({ en: "fed", ar: "غذّى", zh: "喂入" })} <b>{tr({ en: "collection results & gap", ar: "نتائج التحصيل والفجوة", zh: "征收结果与缺口" })}</b> {tr({ en: "to", ar: "إلى", zh: "→" })} <span className="tgt">Revenue & Collections Report</span><span className="age">{tr({ en: "today", ar: "اليوم", zh: "今天" })}</span></div>
+      <div className="row"><span className="rp-uc uc02">UC-02</span><span className="arr">→</span> {tr({ en: "flagged", ar: "رصد", zh: "标记" })} <b>{tr({ en: "1 critical alert", ar: "تنبيه حرج", zh: "1 条严重告警" })}</b> {tr({ en: "into", ar: "في", zh: "→" })} <span className="tgt">Executive Summary</span><span className="age">{tr({ en: "today", ar: "اليوم", zh: "今天" })}</span></div>
+    </div>
+    <div className="rp-filters">
+      <div className="rp-fchip"><div className="k">{tr({ en: "Type", ar: "النوع", zh: "类型" })}</div><div className="v">{tr({ en: "All", ar: "الكل", zh: "全部" })} ▾</div></div>
+      <div className="rp-fchip"><div className="k">{tr({ en: "Period", ar: "الفترة", zh: "期间" })}</div><div className="v">FY 2026 · Q2 ▾</div></div>
+      <div className="rp-fchip"><div className="k">{tr({ en: "Department", ar: "الإدارة", zh: "部门" })}</div><div className="v">{tr({ en: "All", ar: "الكل", zh: "全部" })} ▾</div></div>
+      <div className="rp-fchip"><div className="k">{tr({ en: "Status", ar: "الحالة", zh: "状态" })}</div><div className="v">{tr({ en: "All", ar: "الكل", zh: "全部" })} ▾</div></div>
+      <button className="rp-newbtn" style={{ marginInlineStart: "auto" }} onClick={() => setNw(true)}>+ {tr({ en: "New report", ar: "تقرير جديد", zh: "新建报告" })}</button>
+    </div>
+    <div className="rp-libtbl">
+      <div className="rp-libhead"><div>{tr({ en: "Report", ar: "التقرير", zh: "报告" })}</div><div>{tr({ en: "Type", ar: "النوع", zh: "类型" })}</div><div>{tr({ en: "Period", ar: "الفترة", zh: "期间" })}</div><div>{tr({ en: "Assembled from", ar: "مُجمّع من", zh: "汇聚来源" })}</div><div>{tr({ en: "Status", ar: "الحالة", zh: "状态" })}</div><div>{tr({ en: "Updated", ar: "محدّث", zh: "更新" })}</div></div>
+      {reports.map(x => (<div className="rp-librow" key={x.id} onClick={() => setOpen(x.id)}>
+        <div className="rp-rn">{tr(x.name)}<div className="sub">{tr(x.sub)}</div></div>
+        <div>{tr(x.type)}</div><div>{x.period}</div>
+        <div className="rp-srcs">{x.srcs.map((c, i) => <span className={"rp-uc " + ucCls(c)} key={i}>{c}</span>)}</div>
+        <div><span className={"rp-st " + x.status}>{tr(stLabel(x.status))}</span></div>
+        <div className="rp-upd">{x.upd}</div>
+      </div>))}
+    </div>
+
+    {r && <div className="rp-ov open" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
+      <div className="rp-dw">
+        <div className="rp-dwhead"><span className="rp-dwt">📄 {ucl("UC-10", tr({ en: "Report Composer", ar: "منشئ التقارير", zh: "报告编排" }))}</span><button className="rp-dwx" onClick={() => setOpen(null)}>✕ {tr({ en: "Close", ar: "إغلاق", zh: "关闭" })}</button></div>
+        <div className="rp-ctop">
+          <div className="rp-ctl">
+            <div className="rp-eyebrow">{tr({ en: "Report · view only", ar: "تقرير · للعرض فقط", zh: "报告 · 仅查看" })}{SHOW_UC ? " · UC-10" : ""}</div>
+            <h2>{tr(r.title)}</h2>
+            <div className="rp-asm"><span className="rp-asmlab">{tr({ en: "Assembled from", ar: "مُجمّع من", zh: "汇聚来源" })}</span>{r.srcs.map((c, i) => <span className={"rp-uc " + ucCls(c)} key={i}>UC-{c}</span>)}</div>
+          </div>
+          <div className="rp-ctr">
+            <div className="rp-status">{STEPL.map((l, i) => { const cur = RP_STEPS[r.status]; const cls = i < cur ? "done" : (i === cur ? "cur" : ""); return (<React.Fragment key={i}>{i > 0 && <span className="arr">›</span>}<span className={"s " + cls}><span className="dot" />{tr(l)}</span></React.Fragment>); })}</div>
+            <div className="rp-toolbtns"><button className="rp-ebtn" onClick={() => pushLog({ en: "Exporting report to Word…", ar: "تصدير إلى وورد…", zh: "正在导出 Word…" })}>⬇ Word</button><button className="rp-ebtn" onClick={() => pushLog({ en: "Exporting report to Excel…", ar: "تصدير إلى إكسل…", zh: "正在导出 Excel…" })}>⬇ Excel</button><button className="rp-ebtn" onClick={() => pushLog({ en: "Exporting report to PDF…", ar: "تصدير إلى PDF…", zh: "正在导出 PDF…" })}>⬇ PDF</button><button className="rp-send2" onClick={() => pushLog({ en: "Report sent for approval", ar: "أُرسل التقرير للاعتماد", zh: "报告已送审" })}>{tr({ en: "Send for approval", ar: "إرسال للاعتماد", zh: "送审" })} →</button></div>
+          </div>
+        </div>
+        <div className="rp-gate">✓ <b>{tr({ en: "Source data approved", ar: "بيانات المصدر معتمدة", zh: "来源数据已核准" })}</b> — {tr({ en: "official report can be issued (BR-01). Every figure traces to an approved dataset.", ar: "يمكن إصدار التقرير الرسمي (BR-01). كل رقم قابل للتتبع.", zh: "可签发正式报告(BR-01);每个数字均可追溯至已核准数据集。" })}</div>
+        <div className="rp-doc">
+          <div className="rp-dochd"><div className="rp-doctitle">{tr(r.title)}</div>
+            <div className="rp-docmeta"><span>{tr({ en: "Copy No.", ar: "نسخة رقم", zh: "副本号" })} <b>FBC-2026-Q2-118</b></span><span>{tr({ en: "Owner: Financial Reporting Dept", ar: "المالك: إدارة التقارير", zh: "归属:财务报告部" })}</span><span>{tr({ en: "Issue date: pending", ar: "تاريخ الإصدار: معلّق", zh: "发布日期:待定" })}</span><span>{tr({ en: "Sources", ar: "المصادر", zh: "来源" })}: {r.srcs.length} UCs</span></div></div>
+          <div className="rp-docb">
+            <p className="rp-secl">{tr({ en: "Key figures & indicators · auto-filled from approved data", ar: "أرقام ومؤشرات · معبّأة تلقائياً", zh: "关键指标 · 自动取自已核准数据" })}</p>
+            <table className="rp-tbl"><thead><tr><th>{tr({ en: "INDICATOR", ar: "المؤشر", zh: "指标" })}</th><th className="c">{tr({ en: "VALUE", ar: "القيمة", zh: "数值" })}</th><th>{tr({ en: "SOURCE", ar: "المصدر", zh: "来源" })}</th></tr></thead>
+              <tbody>
+                <tr><td>{tr({ en: "Net billed amount", ar: "صافي المفوتر", zh: "净开票额" })}</td><td className="num">SAR 920M</td><td><span className="rp-uc uc13">{tr({ en: "Revenue Collection", ar: "التحصيل", zh: "收入征收部" })}</span></td></tr>
+                <tr><td>{tr({ en: "Collection rate", ar: "معدل التحصيل", zh: "征收率" })}</td><td className="num">87% (+2.1pp)</td><td><span className="rp-uc uc13">{tr({ en: "Revenue Collection", ar: "التحصيل", zh: "收入征收部" })}</span></td></tr>
+                <tr><td>{tr({ en: "Collection gap", ar: "فجوة التحصيل", zh: "征收缺口" })}</td><td className="num">SAR 120M</td><td><span className="rp-uc uc13">{tr({ en: "Revenue Collection", ar: "التحصيل", zh: "收入征收部" })}</span></td></tr>
+                <tr><td>{tr({ en: "Capitalized AUC", ar: "المرسمل", zh: "已资本化在建" })}</td><td className="num">SAR 1.92B</td><td><span className="rp-uc uc14">{tr({ en: "Assets", ar: "الأصول", zh: "资产部" })}</span></td></tr>
+                <tr><td>{tr({ en: "Allocated project cost", ar: "تكلفة المشروع الموزّعة", zh: "已分摊项目成本" })}</td><td className="num">SAR 2.14B</td><td><span className="rp-uc uc12">{tr({ en: "Cost Management", ar: "إدارة التكاليف", zh: "成本管理部" })}</span></td></tr>
+                <tr><td>{tr({ en: "Compliance memos (open)", ar: "مذكرات الامتثال (مفتوحة)", zh: "合规备忘(未结)" })}</td><td className="num">1</td><td><span className="rp-uc uc11">{tr({ en: "Compliance", ar: "الامتثال", zh: "合规部" })}</span></td></tr>
+              </tbody></table>
+            <p className="rp-secl">{tr({ en: "Trend · collection rate by quarter", ar: "الاتجاه · معدل التحصيل ربعياً", zh: "趋势 · 各季度征收率" })}</p>
+            <div className="rp-chart"><div className="rp-bar" style={{ height: "60%" }}><span>83%</span><small>Q3-25</small></div><div className="rp-bar" style={{ height: "64%" }}><span>85%</span><small>Q4-25</small></div><div className="rp-bar" style={{ height: "68%" }}><span>85%</span><small>Q1-26</small></div><div className="rp-bar" style={{ height: "80%" }}><span>87%</span><small>Q2-26</small></div></div>
+            <p className="rp-secl">{tr({ en: "Narrative commentary · auto-generated", ar: "تعليق سردي · مولّد تلقائياً", zh: "叙述评述 · 自动生成" })}</p>
+            <div className="rp-narr"><span className="tag">AI</span>{tr({ en: "Collection rate rose to 87% (+2.1pp). ", ar: "ارتفع معدل التحصيل إلى 87% (+2.1). ", zh: "征收率升至 87%(环比 +2.1pp)。" })}<span className="dev">{tr({ en: "Deviation:", ar: "انحراف:", zh: "偏差:" })}</span>{tr({ en: " a SAR 120M gap remains in 3 Amanat (lease arrears >60d). SAR 1.92B of AUC was capitalized; ", ar: " تبقى فجوة 120 مليون في 3 أمانات. ورُسمل 1.92 مليار؛ ", zh: " SAR 120M 缺口集中于 3 个阿玛纳(租约逾期>60天)。已资本化 SAR 1.92B 在建资产;" })}<span className="dev">{tr({ en: "deviation:", ar: "انحراف:", zh: "偏差:" })}</span>{tr({ en: " 3 equipment items flagged for impairment. ", ar: " 3 معدات مرصودة للانخفاض. ", zh: "3 项设备标记减值。" })}<span className="dev">{tr({ en: "Open item:", ar: "بند مفتوح:", zh: "未结项:" })}</span>{tr({ en: " 1 useful-life policy conflict (UC-11) pending before issuance.", ar: " تعارض سياسة عمر إنتاجي معلّق قبل الإصدار.", zh: " 1 项使用年限政策冲突(UC-11)待解决后方可签发。" })}</div>
+            <div className="rp-narrnote">{tr({ en: "Commentary explains deviations, not just numbers (BR-02) · human review required before release.", ar: "التعليق يفسّر الانحرافات لا الأرقام فقط (BR-02) · يلزم مراجعة بشرية.", zh: "评述解释偏差而非仅罗列数字(BR-02)· 签发前需人工复核。" })}</div>
+            <p className="rp-secl">{tr({ en: "Data sources · lineage", ar: "مصادر البيانات · التتبع", zh: "数据来源 · 追溯" })}</p>
+            <div className="rp-lin"><span className="ln">{tr({ en: "Net billed, collection, gap", ar: "المفوتر والتحصيل والفجوة", zh: "净开票、征收、缺口" })}</span><span className="src">← {tr({ en: "Revenue Collection", ar: "التحصيل", zh: "收入征收部" })} →</span></div>
+            <div className="rp-lin"><span className="ln">{tr({ en: "Capitalized AUC, impairment", ar: "المرسمل والانخفاض", zh: "资本化在建、减值" })}</span><span className="src">← {tr({ en: "Assets", ar: "الأصول", zh: "资产部" })} →</span></div>
+            <div className="rp-lin"><span className="ln">{tr({ en: "Allocated cost, idle surplus", ar: "التكلفة الموزّعة والفائض", zh: "分摊成本、闲置结余" })}</span><span className="src">← {tr({ en: "Cost Management", ar: "إدارة التكاليف", zh: "成本管理部" })} →</span></div>
+            <div className="rp-lin"><span className="ln">{tr({ en: "Compliance memo & basis", ar: "مذكرة الامتثال والأساس", zh: "合规备忘与依据" })}</span><span className="src">← {tr({ en: "Compliance", ar: "الامتثال", zh: "合规部" })} →</span></div>
+            <div className="rp-lin"><span className="ln">{tr({ en: "Audit trail & permissions", ar: "سجل التدقيق والصلاحيات", zh: "审计轨迹与权限" })}</span><span className="src">← {tr({ en: "Audit / Smart Query", ar: "التدقيق / الاستعلام", zh: "审计 / 智能查询" })} →</span></div>
+          </div>
+        </div>
+        <div className="rp-lock">🔒 {tr({ en: "Approved version saved immutably; edits create a new version (BR-04). Each copy carries number, owner, date & sources (BR-03).", ar: "النسخة المعتمدة تُحفظ دون تعديل؛ التعديل يُنشئ نسخة جديدة (BR-04). وكل نسخة تحمل رقماً ومالكاً وتاريخاً ومصادر (BR-03).", zh: "已批准版本不可变保存;修改生成新版本(BR-04)。每份副本含编号、归属、日期与来源(BR-03)。" })}</div>
+      </div>
+    </div>}
+    {nw && <div className="rp-nov" onClick={(e) => { if (e.target === e.currentTarget) setNw(false); }}>
+      <div className="rp-ncard">
+        <div className="rp-nhd">{tr({ en: "New report", ar: "تقرير جديد", zh: "新建报告" })}<button className="x" onClick={() => setNw(false)}>✕</button></div>
+        <div className="rp-nbody">
+          <div className="rp-nlab">{tr({ en: "How do you want to start?", ar: "كيف تريد البدء؟", zh: "从哪种方式开始?" })}</div>
+          <div className="rp-nmodes">
+            <div className={"rp-nmode" + (nmode === "tmpl" ? " on" : "")} onClick={() => setNmode("tmpl")}>📋 {tr({ en: "From a template", ar: "من قالب", zh: "用模板" })}<div className="sub">{tr({ en: "Pick an approved template", ar: "اختر قالباً معتمداً", zh: "选择已批准模板" })}</div></div>
+            <div className={"rp-nmode" + (nmode === "nl" ? " on" : "")} onClick={() => setNmode("nl")}>💬 {tr({ en: "Ask in natural language", ar: "بلغة طبيعية", zh: "自然语言" })}<div className="sub">{tr({ en: "Describe the report you need", ar: "صف التقرير المطلوب", zh: "描述你要的报告" })}</div></div>
+          </div>
+          {nmode === "tmpl"
+            ? <div className="rp-nfield"><div className="rp-nfl">{tr({ en: "Template", ar: "القالب", zh: "模板" })}</div><select value={ntmpl} onChange={e => setNtmpl(e.target.value)}>{TEMPLATES.map(t => <option key={t.key} value={t.key}>{tr(t.name)}</option>)}</select></div>
+            : <div className="rp-nfield"><div className="rp-nfl">{tr({ en: "Request", ar: "الطلب", zh: "请求" })}</div><input value={nnl} onChange={e => setNnl(e.target.value)} placeholder={tr({ en: "e.g. Overdue by Amanah this quarter", ar: "مثال: التأخر حسب الأمانة هذا الربع", zh: "例:本季度按阿玛纳逾期" })} /></div>}
+          <div className="rp-nrow2">
+            <div className="rp-nfield"><div className="rp-nfl">{tr({ en: "Period", ar: "الفترة", zh: "期间" })}</div><div className="rp-nval">FY 2026 · Q2 ▾</div></div>
+            <div className="rp-nfield"><div className="rp-nfl">{tr({ en: "Scope", ar: "النطاق", zh: "范围" })}</div><div className="rp-nval">{tr({ en: "6 Amanat", ar: "6 أمانات", zh: "6 个阿玛纳" })} ▾</div></div>
+          </div>
+        </div>
+        <div className="rp-nfoot"><button className="rp-ncancel" onClick={() => setNw(false)}>{tr({ en: "Cancel", ar: "إلغاء", zh: "取消" })}</button><button className="rp-ngen" onClick={genReport}>✦ {tr({ en: "Generate report", ar: "إنشاء التقرير", zh: "生成报告" })}</button></div>
+      </div>
+    </div>}
+  </div>);
+}
+
+/* ======= Financial Performance Analysis — workspace (Archetype B · analytical) ======= */
+function FpaWorkspace() {
+  const { tr, setRoute, setDeptSub, setBackRoute } = useStore();
+  const openWb = () => { setBackRoute("fpawork"); setDeptSub("fpa"); setRoute("perf"); };
+  return (<div className="fade ws-page">
+    <div className="dw-hd"><div><div className="dw-eyebrow g">{tr({ en: "Department Workspace", ar: "مساحة عمل الإدارة", zh: "部门工作区" })}</div><h1 className="dw-h1">{tr({ en: "Financial Performance Analysis", ar: "تحليل الأداء المالي", zh: "财务绩效分析部" })}</h1></div><div className="dw-live"><SyncBadge />{SHOW_UC ? " · UC-06" : ""}</div></div>
+    <div className="dw-sub">{tr({ en: "Mandate: performance, spend analysis & executive reports (UC-06). Workspace — analytical type: metric-heavy (scorecard + trajectory + variance), no Business Plaza; drills into the UC-06 workbench.", ar: "المهمة: تحليل الأداء والإنفاق والتقارير التنفيذية (UC-06). مساحة العمل — نوع تحليلي مكثّف بالمؤشرات؛ بلا ساحة أعمال.", zh: "职责:绩效、支出分析与执行报告(UC-06)。Workspace — 分析型:指标密集(记分卡+轨迹+偏差),不放 Business Plaza,下钻进 UC-06 工作台。" })}</div>
+    <SmartQueryFab scope={{ en: "Scope: Financial Performance · read-only", ar: "النطاق: الأداء المالي · للقراءة", zh: "范围:财务绩效 · 只读" }} prompts={[{ en: "Why is execution only 64% vs 95% target?", ar: "لماذا التنفيذ 64% فقط مقابل 95%؟", zh: "为何执行率仅 64%(目标 95%)?" }, { en: "Which Amanat are lagging spend?", ar: "ما الأمانات المتأخرة في الإنفاق؟", zh: "哪些阿玛纳支出滞后?" }, { en: "Draft the leadership one-liner", ar: "صياغة سطر للقيادة", zh: "起草给领导的一句话" }]} />
+    <div className="dw-kpis">
+      <div className="dw-kpi"><div className="l">{tr({ en: "Budget Execution", ar: "تنفيذ الميزانية", zh: "预算执行率" })}</div><div className="v">64.0%</div><div className="d down">▼ {tr({ en: "spent ÷ budget · tgt 95%", ar: "مصروف ÷ الميزانية · الهدف 95%", zh: "已花÷预算 · 目标95%" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Plan Variance", ar: "انحراف الخطة", zh: "计划偏差" })}</div><div className="v red">−SAR 4.86B</div><div className="d down">{tr({ en: "below plan-to-date", ar: "أقل من الخطة", zh: "低于至今计划" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Actual Spend", ar: "الإنفاق الفعلي", zh: "实际支出" })}</div><div className="v">SAR 11.12B</div><div className="d">{tr({ en: "of SAR 17.37B budget", ar: "من 17.37 مليار", zh: "占 17.37B 预算" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Remaining Balance", ar: "الرصيد المتبقي", zh: "剩余余额" })}</div><div className="v">SAR 6.25B</div><div className="d">{tr({ en: "36% unspent", ar: "36% غير مصروف", zh: "36% 未支出" })}</div></div>
+    </div>
+    <div className="fw-sig">
+      <div className="fw-hero">
+        <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}><span className="fw-tag red">● {tr({ en: "EXECUTION LAG · BELOW TARGET", ar: "تأخر التنفيذ · دون الهدف", zh: "执行滞后 · 低于目标" })}</span><span className="fw-tag gray">{tr({ en: "Ministry · FY 2026", ar: "الوزارة · 2026", zh: "全部 · FY2026" })}</span></div>
+        <h2>{tr({ en: "Spending is at ", ar: "الإنفاق عند ", zh: "支出仅达预算的 " })}<b>64%</b>{tr({ en: " of the SAR 17.37B budget — SAR 6.25B unspent, SAR 4.86B behind the planned pace.", ar: " من ميزانية 17.37 مليار — 6.25 مليار غير مصروفة و4.86 مليار خلف الخطة.", zh: " 64%(17.37B)— 6.25B 未支出,落后计划 4.86B。" })}</h2>
+        <p>{tr({ en: "Execution vs plan is 70% (SAR 11.12B of SAR 15.98B planned-to-date). Lagging capital projects need acceleration before FY-end; corrective note pending sign-off.", ar: "التنفيذ مقابل الخطة 70% (11.12 من 15.98 مليار). المشاريع الرأسمالية المتأخرة تحتاج تسريعاً.", zh: "执行 vs 计划 70%(11.12B / 15.98B 至今计划)。滞后的资本项目需在年末前加速;纠正说明待签核。" })}</p>
+        <div className="fw-hg"><div><div className="l">{tr({ en: "Execution", ar: "التنفيذ", zh: "执行" })}</div><div className="v">64%</div></div><div><div className="l">{tr({ en: "vs Plan", ar: "مقابل الخطة", zh: "vs 计划" })}</div><div className="v" style={{ color: "#dc2626" }}>70%</div></div><div><div className="l">{tr({ en: "Remaining", ar: "المتبقي", zh: "剩余" })}</div><div className="v">SAR 6.25B</div></div><div><div className="l">{tr({ en: "Budget adj.", ar: "تعديل", zh: "预算调整" })}</div><div className="v">+SAR 0.84B</div></div></div>
+        <DwActions buttons={[{ label: { en: "Open Performance Workbench", ar: "فتح منصة الأداء", zh: "打开绩效工作台" }, cls: "p", arrow: true, go: openWb }, { label: { en: "Acknowledge", ar: "إقرار", zh: "知悉" }, cls: "ghost", confirm: { en: "Acknowledged", ar: "تم الإقرار", zh: "已知悉" } }]} />
+      </div>
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Budget Execution Funnel · FY 2026", ar: "قمع تنفيذ الميزانية · 2026", zh: "预算执行漏斗 · FY2026" })}</div><div className="dw-pb">
+        <div className="fw-fr"><span className="fl">{tr({ en: "Current budget", ar: "الميزانية الحالية", zh: "当前预算" })}</span><div className="bar"><i className="fw-b1" style={{ width: "100%" }} /></div><span className="fv">SAR 17.37B</span></div>
+        <div className="fw-fr"><span className="fl">{tr({ en: "Planned (to date)", ar: "الخطة حتى تاريخه", zh: "计划(至今)" })}</span><div className="bar"><i className="fw-b2" style={{ width: "92%" }} /></div><span className="fv">SAR 15.98B</span></div>
+        <div className="fw-fr"><span className="fl">{tr({ en: "Actual spend", ar: "الإنفاق الفعلي", zh: "实际支出" })}</span><div className="bar"><i className="fw-b3" style={{ width: "64%" }} /></div><span className="fv">SAR 11.12B</span></div>
+        <div className="fw-fr"><span className="fl">{tr({ en: "Remaining", ar: "المتبقي", zh: "剩余" })}</span><div className="bar"><i className="fw-b4" style={{ width: "36%" }} /></div><span className="fv">SAR 6.25B</span></div>
+        <div className="fw-fsum"><div><div className="v">64%</div><div className="l">{tr({ en: "Execution", ar: "التنفيذ", zh: "执行" })}</div></div><div><div className="v">70%</div><div className="l">{tr({ en: "vs plan", ar: "مقابل الخطة", zh: "vs 计划" })}</div></div><div><div className="v">SAR 6.25B</div><div className="l">{tr({ en: "Remaining", ar: "المتبقي", zh: "剩余" })}</div></div></div>
+      </div></div>
+    </div>
+    <div className="dw-sec">{tr({ en: "Performance Scorecard", ar: "بطاقة أداء", zh: "绩效记分卡" })}</div>
+    <div className="fw-score">
+      <div className="fw-sc"><div className="h">{tr({ en: "Budget Execution Rate", ar: "معدل التنفيذ", zh: "预算执行率" })}<span className="dw-st watch">WATCH</span></div><div className="big">64<span className="u">%</span></div><div className="tl">{tr({ en: "target 95% · −31pp", ar: "الهدف 95% · −31", zh: "目标 95% · 差 31pp" })}</div></div>
+      <div className="fw-sc"><div className="h">{tr({ en: "Execution vs Plan", ar: "التنفيذ مقابل الخطة", zh: "执行 vs 计划" })}<span className="dw-st over">BEHIND</span></div><div className="big" style={{ color: "#dc2626" }}>70<span className="u">%</span></div><div className="tl">{tr({ en: "plan 15.98B · −4.86B", ar: "الخطة 15.98 · −4.86", zh: "计划 15.98B · −4.86B" })}</div></div>
+      <div className="fw-sc"><div className="h">{tr({ en: "Remaining Unspent", ar: "غير المصروف", zh: "未支出" })}<span className="dw-st ok">ON HAND</span></div><div className="big">36<span className="u">%</span></div><div className="tl">{tr({ en: "SAR 6.25B available", ar: "6.25 مليار متاح", zh: "SAR 6.25B 可用" })}</div></div>
+    </div>
+    <div className="dw-two">
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Execution rate by Amanah", ar: "معدل التنفيذ حسب الأمانة", zh: "按阿玛纳的执行率" })}<span className="pm">{tr({ en: "ministry avg 64%", ar: "متوسط 64%", zh: "全局均值 64%" })}</span></div><div className="dw-pb" style={{ paddingTop: 14 }}>
+        {[["Riyadh-East", 58, "58%", true], ["Jeddah-Port", 61, "61%", true], ["Dammam-Ind.", 64, "64%", false], ["Makkah-North", 70, "70%", false], ["Madinah-Cent.", 75, "75%", false]].map((b, i) => (<div className="dw-bar" key={i}><span className="an">{b[0]}</span><div className="at"><i style={{ width: b[1] + "%", background: b[3] ? "#dc2626" : "#1b8354" }} /></div><span className="av" style={b[3] ? { color: "#dc2626" } : {}}>{b[2]}</span></div>))}
+      </div></div>
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Spend Trajectory · Planned vs Actual", ar: "مسار الإنفاق", zh: "支出轨迹 · 计划 vs 实际" })}</div><div className="dw-pb">
+        <svg width="100%" height="160" viewBox="0 0 420 160" preserveAspectRatio="none"><line x1="0" y1="42" x2="420" y2="42" stroke="#f0b4ad" strokeDasharray="4 4" /><polyline points="0,140 70,120 140,100 210,80 280,62 350,50 420,42" stroke="#c7d2e8" strokeWidth="2.5" fill="none" /><polyline points="0,140 70,126 140,114 210,102 280,92 350,84 420,78" stroke="#dc2626" strokeWidth="2.5" fill="none" /><circle cx="280" cy="92" r="4" fill="#dc2626" /></svg>
+        <div style={{ fontSize: 10.5, color: "#6b7280", marginTop: 6 }}><span style={{ color: "#c7d2e8", fontWeight: 800 }}>━</span> {tr({ en: "Planned", ar: "مخطط", zh: "计划" })} &nbsp; <span style={{ color: "#dc2626", fontWeight: 800 }}>━</span> {tr({ en: "Actual · below plan", ar: "فعلي · دون الخطة", zh: "实际 · 低于计划" })}</div>
+      </div></div>
+    </div>
+    <div className="dw-pend">
+      <div className="pt">⚑ {tr({ en: "Executive commentary · sign-off", ar: "تعليق تنفيذي · اعتماد", zh: "执行评述 · 签核" })}<span className="conf">AI 90%</span></div>
+      <h3>{tr({ en: "Approve acceleration plan for lagging budget execution", ar: "اعتماد خطة تسريع التنفيذ المتأخر", zh: "批准滞后执行的加速计划" })}</h3>
+      <p>{tr({ en: "Execution at 64% vs 95% target · SAR 4.86B behind plan. Riyadh-East & Jeddah-Port lag most. Acceleration plan pending sign-off before FY-end.", ar: "التنفيذ 64% مقابل 95% · 4.86 مليار خلف الخطة. الرياض-شرق وجدة الأكثر تأخراً.", zh: "执行 64% vs 目标 95% · 落后计划 4.86B。利雅得-东与吉达最滞后;加速计划待签核。" })}</p>
+      <DwActions buttons={[{ label: { en: "Authorize", ar: "اعتماد", zh: "批准" }, cls: "p", confirm: { en: "Authorized · routed for sign-off", ar: "اعتُمد · أُرسل للتوقيع", zh: "已批准 · 已转交签核" } }, { label: { en: "Defer", ar: "تأجيل", zh: "延后" }, cls: "warn", confirm: { en: "Deferred", ar: "أُجّل", zh: "已延后" } }, { label: { en: "Request info", ar: "طلب معلومات", zh: "索取信息" }, cls: "ghost", confirm: { en: "Information requested", ar: "طُلبت معلومات", zh: "已索取信息" } }]} />
+    </div>
+  </div>);
+}
+
+/* ======= Audit — workspace (Archetype C · oversight) ======= */
+function AuditWorkspace() {
+  const { tr, setAlertsOpen } = useStore();
+  return (<div className="fade ws-page">
+    <div className="dw-hd"><div><div className="dw-eyebrow g">{tr({ en: "Department Workspace · oversight", ar: "مساحة عمل · رقابة", zh: "部门工作区 · 监督" })}</div><h1 className="dw-h1">{tr({ en: "Audit Department", ar: "إدارة التدقيق", zh: "审计部" })}</h1></div><div className="dw-live"><SyncBadge />{SHOW_UC ? " · UC-03 (+UC-02)" : ""}</div></div>
+    <div className="dw-sub">{tr({ en: "Mandate: smart query, audit log & permissions + deviation oversight (UC-03/UC-02). Workspace — oversight type: collaboration via inbound feeds (not a Business Plaza) + findings queue + remediation clock + audit log.", ar: "المهمة: الاستعلام الذكي وسجل التدقيق + الرقابة على الانحرافات. مساحة العمل — نوع رقابي عبر التغذية الواردة.", zh: "职责:智能查询、审计日志与权限 + 偏差监督(UC-03/UC-02)。Workspace — 监督型:协作靠各 UC「馈入」而非 Business Plaza,含发现队列 + 整改时钟 + 审计日志。" })}</div>
+    <SmartQueryFab scope={{ en: "Scope: Audit · cross-department read-only", ar: "النطاق: التدقيق · للقراءة عبر الإدارات", zh: "范围:审计 · 跨部门只读" }} prompts={[{ en: "Who approved the AO-2207 surplus?", ar: "من اعتمد فائض AO-2207؟", zh: "谁批准了 AO-2207 结余?" }, { en: "All SAP ↔ Etimad diffs this quarter", ar: "كل فروق ساب↔اعتماد هذا الربع", zh: "本季度全部 SAP↔Etimad 差异" }, { en: "Findings overdue beyond SLA", ar: "النتائج المتأخرة عن SLA", zh: "超 SLA 的发现" }]} />
+    <div className="dw-kpis">
+      <div className="dw-kpi"><div className="l">{tr({ en: "Open Findings", ar: "نتائج مفتوحة", zh: "未结发现" })}</div><div className="v">12</div><div className="d down">▲ +3 this week</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Critical / High", ar: "حرج / مرتفع", zh: "严重 / 高" })}</div><div className="v red">2 / 4</div><div className="d down">1 SLA breach</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Avg Resolution", ar: "متوسط الحل", zh: "平均处置" })}</div><div className="v">8 d</div><div className="d up">▼ −1 QoQ</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Audit Coverage", ar: "تغطية التدقيق", zh: "审计覆盖" })}</div><div className="v">86%</div><div className="d">{tr({ en: "target 90%", ar: "الهدف 90%", zh: "目标 90%" })}</div></div>
+    </div>
+    <div className="al-inbound" style={{ marginBottom: 16 }}><span className="al-inlab">{tr({ en: "Findings inbound from", ar: "نتائج واردة من", zh: "发现来自" })}</span>
+      <span className="al-feeder uc13">UC-13 <span className="n">3</span></span><span className="al-feeder uc12">UC-12 <span className="n">2</span></span><span className="al-feeder uc14">UC-14 <span className="n">2</span></span><span className="al-feeder uc12">UC-09 <span className="n">2</span></span><span className="al-feeder uc11">UC-11 <span className="n">1</span></span><span className="al-feeder sys">{tr({ en: "System", ar: "النظام", zh: "系统" })} <span className="n">2</span></span>
+    </div>
+    <div className="dw-two">
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Findings & Exceptions queue", ar: "قائمة النتائج والاستثناءات", zh: "发现与异常队列" })}<span className="pm">{tr({ en: "by severity & age", ar: "حسب الخطورة", zh: "按严重度·时效" })}</span></div><div className="dw-pb" style={{ paddingTop: 4 }}>
+        {[["uc12", "UC-12", "crit", "AO-2207 idle surplus not disclosed", "Critical", "1d"], ["uc12", "UC-09", "high", "SAP ↔ Etimad reconciliation diff · SAR 25M", "High", "3h"], ["uc13", "UC-13", "high", "Duplicate invoice INV-4471", "High", "6h"], ["uc14", "UC-14", "med", "Impairment not flagged timely", "Medium", "2d"], ["uc11", "UC-11", "med", "Memo missing legal-basis reference", "Medium", "1d"]].map((f, i) => (<div className="al-alert" key={i} onClick={() => setAlertsOpen(true)}><div className={"al-sevbar " + f[2]} /><div className="al-main"><div className="al-t"><span className={"al-uc " + f[0]}>{f[1]}</span> {f[3]}</div></div><span className={"al-risk " + f[2]}>{f[4]}</span><span className="al-age">{f[5]}</span></div>))}
+      </div></div>
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Remediation clock · AO-2207", ar: "ساعة المعالجة · AO-2207", zh: "整改时钟 · AO-2207" })}</div><div className="dw-pb">
+        <div className="aud-clock"><div className="big">36<span className="u">h</span></div><div className="l">{tr({ en: "to deadline · SLA 48h", ar: "للموعد · SLA 48", zh: "距截止 · SLA 48h" })}</div></div>
+        <div className="aud-stage done"><span className="b">✓</span><div>{tr({ en: "Detected & triaged", ar: "رُصد وصُنّف", zh: "已检出并分诊" })}</div><span className="when">−12h</span></div>
+        <div className="aud-stage done"><span className="b">✓</span><div>{tr({ en: "Owner assigned · Cost Mgmt", ar: "تعيين مسؤول", zh: "已指派 · 成本管理" })}</div><span className="when">−8h</span></div>
+        <div className="aud-stage cur"><span className="b">3</span><div>{tr({ en: "Remediation in progress", ar: "المعالجة جارية", zh: "整改进行中" })}</div><span className="when">now</span></div>
+        <div className="aud-stage todo"><span className="b">4</span><div>{tr({ en: "Evidence & verification", ar: "الأدلة والتحقق", zh: "证据与核验" })}</div><span className="when">+24h</span></div>
+        <div className="aud-stage todo"><span className="b">5</span><div>{tr({ en: "Closure & sign-off", ar: "الإغلاق", zh: "结案签核" })}</div><span className="when">+36h</span></div>
+      </div></div>
+    </div>
+    <div className="dw-two">
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Findings by area", ar: "النتائج حسب المجال", zh: "按领域的发现" })}<span className="pm">{tr({ en: "open · quarter", ar: "مفتوحة", zh: "未结·本季" })}</span></div><div className="dw-pb" style={{ paddingTop: 14 }}>
+        {[["Cost Management", 100, "4"], ["Revenue Collection", 75, "3"], ["Accounting", 50, "2"], ["Asset Management", 50, "2"], ["Compliance", 25, "1"]].map((b, i) => (<div className="dw-bar" key={i}><span className="an">{b[0]}</span><div className="at"><i style={{ width: b[1] + "%", background: "#dc2626" }} /></div><span className="av">{b[2]}</span></div>))}
+      </div></div>
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Audit log · recent", ar: "سجل التدقيق", zh: "审计日志 · 最近" })}<span className="pm">UC-03</span></div><div className="dw-pb" style={{ paddingTop: 10 }}>
+        {[["16:48", "Finding raised · AO-2207 · from UC-12"], ["15:10", "Evidence attached · INV-4471 · 2 files"], ["14:02", "Access granted · reviewer · Cost · read-only"], ["11:30", "Finding closed · Eastern permit spike · A"]].map((l, i) => (<div className="aud-log" key={i}><span className="lt">{l[0]}</span><div>{l[1]}</div></div>))}
+      </div></div>
+    </div>
+    <div className="dw-pend red">
+      <div className="pt">⚑ {tr({ en: "Escalation · audit authorization", ar: "تصعيد · تفويض", zh: "升级 · 审计授权" })}<span className="conf">AI 92%</span></div>
+      <h3>{tr({ en: "Escalate AO-2207 idle-surplus finding to Executive Office", ar: "تصعيد نتيجة AO-2207 إلى المكتب التنفيذي", zh: "将 AO-2207 闲置结余发现升级至执行办公室" })}</h3>
+      <p>{tr({ en: "Critical control gap · SLA breached · overlaps UC-12 fund disclosure. Recommend executive escalation with 48h remediation.", ar: "فجوة رقابية حرجة · تجاوز SLA.", zh: "严重控制缺口 · 超 SLA · 与 UC-12 资金披露同源;建议执行升级 + 48h 整改。" })}</p>
+      <DwActions buttons={[{ label: { en: "Authorize escalation", ar: "اعتماد التصعيد", zh: "批准升级" }, cls: "p", confirm: { en: "Escalation authorized · routed to Exec Office", ar: "اعتُمد التصعيد", zh: "已批准升级 · 转交执行办公室" } }, { label: { en: "Defer", ar: "تأجيل", zh: "延后" }, cls: "warn red", confirm: { en: "Deferred", ar: "أُجّل", zh: "已延后" } }, { label: { en: "Request info", ar: "طلب معلومات", zh: "索取信息" }, cls: "ghost", confirm: { en: "Information requested", ar: "طُلبت معلومات", zh: "已索取信息" } }]} />
+    </div>
+  </div>);
+}
+
+/* ======= Budget Execution — workspace (Archetype B) ======= */
+function BudgetExecWorkspace() {
+  const { tr, setRoute, setDeptSub, setBackRoute } = useStore();
+  const openWb = () => { setBackRoute("buwork"); setDeptSub("budexec"); setRoute("budexec"); };
+  return (<div className="fade ws-page">
+    <div className="dw-hd"><div><div className="dw-eyebrow g">{tr({ en: "Department Workspace", ar: "مساحة عمل الإدارة", zh: "部门工作区" })}</div><h1 className="dw-h1">{tr({ en: "Budget Execution Department", ar: "إدارة تنفيذ الميزانية", zh: "预算执行部" })}</h1></div><div className="dw-live"><SyncBadge />{SHOW_UC ? " · UC-07/06" : ""}</div></div>
+    <div className="dw-sub">{tr({ en: "Mandate: budget execution, liquidity, transfers & spend tracking (UC-07/06). Workspace — analytical type: KPI + execution funnel + chapter tracking; drills into Budget Execution analysis.", ar: "المهمة: تنفيذ الميزانية والسيولة والمناقلات وتتبع الإنفاق. مساحة العمل — نوع تحليلي.", zh: "职责:预算执行、流动性、转移与支出跟踪(UC-07/06)。Workspace — 分析型:KPI + 执行漏斗 + 章节跟踪,下钻进预算执行分析。" })}</div>
+    <SmartQueryFab scope={{ en: "Scope: Budget Execution · read-only", ar: "النطاق: تنفيذ الميزانية", zh: "范围:预算执行 · 只读" }} prompts={[{ en: "Which chapters are lagging execution?", ar: "ما الأبواب المتأخرة في التنفيذ؟", zh: "哪些章节执行滞后?" }, { en: "Is liquidity sufficient for Q3?", ar: "هل السيولة كافية للربع الثالث؟", zh: "Q3 流动性是否充足?" }, { en: "Propose a reallocation within ceilings", ar: "اقترح إعادة توزيع ضمن السقوف", zh: "在上限内提出重分配" }]} />
+    <div className="dw-kpis">
+      <div className="dw-kpi"><div className="l">{tr({ en: "Execution Rate", ar: "معدل التنفيذ", zh: "执行率" })}</div><div className="v">64.0%</div><div className="d down">▼ {tr({ en: "spent ÷ budget · tgt 95%", ar: "مصروف ÷ الميزانية · الهدف 95%", zh: "已花÷预算 · 目标95%" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Liquidity", ar: "السيولة", zh: "流动性" })}</div><div className="v">SAR 1.2B</div><div className="d">{tr({ en: "available", ar: "متاح", zh: "可用" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Transfers", ar: "المناقلات", zh: "转移" })}</div><div className="v">14</div><div className="d">3 {tr({ en: "pending", ar: "معلّقة", zh: "待批" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Behind Plan", ar: "خلف الخطة", zh: "落后计划" })}</div><div className="v red">−SAR 4.86B</div><div className="d down">{tr({ en: "vs plan-to-date 15.98B", ar: "مقابل الخطة 15.98", zh: "vs 至今计划 15.98B" })}</div></div>
+    </div>
+    <div className="fw-sig">
+      <div className="fw-hero">
+        <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}><span className="fw-tag red">● {tr({ en: "EXECUTION LAG · BELOW PLAN", ar: "تأخر التنفيذ · دون الخطة", zh: "执行滞后 · 低于计划" })}</span><span className="fw-tag gray">{tr({ en: "Ministry · FY 2026", ar: "الوزارة · 2026", zh: "全部 · FY2026" })}</span></div>
+        <h2>{tr({ en: "Spending is at ", ar: "الإنفاق عند ", zh: "支出仅达 " })}<b>64%</b>{tr({ en: " of the SAR 17.37B budget — SAR 4.86B behind the planned pace. Acceleration / reallocation recommended.", ar: " من ميزانية 17.37 مليار — 4.86 مليار خلف الخطة. يُوصى بالتسريع/إعادة التوزيع.", zh: " 17.37B 预算的 64% — 落后计划 4.86B。建议加速/重分配。" })}</h2>
+        <div className="fw-hg"><div><div className="l">{tr({ en: "Execution", ar: "التنفيذ", zh: "执行" })}</div><div className="v">64%</div></div><div><div className="l">{tr({ en: "Behind plan", ar: "خلف الخطة", zh: "落后计划" })}</div><div className="v" style={{ color: "#dc2626" }}>SAR 4.86B</div></div><div><div className="l">{tr({ en: "Remaining", ar: "المتبقي", zh: "剩余" })}</div><div className="v">SAR 6.25B</div></div><div><div className="l">{tr({ en: "Liquidity", ar: "السيولة", zh: "流动性" })}</div><div className="v">SAR 1.2B</div></div></div>
+        <DwActions buttons={[{ label: { en: "Open Budget Execution analysis", ar: "فتح تحليل تنفيذ الميزانية", zh: "打开预算执行分析" }, cls: "p", arrow: true, go: openWb }, { label: { en: "Acknowledge", ar: "إقرار", zh: "知悉" }, cls: "ghost", confirm: { en: "Acknowledged", ar: "تم الإقرار", zh: "已知悉" } }]} />
+      </div>
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Execution Funnel · FY 2026", ar: "قمع التنفيذ · 2026", zh: "执行漏斗 · FY2026" })}</div><div className="dw-pb">
+        <div className="fw-fr"><span className="fl">{tr({ en: "Current budget", ar: "الميزانية الحالية", zh: "当前预算" })}</span><div className="bar"><i className="fw-b1" style={{ width: "100%" }} /></div><span className="fv">SAR 17.37B</span></div>
+        <div className="fw-fr"><span className="fl">{tr({ en: "Planned (to date)", ar: "الخطة حتى تاريخه", zh: "计划(至今)" })}</span><div className="bar"><i className="fw-b2" style={{ width: "92%" }} /></div><span className="fv">SAR 15.98B</span></div>
+        <div className="fw-fr"><span className="fl">{tr({ en: "Actual spend", ar: "الإنفاق الفعلي", zh: "实际支出" })}</span><div className="bar"><i className="fw-b3" style={{ width: "64%" }} /></div><span className="fv">SAR 11.12B</span></div>
+        <div className="fw-fr"><span className="fl">{tr({ en: "Remaining", ar: "المتبقي", zh: "剩余" })}</span><div className="bar"><i className="fw-b4" style={{ width: "36%" }} /></div><span className="fv">SAR 6.25B</span></div>
+        <div className="fw-fsum"><div><div className="v">64%</div><div className="l">{tr({ en: "Execution", ar: "التنفيذ", zh: "执行" })}</div></div><div><div className="v">70%</div><div className="l">{tr({ en: "vs plan", ar: "مقابل الخطة", zh: "vs 计划" })}</div></div><div><div className="v">SAR 6.25B</div><div className="l">{tr({ en: "Remaining", ar: "المتبقي", zh: "剩余" })}</div></div></div>
+      </div></div>
+    </div>
+    <div className="dw-pend">
+      <div className="pt">⚑ {tr({ en: "Reallocation · approval", ar: "إعادة توزيع · اعتماد", zh: "重分配 · 审批" })}<span className="conf">AI 89%</span></div>
+      <h3>{tr({ en: "Approve SAR 0.6B reallocation from Chapter 7 to Chapters 2 & 5", ar: "اعتماد إعادة توزيع 0.6 مليار من الباب 7 إلى 2 و5", zh: "批准从第 7 章向第 2、5 章重分配 SAR 0.6B" })}</h3>
+      <p>{tr({ en: "Within ceilings · accelerates lagging chapters to recover the SAR 4.86B plan gap by FY-end.", ar: "ضمن السقوف · يسرّع الأبواب المتأخرة لسد فجوة 4.86 مليار قبل نهاية السنة.", zh: "在上限内 · 加速滞后章节,年末前弥补 4.86B 计划缺口。" })}</p>
+      <DwActions buttons={[{ label: { en: "Authorize", ar: "اعتماد", zh: "批准" }, cls: "p", confirm: { en: "Authorized · routed for sign-off", ar: "اعتُمد · أُرسل للتوقيع", zh: "已批准 · 已转交签核" } }, { label: { en: "Defer", ar: "تأجيل", zh: "延后" }, cls: "warn", confirm: { en: "Deferred", ar: "أُجّل", zh: "已延后" } }, { label: { en: "Request info", ar: "طلب معلومات", zh: "索取信息" }, cls: "ghost", confirm: { en: "Information requested", ar: "طُلبت معلومات", zh: "已索取信息" } }]} />
+    </div>
+  </div>);
+}
+
+/* ======= Planning — workspace (Archetype B) ======= */
+function PlanningWorkspace() {
+  const { tr } = useStore();
+  return (<div className="fade ws-page">
+    <div className="dw-hd"><div><div className="dw-eyebrow g">{tr({ en: "Department Workspace", ar: "مساحة عمل الإدارة", zh: "部门工作区" })}</div><h1 className="dw-h1">{tr({ en: "Planning Department", ar: "إدارة التخطيط", zh: "规划部" })}</h1></div><div className="dw-live"><SyncBadge />{SHOW_UC ? " · UC-07 (+04/05)" : ""}</div></div>
+    <div className="dw-sub">{tr({ en: "Mandate: budget planning, ceiling allocation & fiscal space (UC-07, +UC-04 forecasting, UC-05 scenarios). Workspace — analytical type: fiscal-space + forecast + scenario comparison.", ar: "المهمة: تخطيط الميزانية وتخصيص السقوف والحيّز المالي. مساحة العمل — نوع تحليلي.", zh: "职责:预算规划、上限分配与财政空间(UC-07,+UC-04 预测、UC-05 情景)。Workspace — 分析型:财政空间 + 预测 + 情景对比。" })}</div>
+    <SmartQueryFab scope={{ en: "Scope: Planning · read-only", ar: "النطاق: التخطيط", zh: "范围:规划 · 只读" }} prompts={[{ en: "How much fiscal space is left?", ar: "كم الحيّز المالي المتبقي؟", zh: "还剩多少财政空间?" }, { en: "Compare the 3 budget scenarios", ar: "قارن السيناريوهات الثلاثة", zh: "对比 3 个预算情景" }, { en: "Which ceilings are near breach?", ar: "ما السقوف القريبة من التجاوز؟", zh: "哪些上限接近突破?" }]} />
+    <div className="dw-kpis">
+      <div className="dw-kpi"><div className="l">{tr({ en: "Fiscal Space", ar: "الحيّز المالي", zh: "财政空间" })}</div><div className="v">SAR 3.4B</div><div className="d">{tr({ en: "free of ceilings", ar: "خارج السقوف", zh: "上限外可用" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Ceiling Utilization", ar: "استخدام السقوف", zh: "上限使用率" })}</div><div className="v">78%</div><div className="d">2 {tr({ en: "near breach", ar: "قرب التجاوز", zh: "接近突破" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Forecast Accuracy", ar: "دقة التنبؤ", zh: "预测准确度" })}</div><div className="v">94%</div><div className="d up">▲ +2pp</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Open Scenarios", ar: "سيناريوهات", zh: "在评情景" })}</div><div className="v">3</div><div className="d">{tr({ en: "1 recommended", ar: "1 موصى", zh: "1 推荐" })}</div></div>
+    </div>
+    <div className="dw-two">
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Fiscal Space · build-up", ar: "الحيّز المالي · التكوين", zh: "财政空间 · 构成" })}</div><div className="dw-pb" style={{ paddingTop: 14 }}>
+        {[["Projected revenue", 100, "SAR 9.4B", "#1b8354"], ["− Committed", 64, "SAR 6.0B", "#c7d2e8"], ["− Reserves", 21, "SAR 2.0B", "#c7d2e8"], ["= Free space", 36, "SAR 3.4B", "#7c3aed"]].map((b, i) => (<div className="dw-bar" key={i}><span className="an">{b[0]}</span><div className="at"><i style={{ width: b[1] + "%", background: b[3] }} /></div><span className="av">{b[2]}</span></div>))}
+      </div></div>
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Scenarios · comparison", ar: "السيناريوهات · مقارنة", zh: "情景 · 对比" })}<span className="pm">UC-05</span></div><div className="dw-pb" style={{ paddingTop: 12 }}>
+        <div className="fw-sc" style={{ marginBottom: 10, border: "1.5px solid #6d28d9", background: "#f5effe" }}><div className="h">{tr({ en: "Reallocation", ar: "إعادة توزيع", zh: "重分配" })} <span className="dw-st ok">{tr({ en: "RECOMMENDED", ar: "موصى", zh: "推荐" })}</span></div><div className="tl">{tr({ en: "Within ceilings · closes gap · +0 fiscal", ar: "ضمن السقوف · يغلق الفجوة", zh: "在上限内 · 弥合缺口 · 财政 +0" })}</div></div>
+        <div className="fw-sc" style={{ marginBottom: 10 }}><div className="h">{tr({ en: "Expansion", ar: "توسّع", zh: "扩张" })} <span className="dw-st over">CAP RISK</span></div><div className="tl">{tr({ en: "Faster delivery · +SAR 1.1B · cap risk", ar: "أسرع · خطر السقف", zh: "更快交付 · +SAR 1.1B · 上限风险" })}</div></div>
+        <div className="fw-sc"><div className="h">{tr({ en: "Status quo", ar: "الوضع الراهن", zh: "维持现状" })} <span className="dw-st watch">GAP</span></div><div className="tl">{tr({ en: "No change · gap remains", ar: "بلا تغيير · تبقى الفجوة", zh: "不变 · 缺口仍在" })}</div></div>
+      </div></div>
+    </div>
+    <div className="dw-pend">
+      <div className="pt">⚑ {tr({ en: "Scenario · approval", ar: "سيناريو · اعتماد", zh: "情景 · 审批" })}<span className="conf">AI 91%</span></div>
+      <h3>{tr({ en: "Adopt the reallocation scenario for FY 2026", ar: "اعتماد سيناريو إعادة التوزيع للسنة 2026", zh: "采用 FY 2026 重分配情景" })}</h3>
+      <p>{tr({ en: "Closes the priority-spending gap within ceilings with no extra fiscal cost.", ar: "يغلق فجوة الإنفاق ضمن السقوف دون كلفة إضافية.", zh: "在上限内弥合优先支出缺口,无额外财政成本。" })}</p>
+      <DwActions buttons={[{ label: { en: "Adopt", ar: "اعتماد", zh: "采用" }, cls: "p", confirm: { en: "Scenario adopted", ar: "اعتُمد السيناريو", zh: "已采用情景" } }, { label: { en: "Defer", ar: "تأجيل", zh: "延后" }, cls: "warn", confirm: { en: "Deferred", ar: "أُجّل", zh: "已延后" } }, { label: { en: "Compare in workbench", ar: "قارن", zh: "工作台对比" }, cls: "ghost", confirm: { en: "Sent to workbench for comparison", ar: "أُرسل للمقارنة", zh: "已转工作台对比" } }]} />
+    </div>
+  </div>);
+}
+
+/* ======= Financial Entitlements — workspace (Archetype A) ======= */
+function EntitlementsWorkspace() {
+  const { tr, setAlertsOpen } = useStore();
+  return (<div className="fade ws-page">
+    <div className="dw-hd"><div><div className="dw-eyebrow g">{tr({ en: "Department Workspace", ar: "مساحة عمل الإدارة", zh: "部门工作区" })}</div><h1 className="dw-h1">{tr({ en: "Financial Entitlements Department", ar: "إدارة الاستحقاقات المالية", zh: "财务权益部" })}</h1></div><div className="dw-live"><SyncBadge />{SHOW_UC ? " · UC-08" : ""}</div></div>
+    <div className="dw-sub">{tr({ en: "Mandate: contracts, claims, disbursements & entitlements (UC-08). Workspace — operating type: disbursement pipeline + claims matching + approval; hands off to Accounting & Audit.", ar: "المهمة: العقود والمطالبات والصرف والاستحقاقات (UC-08). مساحة العمل — نوع تشغيلي.", zh: "职责:合同、索赔、拨付与权益(UC-08)。Workspace — 运营型:拨付管线 + 索赔匹配 + 审批,交付给会计与审计。" })}</div>
+    <SmartQueryFab scope={{ en: "Scope: Entitlements · read-only", ar: "النطاق: الاستحقاقات", zh: "范围:财务权益 · 只读" }} prompts={[{ en: "Which claims lack completion evidence?", ar: "ما المطالبات بلا إثبات إنجاز؟", zh: "哪些索赔缺完工证明?" }, { en: "What is pending disbursement today?", ar: "ما المستحق للصرف اليوم؟", zh: "今天待拨付多少?" }, { en: "Show claims breaching SLA", ar: "المطالبات المتجاوزة لـ SLA", zh: "超 SLA 的索赔" }]} />
+    <div className="dw-kpis">
+      <div className="dw-kpi"><div className="l">{tr({ en: "Active Claims", ar: "مطالبات نشطة", zh: "在办索赔" })}</div><div className="v">42</div><div className="d">7 {tr({ en: "this week", ar: "هذا الأسبوع", zh: "本周" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Pending Disbursement", ar: "صرف معلّق", zh: "待拨付" })}</div><div className="v">SAR 320M</div><div className="d">18 {tr({ en: "claims", ar: "مطالبة", zh: "笔" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "On-time Rate", ar: "في الوقت", zh: "按时率" })}</div><div className="v">91%</div><div className="d up">▲ +1.5pp</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Exceptions", ar: "استثناءات", zh: "例外" })}</div><div className="v red">5</div><div className="d down">2 {tr({ en: "no evidence", ar: "بلا إثبات", zh: "缺证" })}</div></div>
+    </div>
+    <div className="dw-two">
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Disbursement Pipeline", ar: "خط الصرف", zh: "拨付管线" })}</div><div className="dw-pb">
+        <div className="fw-fr"><span className="fl">{tr({ en: "Claims", ar: "مطالبات", zh: "索赔" })}</span><div className="bar"><i className="fw-b1" style={{ width: "100%" }} /></div><span className="fv">42</span></div>
+        <div className="fw-fr"><span className="fl">{tr({ en: "Verified", ar: "مُتحقّق", zh: "已核验" })}</span><div className="bar"><i className="fw-b2" style={{ width: "83%" }} /></div><span className="fv">35</span></div>
+        <div className="fw-fr"><span className="fl">{tr({ en: "Approved", ar: "معتمد", zh: "已批准" })}</span><div className="bar"><i className="fw-b2" style={{ width: "67%" }} /></div><span className="fv">28</span></div>
+        <div className="fw-fr"><span className="fl">{tr({ en: "Disbursed", ar: "مصروف", zh: "已拨付" })}</span><div className="bar"><i className="fw-b3" style={{ width: "55%" }} /></div><span className="fv">23</span></div>
+        <div className="fw-fsum"><div><div className="v">SAR 320M</div><div className="l">{tr({ en: "Pending", ar: "معلّق", zh: "待拨" })}</div></div><div><div className="v">91%</div><div className="l">{tr({ en: "On-time", ar: "في الوقت", zh: "按时" })}</div></div><div><div className="v">5</div><div className="l">{tr({ en: "Exceptions", ar: "استثناءات", zh: "例外" })}</div></div></div>
+      </div></div>
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Claims · focus list", ar: "المطالبات · قائمة التركيز", zh: "索赔 · 重点清单" })}<span className="pm">{tr({ en: "exceptions first", ar: "الاستثناءات أولاً", zh: "例外优先" })}</span></div><div className="dw-pb" style={{ paddingTop: 4 }}>
+        {[["crit", "CLM-3411 · no completion evidence", "SAR 41M", "Critical"], ["high", "CLM-3402 · amount mismatch", "SAR 28M", "High"], ["med", "CLM-3398 · late submission", "SAR 12M", "Medium"], ["low", "CLM-3380 · routine review", "SAR 6M", "Low"]].map((f, i) => (<div className="al-alert" key={i} onClick={() => setAlertsOpen(true)}><div className={"al-sevbar " + f[0]} /><div className="al-main"><div className="al-t">{f[1]}</div></div><span className="av" style={{ fontWeight: 800, fontSize: 12, marginInlineEnd: 8 }}>{f[2]}</span><span className={"al-risk " + f[0]}>{f[3]}</span></div>))}
+      </div></div>
+    </div>
+    <div className="dw-pend">
+      <div className="pt">⚑ {tr({ en: "Disbursement batch · approval", ar: "دفعة صرف · اعتماد", zh: "拨付批次 · 审批" })}<span className="conf">AI 90%</span></div>
+      <h3>{tr({ en: "Authorize disbursement batch (16 verified claims · SAR 268M)", ar: "اعتماد دفعة صرف (16 مطالبة · 268 مليون)", zh: "批准拨付批次(16 笔已核验 · SAR 268M)" })}</h3>
+      <p>{tr({ en: "Excludes 2 claims lacking completion evidence (held for review).", ar: "باستثناء مطالبتين بلا إثبات إنجاز.", zh: "已排除 2 笔缺完工证明的索赔(留待复核)。" })}</p>
+      <DwActions buttons={[{ label: { en: "Authorize", ar: "اعتماد", zh: "批准" }, cls: "p", confirm: { en: "Disbursement batch authorized", ar: "اعتُمدت دفعة الصرف", zh: "已批准拨付批次" } }, { label: { en: "Hold", ar: "تعليق", zh: "暂缓" }, cls: "warn", confirm: { en: "Held for review", ar: "عُلّق للمراجعة", zh: "已暂缓待复核" } }, { label: { en: "Review exceptions", ar: "مراجعة الاستثناءات", zh: "复核例外" }, cls: "ghost", go: () => setAlertsOpen(true) }]} />
+    </div>
+  </div>);
+}
+
+/* ======= Accounting — workspace (Archetype A) ======= */
+function AccountingWorkspace() {
+  const { tr, setRoute, setBackRoute } = useStore();
+  return (<div className="fade ws-page">
+    <div className="dw-hd"><div><div className="dw-eyebrow g">{tr({ en: "Department Workspace", ar: "مساحة عمل الإدارة", zh: "部门工作区" })}</div><h1 className="dw-h1">{tr({ en: "Accounting Department", ar: "إدارة المحاسبة", zh: "会计部" })}</h1></div><div className="dw-live"><SyncBadge />{SHOW_UC ? " · UC-09 (+11)" : ""}</div></div>
+    <div className="dw-sub">{tr({ en: "Mandate: financial closing, reconciliation & settlements (UC-09, +UC-11 memos). Workspace — operating type: close stages + SAP↔Etimad reconciliation + adjusting entries.", ar: "المهمة: الإقفال المالي والتسوية والتسويات (UC-09). مساحة العمل — نوع تشغيلي.", zh: "职责:关账、对账与结算(UC-09,+UC-11 备忘)。Workspace — 运营型:关账阶段 + SAP↔Etimad 对账 + 调整分录。" })}</div>
+    <SmartQueryFab scope={{ en: "Scope: Accounting · read-only", ar: "النطاق: المحاسبة", zh: "范围:会计 · 只读" }} prompts={[{ en: "What blocks the period close?", ar: "ما الذي يعيق الإقفال؟", zh: "什么阻碍期末关账?" }, { en: "Show the SAP↔Etimad differences", ar: "أظهر فروق ساب↔اعتماد", zh: "显示 SAP↔Etimad 差异" }, { en: "Draft the adjusting entries", ar: "صياغة قيود التسوية", zh: "起草调整分录" }]} />
+    <div className="dw-kpis">
+      <div className="dw-kpi"><div className="l">{tr({ en: "Close Progress", ar: "تقدّم الإقفال", zh: "关账进度" })}</div><div className="v">82%</div><div className="d up">{tr({ en: "on schedule", ar: "في الموعد", zh: "按计划" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Reconciliation", ar: "المطابقة", zh: "对账率" })}</div><div className="v">98%</div><div className="d down">2 {tr({ en: "diffs", ar: "فروق", zh: "项差异" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Adjusting Entries", ar: "قيود التسوية", zh: "调整分录" })}</div><div className="v">4</div><div className="d">{tr({ en: "proposed", ar: "مقترحة", zh: "待过账" })}</div></div>
+      <div className="dw-kpi"><div className="l">{tr({ en: "Accounting Memos", ar: "مذكرات", zh: "会计备忘" })}</div><div className="v">1</div><div className="d down">{tr({ en: "needs review", ar: "للمراجعة", zh: "待复核" })}</div></div>
+    </div>
+    <div className="dw-two">
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Period Close · stages", ar: "الإقفال · مراحل", zh: "期末关账 · 阶段" })}<span className="pm">FY 2026 · Q2</span></div><div className="dw-pb">
+        <div className="aud-stage done"><span className="b">✓</span><div>{tr({ en: "Pre-close checklist", ar: "قائمة ما قبل الإقفال", zh: "关账前清单" })}</div><span className="when">{tr({ en: "done", ar: "تم", zh: "完成" })}</span></div>
+        <div className="aud-stage done"><span className="b">✓</span><div>{tr({ en: "Reconciliation (SAP ↔ Etimad)", ar: "المطابقة", zh: "对账(SAP↔Etimad)" })}</div><span className="when">98%</span></div>
+        <div className="aud-stage cur"><span className="b">3</span><div>{tr({ en: "Adjusting entries", ar: "قيود التسوية", zh: "调整分录" })}</div><span className="when">now</span></div>
+        <div className="aud-stage todo"><span className="b">4</span><div>{tr({ en: "Close period", ar: "إقفال الفترة", zh: "关闭期间" })}</div><span className="when">+1d</span></div>
+        <div className="aud-stage todo"><span className="b">5</span><div>{tr({ en: "Financial statements", ar: "القوائم المالية", zh: "财务报表" })}</div><span className="when">+2d</span></div>
+      </div></div>
+      <div className="dw-panel"><div className="dw-ph">{tr({ en: "Reconciliation · SAP ↔ Etimad", ar: "المطابقة · ساب↔اعتماد", zh: "对账 · SAP↔Etimad" })}<span className="pm">2 {tr({ en: "open", ar: "مفتوح", zh: "未结" })}</span></div><div className="dw-pb" style={{ paddingTop: 4 }}>
+        {[["high", "Esnad assignment · SAR +15M", "High"], ["high", "Tahseel revenue · SAR −12M", "High"], ["low", "Bank fees timing · SAR 0.4M", "Low"]].map((f, i) => (<div className="al-alert" key={i}><div className={"al-sevbar " + f[0]} /><div className="al-main"><div className="al-t">{f[1]}</div></div><span className={"al-risk " + f[0]}>{f[2]}</span></div>))}
+        <div className="wb-kk" style={{ marginTop: 6 }}><span>{tr({ en: "Net difference", ar: "صافي الفرق", zh: "净差异" })}</span><b>SAR 25M</b></div>
+      </div></div>
+    </div>
+    <div className="dw-pend">
+      <div className="pt">⚑ {tr({ en: "Adjusting entries · approval", ar: "قيود التسوية · اعتماد", zh: "调整分录 · 审批" })}<span className="conf">AI 90%</span></div>
+      <h3>{tr({ en: "Post 2 adjusting entries to clear SAR 25M reconciliation difference", ar: "ترحيل قيدي تسوية لإغلاق فرق 25 مليون", zh: "过账 2 项调整分录以清除 SAR 25M 对账差异" })}</h3>
+      <p>{tr({ en: "Within tolerance · IPSAS-compliant · clears the pre-close checklist (UC-11 memo attached).", ar: "ضمن الحدود · متوافق IPSAS · يُغلق قائمة ما قبل الإقفال.", zh: "在容差内 · 符合 IPSAS · 清空关账前清单(附 UC-11 备忘)。" })}</p>
+      <DwActions buttons={[{ label: { en: "Post entries", ar: "ترحيل", zh: "过账" }, cls: "p", confirm: { en: "Adjusting entries posted", ar: "رُحّلت القيود", zh: "已过账调整分录" } }, { label: { en: "Defer", ar: "تأجيل", zh: "延后" }, cls: "warn", confirm: { en: "Deferred", ar: "أُجّل", zh: "已延后" } }, { label: { en: "Open memo (UC-11)", ar: "فتح المذكرة", zh: "打开备忘(UC-11)" }, cls: "ghost", go: () => { setBackRoute("acctwork"); setRoute("compmemo"); } }]} />
     </div>
   </div>);
 }
@@ -3453,10 +4118,52 @@ function Reports() {
    App root
    ========================================================================= */
 const Uc06App = React.lazy(() => import("./uc06/Uc06App.jsx"));
+class EmbedErrorBoundary extends React.Component {
+  constructor(p) { super(p); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch(err, info) { console.error("Embedded analysis crashed:", err, info); }
+  render() {
+    if (this.state.err) {
+      return (<div style={{ padding: 32, fontSize: 14, color: "#b91c1c", maxWidth: 760, margin: "0 auto" }}>
+        <div style={{ fontWeight: 800, marginBottom: 8 }}>This analysis view failed to render.</div>
+        <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "#374151", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: 12 }}>{String((this.state.err && this.state.err.stack) || this.state.err)}</pre>
+      </div>);
+    }
+    return this.props.children;
+  }
+}
 function Shell() {
-  const { t, tr, route, log, pushLog, lang, setRoute, setDeptSub, perfJump, setPerfJump, backRoute, setBackRoute } = useStore();
+  const { t, tr, route, log, pushLog, lang, setRoute, setDeptSub, perfJump, setPerfJump, backRoute, setBackRoute, alertsOpen, setAlertsOpen } = useStore();
   useEffect(() => { const msgs = ["log_idle", "log_scan", "log_route"]; const id = setInterval(() => pushLog(msgs[Math.floor(Math.random() * msgs.length)]), 9000); return () => clearInterval(id); }, []);
   useEffect(() => { if (log.length === 0) pushLog("log_scan"); }, []);
+  // count-up the big KPI numbers on each page (skips embedded UC-06 + reduced-motion)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = setTimeout(() => {
+      const els = document.querySelectorAll(".content .dw-kpi > .v, .content .kmbig, .content .wb-big");
+      els.forEach(el => {
+        if (el.dataset.cu || el.children.length) return;
+        const raw = (el.textContent || "").trim();
+        const m = raw.match(/^(\D*?)(-?\d[\d,]*(?:\.\d+)?)(.*)$/);
+        if (!m) return;
+        const pre = m[1], numStr = m[2], suf = m[3];
+        const target = parseFloat(numStr.replace(/,/g, ""));
+        if (!isFinite(target)) return;
+        const dec = (numStr.split(".")[1] || "").length;
+        el.dataset.cu = "1";
+        const dur = 900, t0 = performance.now();
+        const fmt = v => pre + (dec ? v.toFixed(dec) : Math.round(v).toLocaleString("en-US")) + suf;
+        const step = now => {
+          const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+          el.textContent = fmt(target * e);
+          if (p < 1) requestAnimationFrame(step); else { el.textContent = raw; }
+        };
+        requestAnimationFrame(step);
+      });
+    }, 90);
+    return () => clearTimeout(id);
+  }, [route]);
   // The embedded UC-06 module no longer mutates the global document direction,
   // but keep our own direction asserted whenever we leave the embedded routes.
   useEffect(() => { if (route !== "perf" && route !== "rcreports" && route !== "budexec") { document.documentElement.lang = lang; document.documentElement.dir = lang === "ar" ? "rtl" : "ltr"; } }, [route, lang]);
@@ -3475,7 +4182,9 @@ function Shell() {
         <Sidebar />
         <div className="uc06-root" style={{ flex: "1 1 auto", minWidth: 0, height: "100%", overflow: "hidden" }}>
           <React.Suspense fallback={<div style={{ padding: 40, fontSize: 15, color: "#4b5563" }}>Loading…</div>}>
-            <Uc06App embedded subDept={sub} appLang={lang} initialTab={initTab} autoGenerate={!!(perfJump && perfJump.generate)} onBack={onBack} onConsumeJump={() => setPerfJump(null)} key={sub} />
+            <EmbedErrorBoundary key={sub}>
+              <Uc06App embedded subDept={sub} appLang={lang} initialTab={initTab} autoGenerate={!!(perfJump && perfJump.generate)} onBack={onBack} onConsumeJump={() => setPerfJump(null)} key={sub} />
+            </EmbedErrorBoundary>
           </React.Suspense>
         </div>
       </div>
@@ -3493,13 +4202,25 @@ function Shell() {
   else if (route === "rcwork") page = <RcWorkspace />;
   else if (route === "rcbench") page = <RcWorkbench />;
   else if (route === "rcdata") page = <RcDataFlow />;
+  else if (route === "rcdatav1") page = <RcDataFlowV1 />;
   else if (route === "aswork") page = <AssetsWorkspace />;
   else if (route === "asbench") page = <AssetsWorkbench />;
   else if (route === "csfunds") page = <CostFundsConsole />;
   else if (route === "compmemo") page = <ComplianceRuling />;
-  else if (route === "reports") page = <Reports />;
+  else if (route === "alerts") page = <AlertsCenter />;
+  else if (route === "fpawork") page = <FpaWorkspace />;
+  else if (route === "audwork") page = <AuditWorkspace />;
+  else if (route === "buwork") page = <BudgetExecWorkspace />;
+  else if (route === "plnwork") page = <PlanningWorkspace />;
+  else if (route === "entwork") page = <EntitlementsWorkspace />;
+  else if (route === "acctwork") page = <AccountingWorkspace />;
+  else if (route === "reports") page = <ReportHub />;
   else page = <Hub />;
-  return (<><TopBar /><div className="shell"><Sidebar /><div className="content">{page}</div></div><AgentLog /><ReleaseNotes /></>);
+  return (<><TopBar /><div className="shell"><Sidebar /><div className="content">{page}</div></div><AgentLog /><ReleaseNotes />
+    {alertsOpen && <div className="al-overlay" onClick={() => setAlertsOpen(false)}>
+      <div className="al-drawer" onClick={e => e.stopPropagation()}><AlertsCenter drawer onClose={() => setAlertsOpen(false)} /></div>
+    </div>}
+  </>);
 }
 const RELEASES = [
   { v: "v0.9", d: "2026-06-22", cur: true, items: {
