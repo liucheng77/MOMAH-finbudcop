@@ -1819,6 +1819,7 @@ html[dir="rtl"] .rp-dw{animation:al-slide-rtl .34s cubic-bezier(.4,0,.2,1)}
 .mf-down.green .t .od{background:#fff;opacity:1}
 .mf-down.green .s{padding:8px 11px;margin-top:0;color:var(--muted)}
 .mf-down.green .mf-sublist{padding:8px 9px;display:flex;flex-direction:column;gap:6px}
+.mf-down.green .mf-ndesc{font-size:11.5px;color:#4a5568;padding:9px 11px 4px;line-height:1.4}
 .mf-down.green .mf-subitem{display:flex;align-items:flex-start;gap:6px;font-size:10.5px;font-weight:600;color:#3a4a52;border:1px solid var(--line);border-radius:7px;padding:5px 8px;line-height:1.35}
 .mf-down.green .mf-subitem .sd{width:6px;height:6px;border-radius:50%;background:#2563eb;flex:0 0 auto;margin-top:4px}
 .mf-down.gold{background:#fdf4d9;border-color:#f0dca6;color:#8a6a06}

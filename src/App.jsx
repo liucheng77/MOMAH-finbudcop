@@ -2215,12 +2215,12 @@ function RcDataFlowV1() {
         {MF_V1.agents.map((a, i) => (<div className="node mf-card pa" style={{ left: 540, top: 255 + i * 138, width: 190 }} key={i}><div className="hd"><span className="pdot" /><b>{tr(a.n)}</b></div><div className="pd">{tr(a.d)}</div><span className="ptag">{tr(a.tag)}</span></div>))}
         <div className="node mf-aggr" style={{ left: 778, top: 408, width: 118 }}><b>{tr({ en: "Aggregator", ar: "المُجمِّع", zh: "汇聚器" })}</b><span>{tr({ en: "Merge · Validate · Reduce", ar: "دمج · تحقّق · اختزال", zh: "合并 · 校验 · 归约" })}</span></div>
         <div className="node mf-uc13" style={{ left: 946, top: 95, width: 330 }}>
-          <div className="hd"><b>{colh("UC-13", tr({ en: "Revenue Analytics Agent", ar: "وكيل تحليلات الإيرادات", zh: "收入分析智能体" }))}</b><span className="core">CORE</span></div>
+          <div className="hd"><b>{colh("UC-13", tr({ en: "Revenue Analytics Agent", ar: "وكيل تحليلات الإيرادات", zh: "收入分析智能体" }))}</b><span className="core">{tr({ en: "CORE", ar: "أساسي", zh: "核心" })}</span></div>
           <div className="mf-narr"><div className="mf-narr-body">
             <div className="sct2">{tr({ en: "OUTPUTS", ar: "المخرجات", zh: "输出" })}</div>
             <div className="mf-outs">{MF_V1.outputs.map((o, i) => (<div className="mf-out" key={i}><div className="t"><span className="od" /> {tr(o.t)}</div><div className="s">{tr(o.s)}</div></div>))}</div>
           </div></div>
-          <div className="mf-narr"><b>{tr({ en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" })}<span className="core">CORE</span></b>
+          <div className="mf-narr"><b>{tr({ en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" })}<span className="core">{tr({ en: "CORE", ar: "أساسي", zh: "核心" })}</span></b>
             <div className="mf-narr-body">
               <div className="sct2">{tr({ en: "OUTPUTS", ar: "المخرجات", zh: "输出" })}</div>
               <div className="mf-outs">
@@ -2229,7 +2229,7 @@ function RcDataFlowV1() {
               </div>
             </div>
           </div>
-          <div className="mf-narr"><b>{tr({ en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "前瞻洞察智能体" })}<span className="core">CORE</span></b>
+          <div className="mf-narr"><b>{tr({ en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "前瞻洞察智能体" })}<span className="core">{tr({ en: "CORE", ar: "أساسي", zh: "核心" })}</span></b>
             <div className="mf-narr-body">
               <div className="sct2">{tr({ en: "OUTPUTS", ar: "المخرجات", zh: "输出" })}</div>
               <div className="mf-outs">
@@ -2393,6 +2393,7 @@ function DirectorateFlow({ flow }) {
   const marker = c => c === "g" ? "url(#mfag)" : c === "o" ? "url(#mfao)" : "url(#mfab)";
   const ucBox = (n) => (<div className="node mf-down green f6uc" style={{ left: n.x, top: n.y, width: n.w, minHeight: n.h }} key={n.code}>
     <div className="t"><span className="od" />{colh(n.code, tr(n.title))}</div>
+    {n.desc && <div className="mf-ndesc">{tr(n.desc)}</div>}
     <div className="mf-sublist">{n.ags.map((k, i) => (<div className="mf-subitem" key={i}><span className="sd" />{tr(F6_AG[k])}</div>))}</div>
   </div>);
   const back = () => { if (backRoute) { const b = backRoute; setBackRoute(null); setRoute(b); } else setRoute(flow.back); };
@@ -2472,7 +2473,7 @@ const MF_G02 = {
       { t: { en: "Scenario Comparisons", ar: "مقارنات السيناريوهات", zh: "情景对比" }, d: { en: "Impact & trade-off analysis", ar: "تحليل الأثر والمفاضلات", zh: "影响与权衡分析" } },
       { t: { en: "Performance Dashboards", ar: "لوحات الأداء", zh: "绩效仪表盘" }, d: { en: "Executive reports & KPIs", ar: "تقارير تنفيذية ومؤشرات", zh: "执行报告与 KPI" } },
     ],
-    foot: { en: "Feed downstream storyline · deviations & corrections, reports, alerts — after sign-off.", ar: "تغذّي القصة اللاحقة بعد الاعتماد.", zh: "签核后馈入下游故事线 · 偏差与纠正、报告、告警。" },
+    foot: { en: "Downstream (G-02 storyline continuation) · G-02 storyline (UC-02/UC-03) deviations & corrections · financial reports dashboards & executive summaries · deviations & alerts exception notifications.", ar: "المصب (استمرار قصة ج-02) · قصة ج-02 (UC-02/UC-03) الانحرافات والتصحيحات · التقارير المالية لوحات وملخصات · الانحرافات والتنبيهات إشعارات الاستثناءات.", zh: "下游(G-02 故事线延续)· G-02 故事线(UC-02/UC-03)偏差与纠正 · 财务报告 仪表盘与执行摘要 · 偏差与告警 异常通知。" },
   },
   edges: [
     { from: "src", fa: "R", to: "uc04", ta: "L", c: "g", t: { en: "Unified data, ceilings, cost drivers", ar: "بيانات موحّدة وسقوف ومحرّكات", zh: "统一数据、上限、成本驱动" } },
@@ -2779,7 +2780,45 @@ const MF_G05_ACCT = {
   ],
 };
 
+const MF_G02_FPA = {
+  back: "fpawork",
+  title: { en: "Financial Performance Analysis — Multi-Agent Flow (G-02)", ar: "تحليل الأداء المالي — تدفّق متعدد الوكلاء (ج-02)", zh: "财务绩效分析 — 多智能体流程(G-02)" },
+  subtitle: { en: "Analysis & forecasting layer · data inputs → forecasting → scenarios → performance → outputs · downstream storyline continuation", ar: "طبقة التحليل والتنبؤ · المدخلات ← التنبؤ ← السيناريوهات ← الأداء ← المخرجات", zh: "分析与预测层 · 数据输入 → 预测 → 情景 → 绩效 → 输出 · 下游故事线延续" },
+  src: { x: 14, y: 100, w: 206, h: 320, list: [
+    { en: "Unified Data (UC-01) — structured financial data", ar: "بيانات موحّدة (UC-01)", zh: "统一数据(UC-01)— 结构化财务数据" },
+    { en: "Budget Planning (UC-07) — ceilings & envelopes", ar: "تخطيط الميزانية (UC-07)", zh: "预算规划(UC-07)— 上限与额度" },
+    { en: "Cost Drivers (UC-15) — external cost signals", ar: "محرّكات التكلفة (UC-15)", zh: "成本驱动(UC-15)— 外部成本信号" },
+  ] },
+  nodes: {
+    uc04: { code: "UC-04", x: 340, y: 120, w: 286, h: 282, title: { en: "Financial Forecasting — Future Commitments", ar: "التنبؤ المالي — الالتزامات المستقبلية", zh: "财务预测 — 未来承诺" }, ags: ["fcast", "roll", "market"] },
+    uc05: { code: "UC-05", x: 780, y: 120, w: 286, h: 282, title: { en: "Scenario Simulation — Alternatives", ar: "محاكاة السيناريوهات — البدائل", zh: "情景模拟 — 备选方案" }, ags: ["scen", "budopt", "insight"] },
+    uc06: { code: "UC-06", x: 1220, y: 120, w: 286, h: 282, title: { en: "Performance Analysis & Executive Reports", ar: "تحليل الأداء والتقارير التنفيذية", zh: "绩效分析与执行报告" }, ags: ["repgen", "narr", "dataq"] },
+    ds1: { code: "UC-02 / UC-03", x: 340, y: 488, w: 286, h: 132, title: { en: "Storyline Continuation", ar: "استمرار القصة", zh: "故事线延续" }, desc: { en: "Deviations & corrections", ar: "الانحرافات والتصحيحات", zh: "偏差与纠正" }, ags: [] },
+    ds2: { code: "UC-10", x: 780, y: 488, w: 286, h: 132, title: { en: "Financial Reports", ar: "التقارير المالية", zh: "财务报告" }, desc: { en: "Dashboards & executive summaries", ar: "لوحات وملخصات تنفيذية", zh: "仪表盘与执行摘要" }, ags: [] },
+    ds3: { code: "UC-02", x: 1220, y: 488, w: 286, h: 132, title: { en: "Deviations & Alerts", ar: "الانحرافات والتنبيهات", zh: "偏差与告警" }, desc: { en: "Exception notifications", ar: "إشعارات الاستثناءات", zh: "异常通知" }, ags: [] },
+  },
+  del: { x: 1660, y: 108, w: 290, h: 312,
+    head: { en: "Outputs", ar: "المخرجات", zh: "输出" },
+    items: [
+      { t: { en: "Forecasted Commitments", ar: "التزامات متوقعة", zh: "预测承诺" }, d: { en: "Future needs & obligations", ar: "الاحتياجات والالتزامات", zh: "未来需求与义务" } },
+      { t: { en: "Scenario Comparisons", ar: "مقارنات السيناريوهات", zh: "情景对比" }, d: { en: "Impact & trade-off analysis", ar: "تحليل الأثر والمفاضلات", zh: "影响与权衡分析" } },
+      { t: { en: "Performance Dashboards", ar: "لوحات الأداء", zh: "绩效仪表盘" }, d: { en: "Executive reports & KPIs", ar: "تقارير تنفيذية ومؤشرات", zh: "执行报告与 KPI" } },
+    ],
+    foot: { en: "Executive & periodic deliverables for the directorate.", ar: "مخرجات تنفيذية ودورية للمديرية.", zh: "面向总局的执行与周期交付物。" },
+  },
+  edges: [
+    { from: "src", fa: "R", to: "uc04", ta: "L", c: "g", t: { en: "Unified data, ceilings, cost drivers", ar: "بيانات موحّدة وسقوف ومحرّكات", zh: "统一数据、上限、成本驱动" } },
+    { from: "uc04", fa: "R", to: "uc05", ta: "L", c: "b", t: { en: "Forecasts", ar: "التنبؤات", zh: "预测" } },
+    { from: "uc05", fa: "R", to: "uc06", ta: "L", c: "b", t: { en: "Scenarios", ar: "السيناريوهات", zh: "情景" } },
+    { from: "uc06", fa: "R", to: "del", ta: "L", c: "o", t: { en: "Performance reports & outputs", ar: "تقارير الأداء والمخرجات", zh: "绩效报告与输出" } },
+    { from: "uc04", fa: "B", to: "ds1", ta: "T", c: "b", t: { en: "Deviations & corrections", ar: "الانحرافات والتصحيحات", zh: "偏差与纠正" } },
+    { from: "uc05", fa: "B", to: "ds2", ta: "T", c: "b", t: { en: "Dashboards & summaries", ar: "لوحات وملخصات", zh: "仪表盘与摘要" } },
+    { from: "uc06", fa: "B", to: "ds3", ta: "T", c: "b", t: { en: "Exception notifications", ar: "إشعارات الاستثناءات", zh: "异常通知" } },
+  ],
+};
+
 function FlowG02() { return <DirectorateFlow flow={MF_G02} />; }
+function FlowG02Fpa() { return <DirectorateFlow flow={MF_G02_FPA} />; }
 
 function FlowG03() { return <DirectorateFlow flow={MF_G03} />; }
 function FlowG04() { return <DirectorateFlow flow={MF_G04} />; }
@@ -4088,8 +4127,8 @@ function CostFundsConsole() {
       <div className="wb-panel"><div className="wb-ph plain"><b>{tr({ en: "Cost distribution", ar: "توزيع التكلفة", zh: "成本分摊" })}</b><span className="wb-pm">{tr({ en: "project: Housing Cluster R-12", ar: "مشروع: مجمّع R-12", zh: "项目:Housing Cluster R-12" })}</span></div>
         <div className="wb-pb"><table className="wb-table"><thead><tr><th>{tr({ en: "COMPONENT", ar: "المكوّن", zh: "组成" })}</th><th>{tr({ en: "UNITS / AREA", ar: "وحدات / مساحة", zh: "套数 / 面积" })}</th><th>{tr({ en: "COST", ar: "التكلفة", zh: "成本" })}</th><th>{tr({ en: "PER UNIT", ar: "لكل وحدة", zh: "每单元" })}</th></tr></thead>
           <tbody>
-            <tr><td>Plot A</td><td>320 units</td><td><Money v="SAR 0.78B" /></td><td><Money v="SAR 2.44M" /></td></tr>
-            <tr><td>Plot B</td><td>260 units</td><td><Money v="SAR 0.61B" /></td><td><Money v="SAR 2.35M" /></td></tr>
+            <tr><td>{tr({ en: "Plot A", ar: "قطعة A", zh: "地块 A" })}</td><td>{tr({ en: "320 units", ar: "320 وحدة", zh: "320 套" })}</td><td><Money v="SAR 0.78B" /></td><td><Money v="SAR 2.44M" /></td></tr>
+            <tr><td>{tr({ en: "Plot B", ar: "قطعة B", zh: "地块 B" })}</td><td>{tr({ en: "260 units", ar: "260 وحدة", zh: "260 套" })}</td><td><Money v="SAR 0.61B" /></td><td><Money v="SAR 2.35M" /></td></tr>
             <tr><td>{tr({ en: "Shared infrastructure", ar: "بنية تحتية مشتركة", zh: "共用基础设施" })}</td><td>{tr({ en: "allocated", ar: "موزّع", zh: "已分摊" })}</td><td><Money v="SAR 0.45B" /></td><td>—</td></tr>
             <tr><td>{tr({ en: "Land acquisition", ar: "اقتناء الأرض", zh: "土地取得" })}</td><td>{tr({ en: "by area", ar: "حسب المساحة", zh: "按面积" })}</td><td><Money v="SAR 0.30B" /></td><td>—</td></tr>
             <tr><td style={{ color: "var(--danger)" }}>{tr({ en: "Unallocated (review)", ar: "غير موزّع (مراجعة)", zh: "未分摊(复核)" })}</td><td>—</td><td><Money v="SAR 0.26B" /></td><td>—</td></tr>
@@ -4285,10 +4324,10 @@ function ComplianceRuling() {
         </div>
 
         <div className="cr-agents">
-          <div className="cr-agh">🤖 {tr({ en: "Agent assist", ar: "مساعدة الوكلاء", zh: "智能体辅助" })}<span className="tg">3 agents</span></div>
-          <div className="cr-ag"><span className="bd run" /><div><div className="an">Compliance / Rules Agent</div><div className="as">{tr({ en: "Grounded standards · raised the open decision for your call", ar: "أسّس المعايير · رفع القرار المفتوح لك", zh: "接地标准 · 提出待你决策项" })}</div></div></div>
-          <div className="cr-ag"><span className="bd act" /><div><div className="an">Financial Reports Gen.</div><div className="as">{tr({ en: "Drafts the memo / response; refreshes once you decide", ar: "يصيغ المذكرة / الرد ويُحدّثها بعد قرارك", zh: "起草备忘 / 回应;决策后刷新" })}</div></div></div>
-          <div className="cr-ag"><span className="bd act" /><div><div className="an">Data Querying Agent</div><div className="as">{tr({ en: "Pulled AUC schedule, certs & observations from SAP / Esnad", ar: "سحب الجدول والشهادات والملاحظات من ساب / إسناد", zh: "从 SAP / Esnad 拉取折旧表、证明与观察" })}</div></div></div>
+          <div className="cr-agh">🤖 {tr({ en: "Agent assist", ar: "مساعدة الوكلاء", zh: "智能体辅助" })}<span className="tg">{tr({ en: "3 agents", ar: "3 وكلاء", zh: "3 个智能体" })}</span></div>
+          <div className="cr-ag"><span className="bd run" /><div><div className="an">{tr({ en: "Compliance / Rules Agent", ar: "وكيل الامتثال / القواعد", zh: "合规 / 规则智能体" })}</div><div className="as">{tr({ en: "Grounded standards · raised the open decision for your call", ar: "أسّس المعايير · رفع القرار المفتوح لك", zh: "接地标准 · 提出待你决策项" })}</div></div></div>
+          <div className="cr-ag"><span className="bd act" /><div><div className="an">{tr({ en: "Financial Reports Gen.", ar: "توليد التقارير المالية", zh: "财务报告生成" })}</div><div className="as">{tr({ en: "Drafts the memo / response; refreshes once you decide", ar: "يصيغ المذكرة / الرد ويُحدّثها بعد قرارك", zh: "起草备忘 / 回应;决策后刷新" })}</div></div></div>
+          <div className="cr-ag"><span className="bd act" /><div><div className="an">{tr({ en: "Data Querying Agent", ar: "وكيل استعلام البيانات", zh: "数据查询智能体" })}</div><div className="as">{tr({ en: "Pulled AUC schedule, certs & observations from SAP / Esnad", ar: "سحب الجدول والشهادات والملاحظات من ساب / إسناد", zh: "从 SAP / Esnad 拉取折旧表、证明与观察" })}</div></div></div>
         </div>
       </div>
     </div>
@@ -4447,10 +4486,10 @@ function ReportHub() {
     </div>
     <div className="rp-contrib">
       <div className="ch">{tr({ en: "Recent contributions · pushed from upstream UCs into reports", ar: "مساهمات حديثة · مدفوعة من الحالات الأعلى إلى التقارير", zh: "最近贡献 · 由上游 UC 推入报告" })}</div>
-      <div className="row"><span className="rp-uc uc11">UC-11</span><span className="arr">→</span> {tr({ en: "attached", ar: "أرفق", zh: "附入" })} <b>memo MEMO-1142</b> {tr({ en: "to", ar: "إلى", zh: "→" })} <span className="tgt">G-06 Quarterly</span><span className="age">1h</span></div>
-      <div className="row"><span className="rp-uc uc12">UC-12</span><span className="arr">→</span> {tr({ en: "sent", ar: "أرسل", zh: "推送" })} <b>{tr({ en: "costs & funds data", ar: "بيانات التكاليف والصناديق", zh: "成本与资金数据" })}</b> {tr({ en: "to", ar: "إلى", zh: "→" })} <span className="tgt">Costs & Funds Report</span><span className="age">3h</span></div>
-      <div className="row"><span className="rp-uc uc13">UC-13</span><span className="arr">→</span> {tr({ en: "fed", ar: "غذّى", zh: "喂入" })} <b>{tr({ en: "collection results & gap", ar: "نتائج التحصيل والفجوة", zh: "征收结果与缺口" })}</b> {tr({ en: "to", ar: "إلى", zh: "→" })} <span className="tgt">Revenue & Collections Report</span><span className="age">{tr({ en: "today", ar: "اليوم", zh: "今天" })}</span></div>
-      <div className="row"><span className="rp-uc uc02">UC-02</span><span className="arr">→</span> {tr({ en: "flagged", ar: "رصد", zh: "标记" })} <b>{tr({ en: "1 critical alert", ar: "تنبيه حرج", zh: "1 条严重告警" })}</b> {tr({ en: "into", ar: "في", zh: "→" })} <span className="tgt">Executive Summary</span><span className="age">{tr({ en: "today", ar: "اليوم", zh: "今天" })}</span></div>
+      <div className="row"><span className="rp-uc uc11">UC-11</span><span className="arr">→</span> {tr({ en: "attached", ar: "أرفق", zh: "附入" })} <b>{tr({ en: "memo", ar: "مذكرة", zh: "备忘" })} MEMO-1142</b> {tr({ en: "to", ar: "إلى", zh: "→" })} <span className="tgt">{tr({ en: "G-06 Quarterly", ar: "G-06 الربعي", zh: "G-06 季度报" })}</span><span className="age">1h</span></div>
+      <div className="row"><span className="rp-uc uc12">UC-12</span><span className="arr">→</span> {tr({ en: "sent", ar: "أرسل", zh: "推送" })} <b>{tr({ en: "costs & funds data", ar: "بيانات التكاليف والصناديق", zh: "成本与资金数据" })}</b> {tr({ en: "to", ar: "إلى", zh: "→" })} <span className="tgt">{tr({ en: "Costs & Funds Report", ar: "تقرير التكاليف والصناديق", zh: "成本与资金报告" })}</span><span className="age">3h</span></div>
+      <div className="row"><span className="rp-uc uc13">UC-13</span><span className="arr">→</span> {tr({ en: "fed", ar: "غذّى", zh: "喂入" })} <b>{tr({ en: "collection results & gap", ar: "نتائج التحصيل والفجوة", zh: "征收结果与缺口" })}</b> {tr({ en: "to", ar: "إلى", zh: "→" })} <span className="tgt">{tr({ en: "Revenue & Collections Report", ar: "تقرير الإيرادات والتحصيل", zh: "收入与征收报告" })}</span><span className="age">{tr({ en: "today", ar: "اليوم", zh: "今天" })}</span></div>
+      <div className="row"><span className="rp-uc uc02">UC-02</span><span className="arr">→</span> {tr({ en: "flagged", ar: "رصد", zh: "标记" })} <b>{tr({ en: "1 critical alert", ar: "تنبيه حرج", zh: "1 条严重告警" })}</b> {tr({ en: "into", ar: "في", zh: "→" })} <span className="tgt">{tr({ en: "Executive Summary", ar: "الملخص التنفيذي", zh: "执行摘要" })}</span><span className="age">{tr({ en: "today", ar: "اليوم", zh: "今天" })}</span></div>
     </div>
     <div className="rp-filters">
       <div className="rp-fchip"><div className="k">{tr({ en: "Type", ar: "النوع", zh: "类型" })}</div><div className="v">{tr({ en: "All", ar: "الكل", zh: "全部" })} ▾</div></div>
@@ -4680,7 +4719,7 @@ function DeptWorkspace({ cfg }) {
 
 /* ---- Financial Performance Analysis (UC-06) ---- */
 const WS_CFG_FPA = {
-  uc: "UC-06", kpiTone: "green", flow: FLOW_FPA, plazaModel: PLAZA_G02, plazaSel: "uc06", flowRoute: "g02flow",
+  uc: "UC-06", kpiTone: "green", flow: FLOW_FPA, plazaModel: PLAZA_G02, plazaSel: "uc06", flowRoute: "g02fpaflow",
   title: { en: "Financial Performance Analysis", ar: "تحليل الأداء المالي", zh: "财务绩效分析部" },
   mandate: { en: "Mandate: performance, spend analysis & executive reports (UC-06). KPI metrics + Business Plaza for cross-dept hand-off + floating Smart Query.", ar: "المهمة: تحليل الأداء والإنفاق والتقارير التنفيذية (UC-06). مؤشرات + ساحة الأعمال + استعلام ذكي عائم.", zh: "职责:绩效、支出分析与执行报告(UC-06)。关键指标 + Business Plaza 跨部门协同交付 + 浮动智能查询。" },
   sqScope: { en: "Scope: Financial Performance · read-only", ar: "النطاق: الأداء المالي · للقراءة", zh: "范围:财务绩效 · 只读" },
@@ -5285,7 +5324,7 @@ class EmbedErrorBoundary extends React.Component {
   render() {
     if (this.state.err) {
       return (<div style={{ padding: 32, fontSize: 14, color: "#b91c1c", maxWidth: 760, margin: "0 auto" }}>
-        <div style={{ fontWeight: 800, marginBottom: 8 }}>This analysis view failed to render.</div>
+        <div style={{ fontWeight: 800, marginBottom: 8 }}>{({ en: "This analysis view failed to render.", ar: "تعذّر عرض هذا التحليل.", zh: "此分析视图渲染失败。" }[(typeof document !== "undefined" && document.documentElement.lang) || "en"]) || "This analysis view failed to render."}</div>
         <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "#374151", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: 12 }}>{String((this.state.err && this.state.err.stack) || this.state.err)}</pre>
       </div>);
     }
@@ -5364,6 +5403,7 @@ function Shell() {
   else if (route === "rcdata") page = <RcDataFlow />;
   else if (route === "rcdatav1") page = <RcDataFlowV1 />;
   else if (route === "g02flow") page = <FlowG02 />;
+  else if (route === "g02fpaflow") page = <FlowG02Fpa />;
   else if (route === "g03flow") page = <FlowG03 />;
   else if (route === "g04flow") page = <FlowG04 />;
   else if (route === "g04entflow") page = <FlowG04Ent />;
