@@ -2660,7 +2660,7 @@ function computeDiff(oldStr, newStr) {
     return diff;
 }
 
-export default function Uc06App({ embedded = false, subDept = 'performanceAnalysis', appLang, initialTab, onBack, onConsumeJump, autoGenerate } = {}) {
+export default function Uc06App({ embedded = false, hostHeader = false, subDept = 'performanceAnalysis', appLang, initialTab, onBack, onConsumeJump, autoGenerate } = {}) {
     // When embedded inside the host app, the host's sidebar chooses which
     // sub-department to show; initialise all state to that department.
     const _SUBDEPT_META = {
@@ -5018,10 +5018,10 @@ export default function Uc06App({ embedded = false, subDept = 'performanceAnalys
                     </div>
                 </header>)}
 
-                <main className="flex-1 overflow-y-auto bg-[#F9FAFB]">
+                <main className="flex-1 overflow-y-auto bg-[#f4f7f5]">
                     {activeTab !== 'workspace' && (
-                        <div className={`bg-white border-b border-gray-200 px-8 py-3.5 flex items-center justify-between text-start animate-fadeIn shadow-xs ${lang === 'ar' ? 'flex-row-reverse' : 'flex-row'}`} style={{ fontFamily: 'Cairo, Tajawal, sans-serif' }}>
-                            <div className={`flex items-center gap-4 ${lang === 'ar' ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div className={`${hostHeader ? 'bg-transparent' : 'bg-white border-b border-gray-200 shadow-xs'} px-8 py-3.5 flex items-center ${hostHeader ? 'justify-center' : 'justify-between'} text-start animate-fadeIn ${lang === 'ar' ? 'flex-row-reverse' : 'flex-row'}`} style={{ fontFamily: 'Cairo, Tajawal, sans-serif' }}>
+                            {!hostHeader && <div className={`flex items-center gap-4 ${lang === 'ar' ? 'flex-row-reverse' : 'flex-row'}`}>
                                 <button
                                     onClick={() => {
                                         if (cameFromHost && onBack) { onBack(); return; }
@@ -5035,7 +5035,7 @@ export default function Uc06App({ embedded = false, subDept = 'performanceAnalys
                                 <span className="text-xs font-bold text-gray-700 max-w-[300px] truncate">
                                     {activeFunctionLabel}
                                 </span>
-                            </div>
+                            </div>}
 
                             <div className="hidden lg:flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl border border-gray-200 text-xs shadow-inner">
                                 {[

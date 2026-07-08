@@ -151,6 +151,7 @@ function AIReadyNotice({ tr, children, tags = [] }) {
   );
 }
 
+const STORYLINE_FOUNDATION = { id: "data", route: "bench01", label: { en: "Unified data (UC-01)", ar: "بيانات موحّدة (UC-01)", zh: "统一数据 (UC-01)" } };
 const STORYLINE_MAIN_STEPS = [
   { id: "budget", route: "plnbudget", label: { en: "Budget planning", ar: "تخطيط الميزانية", zh: "预算规划" } },
   { id: "forecast", route: "plnforecast", label: { en: "Funding forecast", ar: "تنبؤ التمويل", zh: "资金预测" } },
@@ -173,7 +174,7 @@ function storylineState(id, current) {
 export function G02BusinessStoryline({ tr, current, navigate, className = "" }) {
   const POS = { up: { en: "UPSTREAM", ar: "منبع", zh: "上游" }, here: { en: "THIS", ar: "هذه", zh: "本环节" }, down: { en: "DOWNSTREAM", ar: "المصب", zh: "下游" } };
   const go = (route) => { if (navigate && route) navigate(route); };
-  const STEPS = [STORYLINE_MAIN_STEPS[0], ...STORYLINE_DRILL_STEPS, ...STORYLINE_MAIN_STEPS.slice(1)];
+  const STEPS = [STORYLINE_FOUNDATION, STORYLINE_MAIN_STEPS[0], ...STORYLINE_DRILL_STEPS, ...STORYLINE_MAIN_STEPS.slice(1)];
   const curIdx = STEPS.findIndex((step) => step.id === current);
   const posOf = (i) => (curIdx < 0 ? "down" : i < curIdx ? "up" : i === curIdx ? "here" : "down");
   return (

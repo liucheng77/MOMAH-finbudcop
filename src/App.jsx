@@ -5970,6 +5970,7 @@ function BudgetPlanningConsolePage() {
   const [rolling, setRolling] = useState(false);
   const [status, setStatus] = useState("draft");
   const [done, setDone] = useState(null);
+  const [showDiff, setShowDiff] = useState(true);
   const applyPlan = (p) => { setPlan(p.id); setW(p.w); setReserve(p.reserve); setRev(p.rev); setOvr({}); setStatus("draft"); setDone(null); };
   const M = (n) => "SAR " + n.toFixed(2) + "B";
   const allocatable = BP_TOTAL * (1 + rev / 100) * (1 - reserve / 100);
@@ -6002,6 +6003,7 @@ function BudgetPlanningConsolePage() {
     setOvr(o); setStatus("draft"); setDone(bpT("Surplus reallocated · " + deficit.length + " deficit(s) cleared, ready to submit", "أُعيد توزيع الفائض", "已再分配盈余 · 消除 " + deficit.length + " 个赤字,可提交审批"));
   };
   const submit = () => { if (deficit.length > 0) return; setStatus("submitted"); setDone(null); };
+  const batchScale = (pct) => { const o = {}; rows.forEach(r => { o[r.a.id] = +(r.alloc * (1 + pct / 100)).toFixed(2); }); setOvr(o); setStatus("draft"); setDone(bpT("Batch adjusted all allocations " + (pct > 0 ? "+" : "") + pct + "%", "تعديل جماعي", "已批量调整全部分配额 " + (pct > 0 ? "+" : "") + pct + "%")); };
   const insight = tr({
     en: "Plan distributes **" + M(allocated) + "** across " + rows.length + " Amanas with a **" + reserve + "% central reserve**" + (rolling ? " (rolling forecast on)" : "") + ". " + (deficit.length ? "~~" + deficit.length + " in deficit~~ (largest **" + tr(deficit[0].a.n) + " " + deficit[0].eff.toFixed(2) + "B**). " : "All balanced or in surplus. ") + "**" + surplus.length + "** in surplus; " + (paperRisk ? "**" + paperRisk + "** paper-surplus risk(s) under forecast." : "forecast holds."),
     ar: "توزّع الخطة **" + M(allocated) + "** عبر " + rows.length + " أمانة باحتياطي **" + reserve + "%**. " + (deficit.length ? "~~" + deficit.length + " في عجز~~. " : "الجميع متوازن. ") + "**" + surplus.length + "** فائض؛ **" + paperRisk + "** خطر فائض ورقي.",
@@ -6020,6 +6022,24 @@ function BudgetPlanningConsolePage() {
     ["pop", bpT("Population", "السكان", "人口权重"), 100], ["area", bpT("City area", "المساحة", "城市面积"), 100], ["prio", bpT("Strategic priority", "الأولوية", "战略优先级"), 100],
     ["com", bpT("Committed obligations", "الالتزامات", "承诺义务"), 100], ["pay", bpT("Payment plan", "خطة الدفع", "支付计划"), 100], ["protect", bpT("Protected area", "المناطق المحمية", "保护区范围"), 100],
   ];
+  const comSum = BP_AMANAS.reduce((s, a) => s + a.com, 0);
+  const paySum = BP_AMANAS.reduce((s, a) => s + a.pay, 0);
+  const dedTotal = comSum + paySum;
+  const allocsUnder = (pw, pres, prv) => { const al = BP_TOTAL * (1 + prv / 100) * (1 - pres / 100); const sc = a => (pw.pop * a.pop + pw.area * a.area + pw.prio * a.prio + pw.com * (a.com / BP_MAXCOM * 100) + pw.pay * (a.pay / BP_MAXPAY * 100) + pw.protect * a.protect) / 100; const ss = BP_AMANAS.reduce((s, a) => s + sc(a), 0); return BP_AMANAS.map(a => ({ a, alloc: al * sc(a) / (ss || 1) })); };
+  const curDiff = allocsUnder(w, reserve, rev).map(x => ({ n: x.a.n, id: x.a.id, delta: x.alloc - x.a.base })).sort((a, b) => b.delta - a.delta);
+  const topGain = curDiff.slice(0, 3);
+  const topLose = curDiff.slice(-3).reverse();
+  const curPlanObj = BP_PLANS.find(p => p.id === plan);
+  const maxW = Math.max(w.pop, w.area, w.prio, w.com, w.pay, w.protect, 1);
+  const topW = SLIDERS.filter(([k]) => w[k] === maxW).map(([, lab]) => tr(lab));
+  const planName = curPlanObj ? tr(curPlanObj.n) : tr({ en: "Custom mix", ar: "مزيج مخصص", zh: "自定义组合" });
+  const sugZh = deficit.length ? "先从盈余批量补足 " + deficit.length + " 个赤字,再提交审批" : (paperRisk && !rolling ? "开启滚动预测、按真实执行能力规划,避免纸面盈余被高估" : "结构稳健,可提交审批下发");
+  const sugEn = deficit.length ? "batch-fund the " + deficit.length + " deficit(s) from surplus before submitting" : (paperRisk && !rolling ? "turn on the rolling forecast to plan against real capacity, not paper surplus" : "structure is sound — ready to submit");
+  const aiSummary = tr({
+    en: "Plan **" + planName + "** distributes **" + allocated.toFixed(2) + "B** across " + rows.length + " Amanas (reserve " + reserve + "%). **Key changes** vs FY2026: **" + tr(topGain[0].n) + " " + (topGain[0].delta >= 0 ? "+" : "") + topGain[0].delta.toFixed(2) + "B** up, **" + tr(topLose[0].n) + " " + topLose[0].delta.toFixed(2) + "B** down (weights favour " + topW.join(" / ") + "). **Risks**: " + (deficit.length ? deficit.length + " Amana(s) in deficit (largest " + tr(deficit[0].a.n) + " " + deficit[0].eff.toFixed(2) + "B)" : "no deficit") + (paperRisk ? ", " + paperRisk + " paper-surplus turn tight under forecast" : ", forecast holds") + ". **Recommendation**: " + sugEn + ".",
+    ar: "خطة **" + planName + "** توزّع **" + allocated.toFixed(2) + "B**. المخاطر: " + (deficit.length ? deficit.length + " عجز" : "لا عجز") + ". التوصية: " + (deficit.length ? "تغطية العجز" : "جاهز للتقديم") + ".",
+    zh: "当前方案「**" + planName + "**」在 " + rows.length + " 个阿玛纳间分配 **" + allocated.toFixed(2) + "B**(储备 " + reserve + "%)。**关键变化**(对比 FY2026):**" + tr(topGain[0].n) + " " + (topGain[0].delta >= 0 ? "+" : "") + topGain[0].delta.toFixed(2) + "B** 增加、**" + tr(topLose[0].n) + " " + topLose[0].delta.toFixed(2) + "B** 减少(权重侧重 " + topW.join(" / ") + ")。**风险项**:" + (deficit.length ? deficit.length + " 个阿玛纳赤字(最大 " + tr(deficit[0].a.n) + " " + deficit[0].eff.toFixed(2) + "B)" : "无赤字") + (paperRisk ? "、" + paperRisk + " 个纸面盈余在滚动预测下转紧张" : "、预测下稳健") + "。**优化建议**:" + sugZh + "。"
+  });
   return (<div className="fade wb"><div className="card pad wb-frame">
     <SmartQueryFab scope={bpT("Scope: Budget Planning · FY2027 · read-only", "النطاق: تخطيط الميزانية", "范围:预算规划 · FY2027 · 只读")} prompts={sqPrompts} />
     <div className="card pad wb-head">
@@ -6028,72 +6048,90 @@ function BudgetPlanningConsolePage() {
       <div className="bp-wrap-story"><G02BusinessStoryline tr={tr} current="budget" navigate={goStory} /></div>
     </div>
 
+    <div className="bp-aisum"><span className="bp-aisum-ic">✦</span><div className="bp-aisum-tx"><span className="bp-aisum-lab">{tr({ en: "AI PLAN SUMMARY", ar: "ملخص خطة الذكاء", zh: "AI 方案摘要" })}</span><Hi t={aiSummary} /></div><span className="bp-agent bp-aisum-ag">Rolling Forecasting Agent</span></div>
+
     <div className="bp-kpis">
-      <div className="bp-kpi"><div className="l">{tr({ en: "Total planning budget", ar: "إجمالي الميزانية", zh: "规划总预算" })}</div><div className="v">{M(BP_TOTAL * (1 + rev / 100))}</div><div className="s">FY2027 · {rev !== 0 ? (rev > 0 ? "+" : "") + rev + "% " + tr({ en: "revenue", ar: "إيراد", zh: "收入" }) : tr({ en: "approved ceilings", ar: "السقوف", zh: "已批准上限" })}</div></div>
-      <div className="bp-kpi"><div className="l">{tr({ en: "Allocated", ar: "مُوزّع", zh: "已分配额度" })}</div><div className="v">{M(allocated)}</div><div className="s">{Math.round(allocated / (BP_TOTAL * (1 + rev / 100)) * 100)}% · {rows.length} {tr({ en: "Amanas", ar: "أمانات", zh: "阿玛纳" })}</div></div>
-      <div className="bp-kpi"><div className="l">{tr({ en: "Central reserve", ar: "الاحتياطي", zh: "中央储备" })}</div><div className="v">{M(reserveAmt)}</div><div className="s">{reserve}% {tr({ en: "held back", ar: "محتجز", zh: "预留" })}</div></div>
-      <div className={"bp-kpi" + (Math.abs(remaining) < 0.01 ? " ok" : "")}><div className="l">{tr({ en: "Remaining allocatable", ar: "المتبقي", zh: "剩余可分配" })}</div><div className="v">{M(remaining)}</div><div className="s">{Math.abs(remaining) < 0.01 ? tr({ en: "fully allocated", ar: "موزّع بالكامل", zh: "已全部分配" }) : tr({ en: "adjust to balance", ar: "عدّل", zh: "调整以平衡" })}</div></div>
+      <div className="bp-kpi"><div className="l">{tr({ en: "Budget ceiling (allocatable)", ar: "سقف الميزانية", zh: "预算上限(可分配)" })}</div><div className="v">{M(allocatable)}</div><div className="s">{BP_TOTAL.toFixed(2)}B × (1−{tr({ en: "reserve", ar: "احتياطي", zh: "储备" })} {reserve}%){rev !== 0 ? " ×(1" + (rev > 0 ? "+" : "") + rev + "%)" : ""}</div></div>
+      <div className="bp-kpi"><div className="l">{tr({ en: "Deductions (Σ)", ar: "الخصومات", zh: "扣除项(合计)" })}</div><div className="v">{M(dedTotal)}</div><div className="s">{tr({ en: "committed", ar: "ملتزم", zh: "承诺" })} {comSum.toFixed(2)} + {tr({ en: "payment", ar: "الدفع", zh: "支付" })} {paySum.toFixed(2)}</div></div>
+      <div className="bp-kpi formula hl"><div className="l">◇ {tr({ en: "Fiscal space (Σ)", ar: "الحيّز المالي", zh: "财政空间(合计)" })}</div><div className="v">{M(paperTotal)}</div><div className="bp-kpi-eq">{tr({ en: "ceiling", ar: "السقف", zh: "上限" })} {allocated.toFixed(2)} − {tr({ en: "committed", ar: "ملتزم", zh: "承诺" })} {comSum.toFixed(2)} − {tr({ en: "payment", ar: "الدفع", zh: "支付" })} {paySum.toFixed(2)} = <b>{paperTotal.toFixed(2)}B</b></div></div>
+      <div className={"bp-kpi" + (deficit.length ? " danger" : " ok")}><div className="l">{tr({ en: "Fiscal status", ar: "الحالة", zh: "财政状态" })}</div><div className="v">{deficit.length} / {surplus.length}</div><div className="s">{tr({ en: "deficit / surplus", ar: "عجز / فائض", zh: "赤字 / 盈余" })}{paperRisk ? " · " + paperRisk + " " + tr({ en: "paper risk", ar: "خطر ورقي", zh: "纸面风险" }) : ""}</div></div>
     </div>
 
-    <div className="bp-grid2">
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "AI planning options", ar: "خيارات التخطيط", zh: "AI 规划方案" })} <span className="bp-agent">Budget Optimization Agent</span></div>
-        <div className="bp-plans">{BP_PLANS.map(p => (<button key={p.id} className={"bp-plan" + (plan === p.id ? " on" : "")} onClick={() => applyPlan(p)}>
-          <div className="bp-plan-h"><b>{tr(p.n)}</b><span className={"bp-rec" + (p.rec >= 88 ? " top" : "")}>{tr({ en: "rec", ar: "التوصية", zh: "推荐指数" })} · {p.rec}</span></div>
-          <div className="bp-plan-n">{tr(p.note)}</div></button>))}</div>
-      </div>
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Allocation weights", ar: "أوزان التوزيع", zh: "分配权重" })} <span className="bp-agent">Scenario Simulation Agent · {tr({ en: "live", ar: "حي", zh: "实时" })}</span></div>
-        {SLIDERS.map(([k, lab, mx]) => (<div className="bp-slider" key={k}><span className="bp-slk">{tr(lab)}</span><input type="range" min="0" max={mx} value={w[k]} onChange={e => setSlider(k, +e.target.value)} /><span className="bp-slv">{w[k]}</span></div>))}
-        <div className="bp-slider"><span className="bp-slk">{tr({ en: "Reserve %", ar: "الاحتياطي %", zh: "储备金比例" })}</span><input type="range" min="0" max="20" value={reserve} onChange={e => { setReserve(+e.target.value); setPlan(""); }} /><span className="bp-slv">{reserve}%</span></div>
-        <div className="bp-slider"><span className="bp-slk">{tr({ en: "Revenue forecast %", ar: "توقع الإيراد %", zh: "收入预测" })}</span><input type="range" min="-5" max="8" value={rev} onChange={e => { setRev(+e.target.value); setPlan(""); }} /><span className="bp-slv">{rev > 0 ? "+" : ""}{rev}%</span></div>
-      </div>
-    </div>
-
-    <div className="bp-grid2">
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Rolling forecast · avoid paper surplus", ar: "التنبؤ المتجدد", zh: "滚动预测 · 避免纸面盈余" })} <span className="bp-agent">Rolling Forecasting Agent</span>
-        <label className="bp-toggle"><input type="checkbox" checked={rolling} onChange={e => { setRolling(e.target.checked); setStatus("draft"); }} /> {tr({ en: "Apply", ar: "تطبيق", zh: "应用" })}</label></div>
-        <div className="bp-roll"><div className="bp-roll-row"><span>{tr({ en: "Paper fiscal space (Σ)", ar: "الحيز الورقي", zh: "纸面财政空间(合计)" })}</span><b>{M(paperTotal)}</b></div>
-          <div className="bp-roll-row"><span>{tr({ en: "Rolling forecast (Σ)", ar: "التنبؤ المتجدد", zh: "滚动预测(合计)" })}</span><b className={fcastTotal < paperTotal ? "warn" : ""}>{M(fcastTotal)}</b></div>
-          <div className="bp-roll-d">{tr({ en: "Combines historical execution trend + current data. " + paperRisk + " Amana(s) show paper surplus that the forecast turns tight/deficit — turn on to plan against real capacity, not paper.", ar: "يجمع الاتجاه التاريخي والبيانات الحالية. " + paperRisk + " أمانات فائضها ورقي.", zh: "结合历史执行趋势 + 当前数据。" + paperRisk + " 个阿玛纳的纸面盈余在预测下转为紧张/赤字——开启后按真实可用能力规划,而非纸面。" })}</div>
+    <div className="uf-sec bp-planbox"><div className="uf-h">{tr({ en: "AI planning options & allocation weights", ar: "خيارات التخطيط وأوزان التوزيع", zh: "AI 规划方案与分配权重" })} <span className="bp-agent">Budget Optimization Agent · {tr({ en: "live", ar: "حي", zh: "实时" })}</span></div>
+      <div className="bp-tabs">{BP_PLANS.map(p => (<button key={p.id} className={"bp-tab" + (plan === p.id ? " on" : "")} onClick={() => applyPlan(p)}><span className="bp-tab-n">{tr(p.n)}</span><span className={"bp-tab-rec" + (p.rec >= 88 ? " top" : "")}>{tr({ en: "rec", ar: "توصية", zh: "推荐指数" })} {p.rec}</span></button>))}</div>
+        <div className="bp-plan-ai bp-plan-ai-full"><div className="bp-plan-ai-h"><span className="bp-plan-ai-ic">✦</span>{tr({ en: "AI plan interpretation", ar: "تفسير خطة الذكاء", zh: "AI 方案解读" })}</div>
+          <div className="bp-plan-ai-b"><Hi t={plan !== "" ? tr({ en: "**" + tr(curPlanObj.n) + "** (rec " + curPlanObj.rec + ") — " + tr(curPlanObj.note) + ". It emphasises **" + topW.join(" / ") + "**, so vs FY2026 it lifts **" + tr(topGain[0].n) + " +" + topGain[0].delta.toFixed(2) + "B** and trims **" + tr(topLose[0].n) + " " + topLose[0].delta.toFixed(2) + "B**.", ar: "**" + tr(curPlanObj.n) + "** — " + tr(curPlanObj.note) + ".", zh: "**" + tr(curPlanObj.n) + "**(推荐指数 " + curPlanObj.rec + ")—— " + tr(curPlanObj.note) + "。该方案侧重 **" + topW.join(" / ") + "**,因此相对 FY2026 会抬升 **" + tr(topGain[0].n) + " +" + topGain[0].delta.toFixed(2) + "B**、压减 **" + tr(topLose[0].n) + " " + topLose[0].delta.toFixed(2) + "B**。" }) : tr({ en: "**Custom weight mix** — adjust the weight sliders; the table below re-allocates live. Currently tilts to **" + tr(topGain[0].n) + "** (+" + topGain[0].delta.toFixed(2) + "B) vs FY2026.", ar: "مزيج مخصص.", zh: "**自定义权重组合** —— 调整下方权重滑块,分配表实时重算。当前相对 FY2026 向 **" + tr(topGain[0].n) + "**(+" + topGain[0].delta.toFixed(2) + "B)倾斜。" })} /></div></div>
+      <div className="bp-planrow">
+        <div className="bp-pcell">
+          <div className="bp-diff-h">{tr({ en: "Allocation weights · live", ar: "أوزان التوزيع · حي", zh: "分配权重 · 实时" })}</div>
+          {SLIDERS.map(([k, lab, mx]) => (<div className="bp-slider" key={k}><span className="bp-slk">{tr(lab)}</span><input type="range" min="0" max={mx} value={w[k]} onChange={e => setSlider(k, +e.target.value)} /><span className="bp-slv">{w[k]}</span></div>))}
+          <div className="bp-slider"><span className="bp-slk">{tr({ en: "Reserve %", ar: "الاحتياطي %", zh: "储备金比例" })}</span><input type="range" min="0" max="20" value={reserve} onChange={e => { setReserve(+e.target.value); setPlan(""); setStatus("draft"); }} /><span className="bp-slv">{reserve}%</span></div>
+          <div className="bp-slider"><span className="bp-slk">{tr({ en: "Revenue forecast %", ar: "توقع الإيراد %", zh: "收入预测" })}</span><input type="range" min="-5" max="8" value={rev} onChange={e => { setRev(+e.target.value); setPlan(""); setStatus("draft"); }} /><span className="bp-slv">{rev > 0 ? "+" : ""}{rev}%</span></div>
+        </div>
+        <div className="bp-pcell">
+          <div className="bp-diff-h">{tr({ en: "Weight-dimension profile", ar: "ملف بُعد الأوزان", zh: "权重维度画像" })}</div>
+          <div className="bp-wbars">{SLIDERS.map(([k, lab]) => (<div className="bp-wbar" key={k}><span className="bp-wbar-k">{tr(lab)}</span><div className="bp-wbar-t"><i className={w[k] === maxW ? "top" : ""} style={{ width: (w[k] / maxW * 100) + "%" }} /></div><b>{w[k]}</b></div>))}</div>
+        </div>
+        <div className="bp-pcell">
+          <div className="bp-diff-h">{tr({ en: "Rolling forecast", ar: "التنبؤ المتجدد", zh: "滚动预测" })} <label className="bp-toggle"><input type="checkbox" checked={rolling} onChange={e => { setRolling(e.target.checked); setStatus("draft"); }} /> {tr({ en: "Apply", ar: "تطبيق", zh: "应用" })}</label></div>
+          <div className="bp-roll"><div className="bp-roll-row"><span>{tr({ en: "Paper space (Σ)", ar: "الحيز الورقي", zh: "纸面空间(Σ)" })}</span><b>{M(paperTotal)}</b></div>
+            <div className="bp-roll-row"><span>{tr({ en: "Forecast (Σ)", ar: "التنبؤ", zh: "预测(Σ)" })}</span><b className={fcastTotal < paperTotal ? "warn" : ""}>{M(fcastTotal)}</b></div>
+            <div className="bp-roll-d">{tr({ en: paperRisk + " Amana(s) show paper surplus the forecast turns tight — turn on to plan against real capacity.", ar: paperRisk + " أمانات فائضها ورقي.", zh: paperRisk + " 个阿玛纳纸面盈余在预测下转紧张——开启后按真实能力规划。" })}</div>
+          </div>
+        </div>
+        <div className="bp-pcell">
+          <div className="bp-diff-h">{tr({ en: "Version comparison (vs FY2026)", ar: "مقارنة النسخ", zh: "历史版本对比(FY2026)" })}</div>
+          <div className="bp-cmp-sum"><b className={allocated - baseTotal >= 0 ? "up" : "down"}>{allocated - baseTotal >= 0 ? "+" : ""}{(allocated - baseTotal).toFixed(2)}B ({baseTotal > 0 ? Math.round((allocated - baseTotal) / baseTotal * 100) : 0}%)</b> {tr({ en: "vs FY2026", ar: "مقابل 2026", zh: "对比 FY2026" })}</div>
+          {cmp.slice(0, 5).map(c => (<div className="bp-cmp-row" key={c.id}><span className="bp-cmp-n">{tr(c.n)}</span><span className="bp-cmp-bars"><i className={c.delta >= 0 ? "up" : "down"} style={{ width: Math.min(100, Math.abs(c.delta) / 0.8 * 100) + "%" }} /></span><span className={"bp-cmp-d " + (c.delta >= 0 ? "up" : "down")}>{c.delta >= 0 ? "+" : ""}{c.delta.toFixed(2)}</span></div>))}
+          <div className="uf-note">{tr({ en: "Biggest shift: " + tr(cmp[0].n) + " " + (cmp[0].delta >= 0 ? "+" : "") + cmp[0].delta.toFixed(2) + "B.", ar: "أكبر تغيّر: " + tr(cmp[0].n), zh: "最大变动:" + tr(cmp[0].n) + " " + (cmp[0].delta >= 0 ? "+" : "") + cmp[0].delta.toFixed(2) + "B。" })}</div>
         </div>
       </div>
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Version comparison & impact (vs FY2026)", ar: "مقارنة النسخ والأثر", zh: "历史版本对比与影响分析(对比 FY2026)" })}</div>
-        <div className="bp-cmp-sum">{tr({ en: "FY2027 " + M(allocated) + " vs FY2026 " + M(baseTotal) + " · ", ar: "2027 مقابل 2026 · ", zh: "FY2027 " + M(allocated) + " vs FY2026 " + M(baseTotal) + " · " })}<b className={allocated - baseTotal >= 0 ? "up" : "down"}>{allocated - baseTotal >= 0 ? "+" : ""}{(allocated - baseTotal).toFixed(2)}B ({baseTotal > 0 ? Math.round((allocated - baseTotal) / baseTotal * 100) : 0}%)</b></div>
-        {cmp.slice(0, 5).map(c => (<div className="bp-cmp-row" key={c.id}><span className="bp-cmp-n">{tr(c.n)}</span><span className="bp-cmp-bars"><i className={c.delta >= 0 ? "up" : "down"} style={{ width: Math.min(100, Math.abs(c.delta) / 0.8 * 100) + "%" }} /></span><span className={"bp-cmp-d " + (c.delta >= 0 ? "up" : "down")}>{c.delta >= 0 ? "+" : ""}{c.delta.toFixed(2)}B</span></div>))}
-        <div className="uf-note">{tr({ en: "Biggest shift: " + tr(cmp[0].n) + " " + (cmp[0].delta >= 0 ? "+" : "") + cmp[0].delta.toFixed(2) + "B — review the standard change (population/priority weights) driving it.", ar: "أكبر تغيّر: " + tr(cmp[0].n), zh: "最大变动:" + tr(cmp[0].n) + " " + (cmp[0].delta >= 0 ? "+" : "") + cmp[0].delta.toFixed(2) + "B —— 需复核驱动它的标准变化(人口/优先级权重)。" })}</div>
-      </div>
-    </div>
-
-    <div className="uf-sec"><div className="uf-h">{tr({ en: "Allocation table · fiscal space per Amana", ar: "جدول التوزيع", zh: "分配表 · 各 Amana 财政空间" })} {rolling && <span className="bp-fc-tag">{tr({ en: "rolling forecast", ar: "تنبؤ متجدد", zh: "滚动预测口径" })}</span>} <span className="bp-hint">{tr({ en: "edit an allocation to override", ar: "حرّر للتجاوز", zh: "可行内编辑分配额覆盖" })}</span></div>
-      <table className="wb-table bp-table"><thead><tr><th>{tr({ en: "Amana", ar: "الأمانة", zh: "阿玛纳" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Allocation", ar: "المخصص", zh: "分配额" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Committed", ar: "ملتزم", zh: "承诺" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Payment plan", ar: "خطة الدفع", zh: "支付计划" })}</th><th style={{ textAlign: "end" }}>{tr(rolling ? { en: "Forecast space", ar: "الحيز المتوقع", zh: "预测财政空间" } : { en: "Fiscal space", ar: "الحيز", zh: "财政空间" })}</th><th>{tr({ en: "Status", ar: "الحالة", zh: "状态" })}</th></tr></thead>
+      <div className="bp-planbox-tbl"><div className="bp-sub-h">↳ {tr({ en: "Budget detail per Amana", ar: "تفصيل الميزانية لكل أمانة", zh: "预算明细表(按 Amana 展开)" })} {rolling && <span className="bp-fc-tag">{tr({ en: "rolling forecast", ar: "تنبؤ متجدد", zh: "滚动预测口径" })}</span>}</div>
+      <div className="bp-tbl-tools"><span className="bp-tbl-tools-l">{tr({ en: "Batch adjust", ar: "تعديل جماعي", zh: "批量调整" })}:</span>
+        <button onClick={() => batchScale(-2)}>−2%</button><button onClick={() => batchScale(2)}>+2%</button>
+        <button className="bp-tbl-realloc" onClick={reallocate} disabled={!deficit.length}>⇄ {tr({ en: "Fund deficits from surplus", ar: "تغطية العجز من الفائض", zh: "盈余补赤字" })}</button>
+        <button onClick={() => { setOvr({}); setStatus("draft"); }}>↺ {tr({ en: "Reset", ar: "إعادة", zh: "复位" })}</button>
+        <span className="bp-hint">{tr({ en: "or edit any allocation inline", ar: "أو حرّر أي مخصص", zh: "或行内编辑任一分配额" })}</span></div>
+      <table className="wb-table bp-table"><thead><tr>
+        <th>{tr({ en: "Amana", ar: "الأمانة", zh: "阿玛纳" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "Budget ceiling", ar: "سقف الميزانية", zh: "预算上限" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "Deductions", ar: "الخصومات", zh: "扣除项" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "Committed", ar: "ملتزم", zh: "已承诺" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "Payment plan", ar: "خطة الدفع", zh: "支付计划" })}</th>
+        <th style={{ textAlign: "end" }}>{tr(rolling ? { en: "Surplus / realloc (forecast)", ar: "الفائض (متوقع)", zh: "盈余再分配(预测)" } : { en: "Surplus / reallocation", ar: "الفائض / إعادة التوزيع", zh: "盈余再分配" })}</th></tr></thead>
         <tbody>{rows.map(r => (<tr key={r.a.id} className={r.st}>
           <td>{tr(r.a.n)}</td>
           <td className="bp-mono" style={{ textAlign: "end" }}><input className="bp-edit" value={r.alloc.toFixed(2)} onChange={e => { const v = parseFloat(e.target.value); setOvr(o => ({ ...o, [r.a.id]: isNaN(v) ? 0 : v })); setStatus("draft"); }} /></td>
+          <td className="bp-mono" style={{ textAlign: "end", color: "#8a5a2b" }}>−{(r.a.com + r.a.pay).toFixed(2)}</td>
           <td className="bp-mono" style={{ textAlign: "end" }}>{r.a.com.toFixed(2)}</td>
           <td className="bp-mono" style={{ textAlign: "end" }}>{r.a.pay.toFixed(2)}</td>
-          <td className="bp-mono" style={{ textAlign: "end", fontWeight: 800, color: r.eff < 0 ? "var(--danger)" : "#166534" }}>{r.eff >= 0 ? "+" : ""}{r.eff.toFixed(2)}</td>
-          <td><span className={"bp-st " + r.st}>{tr(r.st === "surplus" ? { en: "surplus", ar: "فائض", zh: "盈余" } : r.st === "deficit" ? { en: "deficit", ar: "عجز", zh: "赤字" } : { en: "tight", ar: "ضيق", zh: "紧张" })}</span></td>
-        </tr>))}</tbody></table>
+          <td className="bp-mono" style={{ textAlign: "end" }}><span className={"bp-realloc-cell " + r.st}>{r.eff >= 0 ? "+" : ""}{r.eff.toFixed(2)}<span className={"bp-st " + r.st}>{tr(r.st === "surplus" ? { en: "surplus", ar: "فائض", zh: "盈余" } : r.st === "deficit" ? { en: "deficit", ar: "عجز", zh: "赤字" } : { en: "tight", ar: "ضيق", zh: "紧张" })}</span></span></td>
+        </tr>))}</tbody>
+        <tfoot><tr className="bp-drv-foot"><td>{tr({ en: "Σ Total", ar: "الإجمالي", zh: "合计" })}</td><td className="bp-mono" style={{ textAlign: "end", fontWeight: 800 }}>{allocated.toFixed(2)}</td><td className="bp-mono" style={{ textAlign: "end" }}>−{dedTotal.toFixed(2)}</td><td className="bp-mono" style={{ textAlign: "end" }}>{comSum.toFixed(2)}</td><td className="bp-mono" style={{ textAlign: "end" }}>{paySum.toFixed(2)}</td><td className="bp-mono" style={{ textAlign: "end", fontWeight: 800, color: paperTotal < 0 ? "var(--danger)" : "#166534" }}>{paperTotal >= 0 ? "+" : ""}{paperTotal.toFixed(2)}</td></tr></tfoot>
+      </table>
+      </div>
     </div>
 
-    <div className="bp-grid2">
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Surplus & reallocation", ar: "الفائض", zh: "盈余与再分配" })} {deficit.length > 0 && <button className="bp-realloc" onClick={reallocate}>⇄ {tr({ en: "Reallocate to clear deficits", ar: "أعد التوزيع", zh: "一键再分配 · 消除赤字" })}</button>}</div>
-        {surplus.length ? surplus.slice(0, 5).map(r => (<div className="bp-sur" key={r.a.id}><span className="bp-sur-n">{tr(r.a.n)}</span><span className="bp-sur-v">+{r.eff.toFixed(2)}B</span><span className="bp-sur-to">→ {deficit[0] ? tr(deficit[0].a.n) : tr({ en: "central reserve", ar: "الاحتياطي", zh: "中央储备" })}</span></div>)) : <div className="uf-note">{tr({ en: "No Amana in surplus under the current plan.", ar: "لا فائض.", zh: "当前方案下无盈余阿玛纳。" })}</div>}
-        {deficit.length > 0 && <div className="bp-defwarn">⚠ {deficit.length} {tr({ en: "Amana(s) in deficit — reallocate before submit.", ar: "أمانات عجز — أعد التوزيع.", zh: "个阿玛纳赤字 — 提交前需再分配。" })}</div>}
-      </div>
-      <div className="uf-sec bp-actions"><div className="uf-h">{tr({ en: "Submit & approval", ar: "التقديم والاعتماد", zh: "提交与审批" })}</div>
-        {status === "submitted" ? <div className="bp-next"><div className="bp-next-h">✓ {tr({ en: "Submitted for approval", ar: "قُدّم للاعتماد", zh: "已提交审批" })}</div>
-          <div className="bp-next-b">{tr({ en: "Shared version BL-2027-v1 routed to 30+ stakeholders (audit-logged). Now in human approval:", ar: "النسخة BL-2027-v1 وُزّعت. الآن في الاعتماد:", zh: "共享版本 BL-2027-v1 已下发 30+ 评审方(已写审计)。现进入人工审批环节:" })}</div>
+    <div className="uf-sec bp-actions"><div className="uf-h">{tr({ en: "Decision", ar: "القرار", zh: "审批操作" })}</div>
+      {status === "submitted"
+        ? <div className="bp-next"><div className="bp-next-h">✓ {tr({ en: "Submitted for approval", ar: "قُدّم للاعتماد", zh: "已提交审批" })}</div>
+          <div className="bp-next-b">{tr({ en: "Shared version BL-2027-v1 routed to 30+ stakeholders (audit-logged). Now in human approval:", ar: "النسخة BL-2027-v1 وُزّعت.", zh: "共享版本 BL-2027-v1 已下发 30+ 评审方(已写审计)。现进入人工审批环节:" })}</div>
           <div className="bp-next-owner">👤 Abdullah Al-Zahrani · {tr({ en: "Planning Lead", ar: "قائد التخطيط", zh: "规划负责人" })} · 📞 +966 55 781 3360</div>
           <button className="dw-btn" onClick={() => setStatus("draft")}>↺ {tr({ en: "Recall to draft", ar: "استرجاع", zh: "撤回为草稿" })}</button></div>
         : <React.Fragment>
-          {deficit.length > 0 && <div className="bp-defwarn">⚠ {tr({ en: "Deficit present — submission blocked. Use “Reallocate” to clear, then submit.", ar: "عجز — التقديم محظور.", zh: "存在赤字 — 提交被阻止。先点「一键再分配」消除赤字,再提交。" })}</div>}
+          <div className="pc-appr-sum"><div className="pc-appr-l">{tr({ en: "Approval object · budget allocation summary", ar: "موضوع الاعتماد · ملخص التوزيع", zh: "审批对象 · 预算分配汇总" })}</div>
+            <div className="pc-appr-row">
+              <div className="pc-appr-cell"><span>{tr({ en: "Plan", ar: "الخطة", zh: "方案" })}</span><b className="pc-appr-nm">{planName}</b></div>
+              <div className="pc-appr-cell"><span>{tr({ en: "Σ BUDGET CEILING", ar: "Σ سقف الميزانية", zh: "Σ 预算上限" })}</span><b>{M(allocated)}</b></div>
+              <div className="pc-appr-cell"><span>{tr({ en: "Σ DEDUCTIONS", ar: "Σ الخصومات", zh: "Σ 扣除项" })}</span><b style={{ color: "#b06a1f" }}>{M(-dedTotal)}</b></div>
+              <div className="pc-appr-cell"><span>{tr({ en: "Σ COMMITTED", ar: "Σ ملتزم", zh: "Σ 已承诺" })}</span><b>{M(comSum)}</b></div></div></div>
+          {deficit.length > 0 && <div className="bp-defwarn">⚠ {tr({ en: "Deficit present — submission blocked. Fund deficits from surplus (batch), then submit.", ar: "عجز — التقديم محظور.", zh: "存在赤字 — 提交被阻止。先用明细表的「盈余补赤字」批量消除赤字,再提交。" })}</div>}
           <div className="bp-act-btns">
             <button className="dw-btn primary" disabled={deficit.length > 0} onClick={submit}>{tr({ en: "Submit for approval", ar: "تقديم للاعتماد", zh: "提交审批" })}</button>
             <button className="dw-btn" onClick={() => setDone(bpT("Draft saved · BL-2027-DRAFT", "حُفظت المسودة", "草稿已保存 · BL-2027-DRAFT"))}>{tr({ en: "Save draft", ar: "حفظ مسودة", zh: "保存草稿" })}</button>
             <button className="dw-btn" onClick={() => setDone(bpT("Plan exported (PDF/Excel)", "صُدّرت", "方案已导出(PDF/Excel)"))}>{tr({ en: "Export plan", ar: "تصدير", zh: "导出方案" })}</button>
           </div></React.Fragment>}
-        {done && <div className="bp-done">✓ {tr(done)}</div>}
-      </div>
+      {done && <div className="bp-done">✓ {tr(done)}</div>}
     </div>
   </div></div>);
 }
@@ -6155,12 +6193,12 @@ const UF_ANOMALIES = [
   { id: "EX-06", sev: "med", lin: "collection_rate", item: ufT("Duplicate beneficiary records (2 regions)", "سجلات مستفيدين مكررة (منطقتان)", "重复受益人记录(2 地区)"), src: "Makin", impact: ufT("Housing-subsidy beneficiary count inflated", "عدد مستفيدي دعم الإسكان مبالغ", "住房补贴受益人计数虚高"), fix: ufT("De-duplicate on national ID", "إزالة التكرار على الهوية الوطنية", "按身份证号去重") },
 ];
 const UF_LINEAGE = {
-  net_invoiced: { field: ufT("Net invoiced amount", "صافي المبلغ المفوتر", "净开票金额"), path: [
-    { n: "Makin", t: ufT("raw invoices", "فواتير خام", "原始发票") }, { n: "Efaa", t: ufT("exclusions & fines", "استبعادات وغرامات", "排除项与罚款") }, { n: "Standardize + exclude", t: ufT("transform · dedupe", "توحيد · إزالة تكرار", "标准化 · 去重") }, { n: "net_invoiced", t: ufT("unified field", "حقل موحّد", "统一字段") } ] },
-  collection_rate: { field: ufT("Collection rate", "نسبة التحصيل", "征收率"), path: [
-    { n: "SADAD + Tahseel", t: ufT("payments received", "المدفوعات المستلمة", "已收款") }, { n: "Makin", t: ufT("billed amount", "المبلغ المفوتر", "开票额") }, { n: "collected ÷ billed", t: ufT("transform · ratio", "تحويل · نسبة", "换算 · 比率") }, { n: "collection_rate", t: ufT("unified field", "حقل موحّد", "统一字段") } ] },
-  budget_balance: { field: ufT("Budget balance", "رصيد الميزانية", "预算余额"), path: [
-    { n: "SAP / Asas", t: ufT("allocation & spend", "التخصيص والإنفاق", "拨款与支出") }, { n: "Hyperion", t: ufT("submission & transfers", "التقديم والمناقلات", "提交与转移") }, { n: "budget − paid", t: ufT("reconcile · SAP truth", "تسوية · ساب", "对账 · 以 SAP 为准") }, { n: "budget_balance", t: ufT("unified field", "حقل موحّد", "统一字段") } ] },
+  net_invoiced: { field: ufT("Net invoiced amount · net_invoiced", "صافي المبلغ المفوتر", "净开票金额 · net_invoiced"), path: [
+    { n: "SAP / Asas", t: ufT("source field · BSEG-WRBTR (gross) − exclusions", "حقل BSEG-WRBTR", "源字段 · BSEG-WRBTR(毛额)− 排除项") }, { n: "DataBank", t: ufT("unified · fact_invoice.net_amount (dedupe + standardize)", "fact_invoice.net_amount", "统一字段 · fact_invoice.net_amount(去重+标准化)") }, { n: "Financial Budgeting Copilot", t: ufT("Financial & budget data", "بيانات مالية وميزانية", "财务与预算数据") } ] },
+  collection_rate: { field: ufT("Collection rate · collection_rate", "نسبة التحصيل", "征收率 · collection_rate"), path: [
+    { n: "SAP / Asas", t: ufT("source · SADAD collected ÷ Makin billed", "حقول SADAD/Makin", "源字段 · SADAD 已收 ÷ Makin 开票") }, { n: "DataBank", t: ufT("unified · fact_collection.rate (ratio + backfill)", "fact_collection.rate", "统一字段 · fact_collection.rate(比率+回填)") }, { n: "Financial Budgeting Copilot", t: ufT("metric · Collection rate KPI", "مؤشر · نسبة التحصيل", "指标 · 征收率 KPI") } ] },
+  budget_balance: { field: ufT("Budget balance · budget_balance", "رصيد الميزانية", "预算余额 · budget_balance"), path: [
+    { n: "SAP / Asas", t: ufT("source of truth · allocation − paid (GL 2310)", "المصدر · GL 2310", "真实来源 · 拨款 − 已付(总账 2310)") }, { n: "DataBank", t: ufT("unified · fact_budget.balance (reconcile vs Hyperion)", "fact_budget.balance", "统一字段 · fact_budget.balance(与 Hyperion 对账)") }, { n: "Financial Budgeting Copilot", t: ufT("metric · Fiscal space / budget_balance", "مؤشر · الحيّز المالي", "指标 · 财政空间 / budget_balance") } ] },
 };
 const UF_LKEYS = ["net_invoiced", "collection_rate", "budget_balance"];
 const UF_AGENTS = [
@@ -6187,11 +6225,12 @@ const UF_AUDIT0 = [
 ];
 const UF_TRUTH_REC = { "EX-02": "SAP", "EX-04": "Etimad" };
 function SharedFoundationWorkbench() {
-  const { tr, setRoute, setBackRoute, backRoute, setDeptSub, pushLog } = useStore();
+  const { tr, setRoute, setBackRoute, backRoute, setDeptSub, setPerfJump, pushLog } = useStore();
   const cfg = BENCH_UC01;
+  const goStory = (r) => { if (r === "bench01") return; setBackRoute("bench01"); if (r === "perf") { setPerfJump && setPerfJump({ tab: "dash" }); setDeptSub("fpa"); } setRoute(r); };
   const [scope, setScope] = useState(UF_SCOPE.map(() => 0));
   const [resolved, setResolved] = useState([]);
-  const [expanded, setExpanded] = useState("EX-01");
+  const [expanded, setExpanded] = useState(null);
   const [lineageKey, setLineageKey] = useState("net_invoiced");
   const [synced, setSynced] = useState({});
   const [scan, setScan] = useState("idle");
@@ -6207,8 +6246,12 @@ function SharedFoundationWorkbench() {
   const back = () => { if (backRoute) { const b = backRoute; setBackRoute(null); setRoute(b); } else { setDeptSub(cfg.dept); setRoute(cfg.back); } };
   const openA = UF_ANOMALIES.filter(a => !resolved.includes(a.id));
   const critN = openA.filter(a => a.sev === "crit").length;
+  const highN = openA.filter(a => a.sev === "high").length;
+  const medN = openA.filter(a => a.sev === "med").length;
   const conflN = openA.filter(a => a.src.includes("↔")).length;
   const isConflict = (a) => a.src.includes("↔");
+  const [sevFilter, setSevFilter] = useState(null);
+  const shownAnom = UF_ANOMALIES.filter(a => !sevFilter || a.sev === sevFilter);
   const resync = (n) => { setSynced(s => ({ ...s, [n]: true })); addAudit(ufT("Re-synced source · " + n, "أُعيدت مزامنة · " + n, "重新同步数据源 · " + n), ""); };
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; setUploaded(u => [...u, f.name]); addAudit(ufT("Excel/CSV uploaded · flagged TEMPORARY (BR-04)", "رفع ملف · مؤقت (BR-04)", "上传 Excel/CSV · 标记为临时文件(BR-04)"), f.name); };
   const applyFix = (a) => { setResolved(r => [...r, a.id]); setExpanded(null); addAudit(ufT("Fix applied · " + a.id, "تطبيق إصلاح · " + a.id, "应用修复 · " + a.id), tr(a.item)); };
@@ -6220,9 +6263,9 @@ function SharedFoundationWorkbench() {
   const cycleScope = (i, v) => { setScope(s => s.map((x, j) => j === i ? v : x)); addAudit(ufT("Scope changed · " + tr(UF_SCOPE[i].k), "تغيّر النطاق", "作用域已更改 · " + tr(UF_SCOPE[i].k)), UF_SCOPE[i].opts[v]); };
   return (<div className="fade wb"><div className="card pad wb-frame">
     <div className="card pad wb-head">
-      <div><div className="wb-title"><button className="pg-back" onClick={back}>‹</button><span className="wb-dot violet" /> {tr(cfg.deptName)} · {tr({ en: "Analysis Workbench", ar: "منصة التحليل", zh: "分析工作台" })}</div>
-        <div className="wb-subt">{ucl(cfg.uc, tr(cfg.subt))}</div></div>
-      <div className="wb-chain"><span className="wb-clab">{tr(cfg.chainLab)}</span>{cfg.chain.map((c, i) => (<React.Fragment key={i}>{i > 0 && <span className="wb-carr">→</span>}<span className={"wb-cpill" + (c.here ? " here" : "")}><span className="wb-cpos">{tr(BQ_POS[c.pos])}</span>{SHOW_UC ? c.code + " · " : ""}{tr(c.name)}</span></React.Fragment>))}</div>
+      <div><div className="wb-title"><button className="pg-back" onClick={back}>‹</button><span className="wb-dot violet" /> {tr(cfg.subt)}</div>
+        <div className="wb-subt">{tr({ en: "One trusted, traceable data foundation — unifies multi-source heterogeneous data into a standardized financial data model", ar: "أساس بيانات موحّد وموثوق وقابل للتتبع — يوحّد البيانات متعددة المصادر وغير المتجانسة في نموذج بيانات مالي معياري", zh: "统一、可信、可追溯的数据底座 —— 将多源异构数据统一为标准化财务数据模型" })}</div></div>
+      <div className="bp-wrap-story"><G02BusinessStoryline tr={tr} current="data" navigate={goStory} /></div>
     </div>
 
     <div className="uf-scopebar"><span className="uf-scope-l">{tr({ en: "DATA SCOPE", ar: "نطاق البيانات", zh: "数据范围" })}</span>
@@ -6232,26 +6275,24 @@ function SharedFoundationWorkbench() {
     <div className="uf-sec"><div className="uf-h">① {tr({ en: "Data source connection", ar: "اتصال مصادر البيانات", zh: "数据源连接面板" })} · {UF_SOURCES.length + uploaded.length} {tr({ en: "systems", ar: "أنظمة", zh: "系统" })}
       <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={onFile} />
       <button className="uf-upload" onClick={() => fileRef.current && fileRef.current.click()}>⬆ {tr({ en: "Upload Excel/CSV (approved template)", ar: "رفع Excel/CSV (قالب معتمد)", zh: "上传 Excel/CSV(已批准模板)" })}</button></div>
-      <div className="uf-src-grid">{UF_SOURCES.map((s, i) => { const st = synced[s.n] ? "synced" : s.st; return (
-        <div className={"uf-src " + st} key={i}>
-          <div className="uf-src-top"><span className={"uf-dot " + st} /><b>{s.n}</b><span className={"uf-src-st " + st}>{tr(stLabel(st))}</span></div>
+      <div className="uf-src-grid">{UF_SOURCES.map((s, i) => (
+        <div className="uf-src demo" key={i}>
+          <div className="uf-src-top"><span className="uf-dot demo" /><b>{s.n}</b><span className="uf-src-st demo">Demo</span></div>
           <div className="uf-src-meta">{tr(s.dom)}</div>
-          <div className="uf-src-foot"><span>{tr({ en: "last sync", ar: "آخر مزامنة", zh: "最近同步" })}: {synced[s.n] ? tr({ en: "just now", ar: "الآن", zh: "刚刚" }) : s.sync}</span><span>{s.rec} {tr({ en: "records", ar: "سجلات", zh: "条" })}</span></div>
-          {st === "stale" && <button className="uf-resync" onClick={() => resync(s.n)}>⟳ {tr({ en: "Re-sync", ar: "إعادة مزامنة", zh: "重新同步" })}</button>}
-        </div>); })}
-        {uploaded.map((fn, i) => (<div className="uf-src temp" key={"up" + i}><div className="uf-src-top"><span className="uf-dot temp" /><b>{fn}</b><span className="uf-src-st temp">{tr({ en: "TEMPORARY", ar: "مؤقت", zh: "临时" })}</span></div><div className="uf-src-meta">{tr({ en: "manual upload · flagged BR-04 · linked to audit log", ar: "رفع يدوي · BR-04 · مرتبط بالسجل", zh: "手动上传 · 标记 BR-04 · 已关联审计日志" })}</div></div>))}
+          <div className="uf-src-foot"><span>{tr({ en: "sample records", ar: "سجلات تجريبية", zh: "示例记录" })}</span><span>{s.rec}</span></div>
+        </div>))}
+        {uploaded.map((fn, i) => (<div className="uf-src demo" key={"up" + i}><div className="uf-src-top"><span className="uf-dot demo" /><b>{fn}</b><span className="uf-src-st demo">Demo</span></div><div className="uf-src-meta">{tr({ en: "manual upload (demo)", ar: "رفع يدوي (تجريبي)", zh: "手动上传(演示)" })}</div></div>))}
       </div>
     </div>
 
-    <div className="uf-sec"><div className="uf-h">② {tr({ en: "Data quality dashboard", ar: "لوحة جودة البيانات", zh: "数据质量仪表板" })}</div>
+    <div className="uf-sec"><div className="uf-h">② {tr({ en: "Data quality & exception list", ar: "جودة البيانات وقائمة الاستثناءات", zh: "数据质量与差异清单" })} <span className="bp-hint">{tr({ en: "KPIs below map 1:1 to the list, grouped by severity — click a severity to filter", ar: "المؤشرات تقابل القائمة حسب الخطورة", zh: "下方 KPI 与清单按严重性一一对应 · 点击某等级筛选" })}</span></div>
       <div className="uf-q-grid">{UF_QUALITY.map((q, i) => (<div className="uf-q" key={i}><div className="uf-q-v">{q.v}{q.unit}</div><div className="uf-q-k">{tr(q.k)}</div><div className="uf-q-bar"><i style={{ width: q.v + "%" }} /></div><div className="uf-q-d">{tr(q.d)}</div></div>))}
-        <div className="uf-q warn"><div className="uf-q-v">{conflN}</div><div className="uf-q-k">{tr({ en: "Conflicts", ar: "التعارضات", zh: "冲突情况" })}</div><div className="uf-q-d">{tr({ en: "cross-system, open", ar: "بين الأنظمة، مفتوحة", zh: "跨系统 · 未结" })}</div></div>
-        <div className="uf-q warn"><div className="uf-q-v">{openA.length}</div><div className="uf-q-k">{tr({ en: "Exceptions", ar: "الاستثناءات", zh: "异常" })}</div><div className="uf-q-d">{critN} {tr({ en: "critical", ar: "حرج", zh: "严重" })}</div></div>
+        <div className={"uf-q sev-crit uf-q-click" + (sevFilter === "crit" ? " on" : "")} onClick={() => setSevFilter(sevFilter === "crit" ? null : "crit")}><div className="uf-q-v">{critN}</div><div className="uf-q-k">{tr(UF_SEV.crit)} ▾</div><div className="uf-q-d">{tr({ en: "click to filter", ar: "انقر للتصفية", zh: "点击筛选" })}</div></div>
+        <div className={"uf-q sev-high uf-q-click" + (sevFilter === "high" ? " on" : "")} onClick={() => setSevFilter(sevFilter === "high" ? null : "high")}><div className="uf-q-v">{highN}</div><div className="uf-q-k">{tr(UF_SEV.high)} ▾</div><div className="uf-q-d">{conflN} {tr({ en: "conflicts", ar: "تعارضات", zh: "冲突" })}</div></div>
+        <div className={"uf-q sev-med uf-q-click" + (sevFilter === "med" ? " on" : "")} onClick={() => setSevFilter(sevFilter === "med" ? null : "med")}><div className="uf-q-v">{medN}</div><div className="uf-q-k">{tr(UF_SEV.med)} ▾</div><div className="uf-q-d">{tr({ en: "click to filter", ar: "انقر للتصفية", zh: "点击筛选" })}</div></div>
       </div>
-    </div>
-
-    <div className="uf-sec"><div className="uf-h">③ {tr({ en: "Difference & exception list", ar: "قائمة الفروق والاستثناءات", zh: "差异列表" })} · <span className="uf-open">{openA.length} {tr({ en: "open", ar: "مفتوح", zh: "未结" })}</span> · <span className="uf-critn">{critN} {tr({ en: "critical", ar: "حرج", zh: "严重" })}</span></div>
-      {UF_ANOMALIES.map(a => { const done = resolved.includes(a.id); const ex = expanded === a.id; const conf = isConflict(a); return (
+      <div className="uf-list-h">{sevFilter ? <span>{tr({ en: "Filtered:", ar: "مُصفّى:", zh: "已筛选:" })} {tr(UF_SEV[sevFilter])} · {shownAnom.length} <button className="uf-list-clear" onClick={() => setSevFilter(null)}>✕ {tr({ en: "clear", ar: "مسح", zh: "清除" })}</button></span> : <span>{tr({ en: "All exceptions", ar: "كل الاستثناءات", zh: "全部差异" })} · <span className="uf-open">{openA.length} {tr({ en: "open", ar: "مفتوح", zh: "未结" })}</span> · <span className="uf-critn">{critN} {tr({ en: "critical", ar: "حرج", zh: "严重" })}</span></span>}</div>
+      {shownAnom.map(a => { const done = resolved.includes(a.id); const ex = expanded === a.id; const conf = isConflict(a); return (
         <div className={"uf-anom" + (done ? " done" : "")} key={a.id}>
           <div className="uf-anom-row" onClick={() => setExpanded(ex ? null : a.id)}>
             <span className={"uf-sev " + a.sev}>{tr(UF_SEV[a.sev])}</span>
@@ -6269,45 +6310,56 @@ function SharedFoundationWorkbench() {
         </div>); })}
     </div>
 
-    <div className="uf-sec"><div className="uf-h">④ {tr({ en: "Lineage tracking", ar: "تتبع السلالة", zh: "血缘追踪" })}</div>
-      <div className="uf-lin-tabs">{UF_LKEYS.map(k => (<button key={k} className={"uf-lin-tab" + (lineageKey === k ? " on" : "")} onClick={() => setLineageKey(k)}>{tr(UF_LINEAGE[k].field)}</button>))}</div>
-      <div className="uf-lin-flow">{UF_LINEAGE[lineageKey].path.map((p, i, arr) => (<React.Fragment key={i}>{i > 0 && <span className="uf-lin-arr">→</span>}<div className={"uf-lin-node" + (i === arr.length - 1 ? " target" : i === 0 ? " src" : "")}><b>{p.n}</b><span>{tr(p.t)}</span></div></React.Fragment>))}</div>
-      <div className="uf-note">{tr({ en: "Every downstream figure can be traced back along this path to its source system.", ar: "كل رقم لاحق يمكن تتبعه عبر هذا المسار إلى نظامه المصدري.", zh: "下游每个数字都可沿此路径回溯到源系统。" })}</div>
+    <div className="uf-sec"><div className="uf-h">③ {tr({ en: "Lineage tracking", ar: "تتبع السلالة", zh: "血缘追踪" })}</div>
+      <div className="uf-lin-flow">{UF_LINEAGE.net_invoiced.path.map((p, i, arr) => (<React.Fragment key={i}>{i > 0 && <span className="uf-lin-arr">→</span>}<div className={"uf-lin-node" + (i === arr.length - 1 ? " target" : i === 0 ? " src" : "")}><b>{p.n}</b><span>{tr(p.t)}</span></div></React.Fragment>))}</div>
+      <div className="uf-note">{tr({ en: "Source system (SAP …) → unified warehouse (DataBank) → the Copilot metric. Every downstream figure traces back along field names to its source.", ar: "النظام المصدري ← المستودع الموحّد ← مؤشر الـ Copilot.", zh: "源系统(SAP 等)→ 统一数仓(DataBank)→ Copilot 指标;下游每个数字都可沿字段名回溯到源系统。" })}</div>
     </div>
 
-    <div className="uf-sec"><div className="uf-h">⑤ {tr({ en: "Agent activity", ar: "نشاط الوكلاء", zh: "Agent 活动栏" })} <button className="uf-scan" onClick={runScan}>{scan === "running" ? tr({ en: "scanning…", ar: "يفحص…", zh: "扫描中…" }) : scan === "done" ? "✓ " + tr({ en: "scan complete", ar: "اكتمل الفحص", zh: "扫描完成" }) : "▶ " + tr({ en: "Run quality scan", ar: "تشغيل فحص الجودة", zh: "运行质量扫描" })}</button></div>
-      <div className="uf-agents">{UF_AGENTS.map((ag, i) => { const stt = scan === "running" ? "running" : scan === "done" ? "done" : "active"; return (
-        <div className="uf-agent" key={i}>
-          <div className="uf-agent-h"><span className={"uf-abadge " + stt} /><b>{tr(ag.n)}</b><span className={"uf-agent-st " + stt}>{stt === "running" ? tr({ en: "running", ar: "يعمل", zh: "运行中" }) : stt === "done" ? tr({ en: "done", ar: "تم", zh: "完成" }) : tr({ en: "active", ar: "نشط", zh: "活动" })}</span></div>
-          <div className="uf-agent-role">{tr(ag.role)}</div>
-          <div className="uf-agent-bar"><i style={{ width: (scan === "done" ? 100 : scan === "running" ? 62 : 34) + "%" }} /></div>
-          <div className="uf-agent-res">{tr(scan === "done" ? ag.resDone : ag.res)}</div>
-        </div>); })}</div>
-    </div>
-
-    <div className="uf-sec uf-review"><div className="uf-h">⑥ {tr({ en: "Data-owner review · dataset version", ar: "مراجعة مالك البيانات · نسخة", zh: "数据所有者审核 · 数据集版本" })}
-      <span className={"uf-ver " + version}>{version === "approved" ? "✓ " + tr({ en: "APPROVED", ar: "معتمد", zh: "已批准" }) : version === "returned" ? "↺ " + tr({ en: "RETURNED", ar: "أُعيد", zh: "已退回" }) : tr({ en: "DRAFT · DS-2026-Q2-v3", ar: "مسودة", zh: "草稿 · DS-2026-Q2-v3" })}</span></div>
-      <div className="uf-review-body">{tr({ en: "The data owner approves the version for analysis only when exceptions & conflicts are cleared; otherwise return for correction. Output cannot be used for official reports while critical items are open (BR-01).", ar: "يعتمد مالك البيانات النسخة فقط بعد معالجة الاستثناءات والتعارضات؛ وإلا تُعاد للتصحيح. لا يمكن استخدام المخرجات في التقارير الرسمية مع وجود بنود حرجة (BR-01).", zh: "数据所有者仅在异常与冲突清零后批准该版本用于分析;否则退回修正。存在严重项时输出不得用于官方报告(BR-01)。" })}</div>
-      {critN > 0 && version === "draft" && <div className="uf-review-warn">⚠ {tr({ en: critN + " critical exception(s) still open — approval for official use is blocked (BR-01).", ar: "لا تزال " + critN + " استثناءات حرجة مفتوحة — الاعتماد محظور.", zh: "仍有 " + critN + " 项严重例外未结 — 官方用途批准被阻止(BR-01)。" })}</div>}
-      {version === "draft" && <div className="uf-review-acts"><button className="dw-btn primary" onClick={approveVersion}>{tr({ en: "Approve version", ar: "اعتماد النسخة", zh: "批准版本" })}</button><button className="dw-btn danger" onClick={returnVersion}>{tr({ en: "Return for correction", ar: "إعادة للتصحيح", zh: "退回修正" })}</button></div>}
-    </div>
-
-    <div className="uf-sec"><div className="uf-h">⑦ {tr({ en: "Audit log · data lineage & provenance (BR-03)", ar: "سجل التدقيق (BR-03)", zh: "审计日志 · 数据溯源(BR-03)" })} · {audit.length}</div>
-      <div className="uf-audit">{audit.map((e, i) => (<div className="uf-audit-row" key={i}><span className="uf-audit-id">{e.id}</span><span className="uf-audit-at">{e.at}</span><span className="uf-audit-act">{tr(e.act)}</span>{e.detail && <span className="uf-audit-det">{e.detail}</span>}</div>))}</div>
+    <div className="uf-sec"><div className="uf-h">④ {tr({ en: "Agent flow", ar: "تدفق الوكلاء", zh: "Agent flow · 智能体流程" })}</div>
+      <div className="uf-flow">{UF_AGENTS.map((ag, i) => (
+        <div className="uf-flow-step" key={i}>
+          <div className="uf-flow-num">{i + 1}</div>
+          <div className="uf-flow-body">
+            <div className="uf-flow-h"><b>{tr(ag.n)}</b></div>
+            <div className="uf-flow-role">{tr(ag.role)}</div>
+          </div>
+        </div>))}</div>
+      <div className="uf-note">{tr({ en: "Logic: Data Querying collects & maps → Anomaly Detection finds anomalies & gaps → Proactive Insights scores quality & prioritises fixes. Each agent's output feeds the next.", ar: "المنطق: الجمع ← الكشف ← الرؤى. مخرجات كل وكيل مدخلات للتالي.", zh: "逻辑关系:数据查询智能体采集并标准化映射 → 异常检测智能体识别异常值与数据缺口 → 主动洞察智能体综合质量评分并按优先级推送修复建议;上游产出即下游输入。" })}</div>
     </div>
   </div></div>);
 }
 
 const pcT = (en, ar, zh) => ({ en, ar, zh });
+// Cost variance bridge: benchmark(base) + Σ driver deltas(cur − base) = reviewed estimate. Every driver is quantity × unit-rate (editable); cur = round(qty × rate). Risk contingency runs below benchmark (negative contribution).
 const PC_PROJECTS = [
   { id: "QBL-2027-0412", name: pcT("Eastern Ring Road — Phase 2", "الطريق الدائري الشرقي — م2", "东部环路 — 二期"), amana: pcT("Jeddah", "جدة", "吉达"), dept: pcT("Infrastructure & Roads", "البنية التحتية والطرق", "基础设施与道路部"), service: pcT("Capital works · roads", "أعمال رأسمالية · طرق", "资本工程 · 道路"), ceiling: 560, fs: 512,
-    drivers: [{ id: "road", cat: pcT("Roadworks", "أعمال الطرق", "道路工程"), unit: pcT("per km · 18 km", "لكل كم · 18 كم", "每公里 · 18 km"), amt: 396, bm: 283 }, { id: "bom", cat: pcT("Materials / BOM", "المواد", "物料 / BOM"), unit: pcT("asphalt · aggregate", "أسفلت", "沥青 · 骨料"), amt: 82, bm: 79 }, { id: "labor", cat: pcT("Personnel", "الموظفون", "人员薪酬"), unit: pcT("labor crews", "طواقم", "施工班组"), amt: 78, bm: 72 }, { id: "equip", cat: pcT("Equipment", "المعدات", "设备采购"), unit: pcT("machinery", "آلات", "机械设备"), amt: 64, bm: 66 }, { id: "out", cat: pcT("Outsourcing", "الإسناد", "外包服务"), unit: pcT("supervision", "الإشراف", "监理"), amt: 20, bm: 18 }] },
+    drivers: [
+      { id: "cq", cat: pcT("Construction quantity", "كمية الإنشاء", "施工量"), qty: 8, unit: pcT("km", "كم", "km"), rate: 39.4, base: 300, hist: 300 },
+      { id: "me", cat: pcT("Materials & equipment", "المواد والمعدات", "材料和设备"), qty: 90, unit: pcT("k-ton", "ألف طن", "千吨"), rate: 1.02, base: 82, hist: 86 },
+      { id: "rp", cat: pcT("Regional price", "السعر الإقليمي", "区域价格"), qty: 20, unit: pcT("idx-pt", "نقطة", "价格指数点"), rate: 2.6, base: 46, hist: 49 },
+      { id: "cx", cat: pcT("Complexity", "التعقيد", "复杂程度"), qty: 10, unit: pcT("cx-pt", "نقطة", "复杂度点"), rate: 3.9, base: 30, hist: 33 },
+      { id: "rc", cat: pcT("Risk contingency", "احتياطي المخاطر", "风险应急准备金"), qty: 20, unit: pcT("%", "%", "%"), rate: 0.4, base: 18, hist: 12 }] },
   { id: "QBL-2027-0388", name: pcT("Housing Cluster R-12", "مجمّع سكني R-12", "住房组团 R-12"), amana: pcT("Riyadh", "الرياض", "利雅得"), dept: pcT("Housing Programs", "برامج الإسكان", "住房计划部"), service: pcT("Buildings · per m²", "مبانٍ · لكل م²", "建筑 · 每 m²"), ceiling: 820, fs: 760,
-    drivers: [{ id: "build", cat: pcT("Building works", "أعمال البناء", "建筑工程"), unit: pcT("per m² · 184k m²", "لكل م²", "每 m² · 18.4万 m²"), amt: 520, bm: 505 }, { id: "bom", cat: pcT("Materials / BOM", "المواد", "物料 / BOM"), unit: pcT("concrete · steel", "خرسانة", "混凝土 · 钢材"), amt: 168, bm: 172 }, { id: "labor", cat: pcT("Personnel", "الموظفون", "人员薪酬"), unit: pcT("labor crews", "طواقم", "施工班组"), amt: 96, bm: 90 }, { id: "equip", cat: pcT("Equipment", "المعدات", "设备采购"), unit: pcT("machinery", "آلات", "机械设备"), amt: 20, bm: 21 }] },
+    drivers: [
+      { id: "cq", cat: pcT("Construction quantity", "كمية الإنشاء", "施工量"), qty: 184, unit: pcT("k-m²", "ألف م²", "千 m²"), rate: 2.8, base: 505, hist: 505 },
+      { id: "me", cat: pcT("Materials & equipment", "المواد والمعدات", "材料和设备"), qty: 120, unit: pcT("k-ton", "ألف طن", "千吨"), rate: 1.47, base: 168, hist: 172 },
+      { id: "rp", cat: pcT("Regional price", "السعر الإقليمي", "区域价格"), qty: 5, unit: pcT("idx-pt", "نقطة", "价格指数点"), rate: 11.6, base: 52, hist: 55 },
+      { id: "cx", cat: pcT("Complexity", "التعقيد", "复杂程度"), qty: 4, unit: pcT("cx-pt", "نقطة", "复杂度点"), rate: 11.75, base: 40, hist: 43 },
+      { id: "rc", cat: pcT("Risk contingency", "احتياطي المخاطر", "风险应急准备金"), qty: 2.5, unit: pcT("%", "%", "%"), rate: 4, base: 20, hist: 15 }] },
   { id: "QBL-2027-0501", name: pcT("Stormwater Resilience Package", "حزمة تصريف السيول", "雨洪韧性项目包"), amana: pcT("Makkah", "مكة", "麦加"), dept: pcT("Drainage Services", "خدمات التصريف", "排水服务部"), service: pcT("Drainage · per km", "تصريف · لكل كم", "排水 · 每公里"), ceiling: 340, fs: 300,
-    drivers: [{ id: "drain", cat: pcT("Drainage works", "أعمال التصريف", "排水工程"), unit: pcT("per km · 26 km", "لكل كم", "每公里 · 26 km"), amt: 214, bm: 176 }, { id: "bom", cat: pcT("Materials / BOM", "المواد", "物料 / BOM"), unit: pcT("pipes · pumps", "أنابيب", "管道 · 水泵"), amt: 74, bm: 71 }, { id: "labor", cat: pcT("Personnel", "الموظفون", "人员薪酬"), unit: pcT("labor crews", "طواقم", "施工班组"), amt: 40, bm: 38 }, { id: "out", cat: pcT("Outsourcing", "الإسناد", "外包服务"), unit: pcT("design", "تصميم", "设计"), amt: 12, bm: 11 }] },
+    drivers: [
+      { id: "cq", cat: pcT("Construction quantity", "كمية الإنشاء", "施工量"), qty: 26, unit: pcT("km", "كم", "km"), rate: 7.7, base: 176, hist: 185 },
+      { id: "me", cat: pcT("Materials & equipment", "المواد والمعدات", "材料和设备"), qty: 1, unit: pcT("lot", "دفعة", "批"), rate: 78, base: 71, hist: 74 },
+      { id: "rp", cat: pcT("Regional price", "السعر الإقليمي", "区域价格"), qty: 4, unit: pcT("idx-pt", "نقطة", "价格指数点"), rate: 9, base: 30, hist: 32 },
+      { id: "cx", cat: pcT("Complexity", "التعقيد", "复杂程度"), qty: 2, unit: pcT("cx-pt", "نقطة", "复杂度点"), rate: 15, base: 22, hist: 25 },
+      { id: "rc", cat: pcT("Risk contingency", "احتياطي المخاطر", "风险应急准备金"), qty: 1.5, unit: pcT("%", "%", "%"), rate: 4, base: 14, hist: 11 }] },
   { id: "QBL-2027-0455", name: pcT("Urban Greening — Corniche", "التشجير الحضري", "城市绿化 — 海滨"), amana: pcT("Dammam", "الدمام", "达曼"), dept: pcT("Parks & Landscaping", "الحدائق والتشجير", "园林与景观部"), service: pcT("Landscaping", "تنسيق حدائق", "园林景观"), ceiling: 180, fs: 210,
-    drivers: [{ id: "green", cat: pcT("Landscaping works", "التشجير", "绿化工程"), unit: pcT("per hectare · 42 ha", "لكل هكتار", "每公顷 · 42 ha"), amt: 96, bm: 98 }, { id: "bom", cat: pcT("Materials / BOM", "المواد", "物料 / BOM"), unit: pcT("plants · irrigation", "نباتات", "苗木 · 灌溉"), amt: 44, bm: 43 }, { id: "labor", cat: pcT("Personnel", "الموظفون", "人员薪酬"), unit: pcT("gardening crews", "طواقم", "养护班组"), amt: 22, bm: 23 }] },
+    drivers: [
+      { id: "cq", cat: pcT("Construction quantity", "كمية الإنشاء", "施工量"), qty: 42, unit: pcT("ha", "هكتار", "公顷"), rate: 2.19, base: 98, hist: 95 },
+      { id: "me", cat: pcT("Materials & equipment", "المواد والمعدات", "材料和设备"), qty: 1, unit: pcT("lot", "دفعة", "批"), rate: 44, base: 43, hist: 42 },
+      { id: "rp", cat: pcT("Regional price", "السعر الإقليمي", "区域价格"), qty: 3, unit: pcT("idx-pt", "نقطة", "价格指数点"), rate: 6, base: 20, hist: 20 },
+      { id: "cx", cat: pcT("Complexity", "التعقيد", "复杂程度"), qty: 1, unit: pcT("cx-pt", "نقطة", "复杂度点"), rate: 15, base: 14, hist: 14 },
+      { id: "rc", cat: pcT("Risk contingency", "احتياطي المخاطر", "风险应急准备金"), qty: 1.25, unit: pcT("%", "%", "%"), rate: 4, base: 10, hist: 8 }] },
 ];
 const PC_REVS = { feasible: pcT("Feasible", "ممكن", "可行"), cond: pcT("Conditional", "مشروط", "有条件"), reject: pcT("Not feasible", "غير ممكن", "不可行") };
 function ProjectCostWorkbench() {
@@ -6315,28 +6367,60 @@ function ProjectCostWorkbench() {
   const [pid, setPid] = useState(PC_PROJECTS[0].id);
   const [q, setQ] = useState("");
   const proj = PC_PROJECTS.find(p => p.id === pid) || PC_PROJECTS[0];
-  const [amt, setAmt] = useState({});
+  const [qty, setQty] = useState({});
   const [finOv, setFinOv] = useState(null);
   const [status, setStatus] = useState(null);
   const [done, setDone] = useState(null);
-  const selectProj = (p) => { setPid(p.id); setAmt({}); setFinOv(null); setStatus(null); setDone(null); };
-  const M = (n) => "SAR " + (n >= 1000 ? (n / 1000).toFixed(2) + "B" : n.toFixed(0) + "M");
+  const selectProj = (p) => { setPid(p.id); setQty({}); setFinOv(null); setStatus(null); setDone(null); };
+  const M = (n) => "SAR " + (n >= 1000 || n <= -1000 ? (n / 1000).toFixed(2) + "B" : n.toFixed(0) + "M");
   const goStory = (r) => { if (r === "plncost") return; setBackRoute("plncost"); if (r === "perf") { setPerfJump({ tab: "dash" }); setDeptSub("fpa"); } setRoute(r); };
-  const drivers = proj.drivers.map(d => { const a = amt[d.id] != null ? amt[d.id] : d.amt; const dev = Math.round((a - d.bm) / d.bm * 100); const score = dev > 30 ? 48 : dev > 15 ? 66 : dev > 6 ? 80 : 90; const anom = dev >= 25; return { ...d, a, dev, score, anom }; });
-  const total = drivers.reduce((s, d) => s + d.a, 0);
-  const bmTotal = drivers.reduce((s, d) => s + d.bm, 0);
+  const aiNote = (d) => {
+    if (d.id === "rc") return d.delta < 0 ? pcT("Risk buffer released (" + d.delta + "); keep residual coverage. Optimal ≈ " + d.base, "احتياطي مُحرَّر", "已释放风险准备金(" + d.delta + ");建议保留必要覆盖。优值≈" + d.base) : pcT("Contingency near optimal " + d.base + ".", "قرب الأمثل", "接近优值 " + d.base + "。");
+    if (d.anom) return pcT("Quantity ≥25% over benchmark; recommend cut toward optimal " + d.base + ".", "كمية فوق الأساس", "工程量高于基准 ≥25%,建议核减至优值 " + d.base + "。");
+    if (d.delta > 0) return pcT("Above benchmark +" + d.delta + "; optimal ≈ " + d.base + ".", "فوق الأساس", "高于基准 +" + d.delta + ",优值≈ " + d.base + "。");
+    if (d.delta < 0) return pcT("Below benchmark; cost-efficient, at/under optimal " + d.base + ".", "دون الأساس", "低于基准,成本效率良好(≤优值 " + d.base + ")。");
+    return pcT("At benchmark optimal " + d.base + ".", "عند الأساس", "与优值 " + d.base + " 一致。");
+  };
+  const drivers = proj.drivers.map(d => {
+    const qv = qty[d.id] != null ? qty[d.id] : d.qty;
+    const cur = Math.round(qv * d.rate);
+    const oc = Math.round(d.qty * d.rate);
+    const delta = cur - d.base, odelta = oc - d.base;
+    const dev = Math.round((cur - d.base) / d.base * 100);
+    const yoy = Math.round((cur - d.hist) / d.hist * 100);
+    const score = dev > 30 ? 48 : dev > 15 ? 66 : dev > 6 ? 80 : dev < -6 ? 88 : 90;
+    const anom = dev >= 25;
+    const opt = d.base;
+    return { ...d, qv, cur, oc, delta, odelta, dev, yoy, score, anom, opt, note: aiNote({ ...d, cur, delta, dev }) };
+  });
+  const setRowOptimal = (d) => setQty(a => ({ ...a, [d.id]: +(d.opt / d.rate).toFixed(1) }));
+  const benchTotal = drivers.reduce((s, d) => s + d.base, 0);
+  const revTotal = drivers.reduce((s, d) => s + d.cur, 0);
+  const origTotal = drivers.reduce((s, d) => s + d.oc, 0);
+  const deltaRev = revTotal - origTotal;
+  const deltaAlloc = revTotal - proj.ceiling;
+  const posSum = drivers.reduce((s, d) => s + Math.max(d.delta, 0), 0);
+  const negSum = drivers.reduce((s, d) => s + Math.min(d.delta, 0), 0);
   const anomalies = drivers.filter(d => d.anom);
-  const overCeiling = total - proj.ceiling;
-  const overFs = total - proj.fs;
-  const consumed = Math.min(120, Math.round(total / proj.ceiling * 100));
+  const overCeiling = deltaAlloc;
+  const overFs = revTotal - proj.fs;
+  const consumed = Math.min(140, Math.round(revTotal / proj.ceiling * 100));
   const finSuggest = (overCeiling > 0 || anomalies.length) ? "reject" : (consumed > 96 ? "cond" : "feasible");
   const finVal = finOv != null ? finOv : finSuggest;
-  const optimize = () => { const worst = drivers.slice().sort((x, y) => y.dev - x.dev)[0]; setAmt(a => ({ ...a, [worst.id]: worst.bm })); setDone(pcT("Budget Optimization Agent · " + tr(worst.cat) + " aligned to market", "مواءمة للسوق", "预算优化智能体 · " + tr(worst.cat) + " 已对齐市场基准")); };
-  const radar = drivers.map(d => ({ k: tr(d.cat), proj: Math.round(d.a / d.bm * 100), mkt: 100 }));
+  const optimize = () => { const cand = drivers.slice().sort((x, y) => y.delta - x.delta)[0]; if (!cand || cand.delta <= 0) return; setRowOptimal(cand); setDone(pcT("Budget Optimization Agent aligned " + tr(cand.cat) + " to optimal (benchmark)", "مواءمة", "预算优化智能体 · 已把「" + tr(cand.cat) + "」调至优值(市场基准)")); };
+  const radar = drivers.map(d => ({ k: tr(d.cat), proj: Math.round(d.cur / d.base * 100), mkt: 100 }));
   const canApprove = anomalies.length === 0 && finVal !== "reject" && overFs <= 0;
+  const gateState = finVal === "reject" ? "hold" : finVal === "cond" ? "cond" : "ready";
+  const gateLab = gateState === "ready" ? tr({ en: "ready", ar: "جاهز", zh: "ready 就绪" }) : gateState === "cond" ? tr({ en: "conditional", ar: "مشروط", zh: "conditional 有条件" }) : tr({ en: "on hold", ar: "معلّق", zh: "on hold 待放行" });
   const decide = (d) => { setStatus(d); setDone(null); };
   const filtered = PC_PROJECTS.filter(p => { const s = (q || "").toLowerCase(); return !s || tr(p.name).toLowerCase().includes(s) || p.id.toLowerCase().includes(s) || tr(p.amana).toLowerCase().includes(s); });
-  const sqPrompts = [pcT("Why is the top driver over benchmark?", "لماذا تجاوز المحرك؟", "最高动因为何超基准?"), pcT("Does this project fit the Amana's fiscal space?", "هل يناسب الحيز؟", "该项目是否在该 Amana 财政空间内?"), pcT("Summarize the tri-review conflict", "لخّص التعارض", "总结三方评审的矛盾")];
+  const sqPrompts = [pcT("Which driver contributes most to the variance?", "أي محرك الأكبر؟", "哪个动因对差异贡献最大?"), pcT("Does this project fit the Amana's fiscal space?", "هل يناسب الحيز؟", "该项目是否在该 Amana 财政空间内?"), pcT("Summarize the tri-review conflict", "لخّص التعارض", "总结三方评审的矛盾")];
+  let cum = benchTotal;
+  const wf = [{ name: tr({ en: "Benchmark", ar: "الأساس", zh: "市场基准" }), base: 0, val: benchTotal, kind: "base", tip: benchTotal }];
+  drivers.forEach(d => { const start = cum, end = cum + d.delta; wf.push({ name: tr(d.cat), base: Math.min(start, end), val: Math.abs(d.delta), kind: d.delta >= 0 ? "up" : "down", tip: d.delta }); cum = end; });
+  wf.push({ name: tr({ en: "Current estimate", ar: "التقدير الحالي", zh: "复核预估" }), base: 0, val: revTotal, kind: "total", tip: revTotal });
+  const wfColor = (k) => k === "base" ? "#3b6ea5" : k === "total" ? "#0b5a37" : k === "up" ? "#e0524a" : "#1B8354";
+  const statusLab = status ? tr(status === "approve" ? { en: "APPROVED", ar: "معتمد", zh: "已批准" } : status === "reject" ? { en: "REJECTED", ar: "مرفوض", zh: "已驳回" } : { en: "INFO REQUESTED", ar: "طلب معلومات", zh: "已请补充" }) : tr({ en: "PENDING REVIEW", ar: "بانتظار المراجعة", zh: "待评审" });
   return (<div className="fade wb"><div className="card pad wb-frame">
     <SmartQueryFab scope={pcT("Scope: Cost Drivers · " + proj.id + " · read-only", "النطاق: محركات التكلفة", "范围:成本动因 · " + proj.id + " · 只读")} prompts={sqPrompts} />
     <div className="card pad wb-head">
@@ -6345,80 +6429,111 @@ function ProjectCostWorkbench() {
       <div className="bp-wrap-story"><G02BusinessStoryline tr={tr} current="cost" navigate={goStory} /></div>
     </div>
 
-    <div className="uf-sec"><div className="uf-h">{tr({ en: "Project request (Qaboul)", ar: "طلب المشروع (قبول)", zh: "项目请求(Qaboul)" })} · {PC_PROJECTS.length} {tr({ en: "requests", ar: "طلبات", zh: "项" })}</div>
-      <input className="pc-search" value={q} onChange={e => setQ(e.target.value)} placeholder={tr({ en: "Search project / Amana / request no…", ar: "ابحث عن مشروع / أمانة / رقم…", zh: "搜索项目 / Amana / 工单号…" })} />
-      <div className="pc-plist">{filtered.map(p => (<button key={p.id} className={"pc-pitem" + (p.id === pid ? " on" : "")} onClick={() => selectProj(p)}>
-        <span className="pc-pid">{p.id}</span><span className="pc-pn">{tr(p.name)} · {tr(p.amana)}</span><span className="pc-pc">{tr({ en: "ceiling", ar: "السقف", zh: "上限" })} {M(p.ceiling)}</span></button>))}
-        {filtered.length === 0 && <div className="uf-note">{tr({ en: "No match.", ar: "لا نتائج.", zh: "无匹配项。" })}</div>}</div>
-    </div>
-
-    <div className="pc-meta">
-      <div className="pc-meta-l"><div className="pc-meta-n">{tr(proj.name)}</div><div className="pc-meta-s">{tr(proj.service)} · {tr(proj.dept)} · {tr(proj.amana)}</div></div>
-      <div className="pc-meta-r"><span className="pc-tag">Qaboul {proj.id}</span><span className={"pc-status " + (status || (canApprove ? "ok" : "wait"))}>{status ? tr(status === "approve" ? { en: "APPROVED", ar: "معتمد", zh: "已批准" } : status === "reject" ? { en: "REJECTED", ar: "مرفوض", zh: "已驳回" } : { en: "INFO REQUESTED", ar: "طلب معلومات", zh: "已请补充" }) : tr({ en: "PENDING REVIEW", ar: "بانتظار المراجعة", zh: "待评审" })}</span></div>
-    </div>
-
-    <div className="bp-kpis">
-      <div className="bp-kpi"><div className="l">{tr({ en: "Project ceiling", ar: "سقف المشروع", zh: "项目预算上限" })}</div><div className="v">{M(proj.ceiling)}</div><div className="s">{tr({ en: "approved cap", ar: "الحد المعتمد", zh: "已批准上限" })}</div></div>
-      <div className={"bp-kpi" + (overCeiling > 0 ? "" : " ok")}><div className="l">{tr({ en: "Estimated cost", ar: "التكلفة المقدرة", zh: "预估成本" })}</div><div className="v">{M(total)}</div><div className="s" style={{ color: overCeiling > 0 ? "var(--danger)" : "#166534" }}>{overCeiling > 0 ? "+" + M(overCeiling) + " " + tr({ en: "over", ar: "فوق", zh: "超上限" }) : tr({ en: "within ceiling", ar: "ضمن السقف", zh: "在上限内" })}</div></div>
-      <div className="bp-kpi"><div className="l">{tr({ en: "Consumed of ceiling", ar: "المستهلك", zh: "已消耗比例" })}</div><div className="v">{consumed}%</div><div className="s">{tr({ en: "vs market ", ar: "مقابل السوق ", zh: "对比市场 " })}{total > bmTotal ? "+" : ""}{Math.round((total - bmTotal) / bmTotal * 100)}%</div></div>
-      <div className={"bp-kpi" + (overFs > 0 ? "" : " ok")}><div className="l">{tr({ en: "Est. remaining vs fiscal space", ar: "المتبقي مقابل الحيز", zh: "预估剩余 vs 财政空间" })}</div><div className="v">{M(proj.fs - total)}</div><div className="s" style={{ color: overFs > 0 ? "var(--danger)" : "#166534" }}>{overFs > 0 ? tr({ en: "exceeds fiscal space", ar: "يتجاوز الحيز", zh: "超出财政空间" }) : tr({ en: "within fiscal space", ar: "ضمن الحيز", zh: "在财政空间内" })}</div></div>
-    </div>
-
     <div className="wb-actbar"><span className="bp-agent wb-ab-agent">{tr({ en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "主动洞察智能体" })}</span>
       <div className="wb-ab-top"><div className="wb-ab-spark">✦</div><div className="wb-ab-tt">
-      <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">run #1508 · {tr({ en: "Market Trends + Budget Optimization + Proactive Insights", ar: "اتجاهات + تحسين + رؤى استباقية", zh: "市场趋势 + 预算优化 + 主动洞察智能体" })}</span></div>
-      <div className="wb-ab-insight"><Hi t={tr({ en: "Estimated **" + M(total) + "** " + (overCeiling > 0 ? "~~exceeds ceiling by " + M(overCeiling) + "~~ " : "") + "· **" + Math.round((total - bmTotal) / bmTotal * 100) + "%** vs market. " + (anomalies.length ? "**" + anomalies.length + " driver anomaly** (top +" + drivers.slice().sort((a, b) => b.dev - a.dev)[0].dev + "%). " : "No driver anomaly. "), ar: "التكلفة **" + M(total) + "** · **" + Math.round((total - bmTotal) / bmTotal * 100) + "%** مقابل السوق.", zh: "预估 **" + M(total) + "** " + (overCeiling > 0 ? "~~超上限 " + M(overCeiling) + "~~ " : "") + "· 高于市场 **" + Math.round((total - bmTotal) / bmTotal * 100) + "%**。" + (anomalies.length ? "**" + anomalies.length + " 项动因异常**(最高 +" + drivers.slice().sort((a, b) => b.dev - a.dev)[0].dev + "%)。" : "无动因异常。") })} /></div>
-      {(() => { const td = drivers.slice().sort((a, b) => b.dev - a.dev)[0]; return (<div className="wb-ab-pi"><span className="wb-ab-pi-ic">◈</span><span>{tr({ en: "Proactive Insights · 4-quarter trend: " + tr(td.cat) + " deviation is recurring, not one-off — flag for structural cost review; materials trend projected to persist next cycle.", ar: "رؤى استباقية · اتجاه 4 أرباع: انحراف " + tr(td.cat) + " متكرر وليس لمرة واحدة — يُوصى بمراجعة هيكلية للتكلفة.", zh: "主动洞察 · 近 4 季度趋势:「" + tr(td.cat) + "」偏差为反复出现(非一次性),建议进入结构性成本复核;建材涨价趋势预计延续至下一周期。" })}</span></div>); })()}
+      <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">{tr({ en: "Market Trends + Budget Optimization + Proactive Insights", ar: "اتجاهات + تحسين + رؤى", zh: "市场趋势 + 预算优化 + 主动洞察智能体" })}</span></div>
+      <div className="wb-ab-insight"><Hi t={tr({ en: "Reviewed **" + M(revTotal) + "** " + (overCeiling > 0 ? "~~exceeds allocation by " + M(overCeiling) + "~~ " : "· within allocation ") + "· bridge **" + (revTotal >= benchTotal ? "+" : "") + M(revTotal - benchTotal) + "** vs benchmark. " + (anomalies.length ? "**" + anomalies.length + " quantity anomaly** (top +" + drivers.slice().sort((a, b) => b.dev - a.dev)[0].dev + "%). " : "No quantity anomaly. "), ar: "المُراجَع **" + M(revTotal) + "** · الجسر **" + M(revTotal - benchTotal) + "** مقابل الأساس.", zh: "复核预估 **" + M(revTotal) + "** " + (overCeiling > 0 ? "~~超分配额 " + M(overCeiling) + "~~ " : "· 在分配额内 ") + "· 桥接 **" + (revTotal >= benchTotal ? "+" : "") + M(revTotal - benchTotal) + "** 对比基准。" + (anomalies.length ? "**" + anomalies.length + " 项工程量异常**(最高 +" + drivers.slice().sort((a, b) => b.dev - a.dev)[0].dev + "%)。" : "无工程量异常。") })} /></div>
+      {(() => { const td = drivers.slice().sort((a, b) => b.delta - a.delta)[0]; return (<div className="wb-ab-pi"><span className="wb-ab-pi-ic">◈</span><span>{tr({ en: "Proactive Insights · 4-quarter trend: " + tr(td.cat) + " is the largest positive contributor and recurring — flag for structural cost review; risk contingency was released this cycle.", ar: "رؤى استباقية · " + tr(td.cat) + " الأكبر مساهمةً.", zh: "主动洞察 · 近 4 季度趋势:「" + tr(td.cat) + "」为最大正向贡献且反复出现,建议结构性成本复核;本周期已释放部分风险准备金。" })}</span></div>); })()}
     </div></div>
       <div className="wb-ab-rows"><div className="wb-ab-col"><div className="wb-ab-h">⚐ {tr({ en: "RECOMMENDED · click to apply", ar: "موصى", zh: "建议 · 提示(点击应用)" })}</div>
         <div className="wb-sugs">
-          <button className="wb-sug" disabled={anomalies.length === 0} onClick={optimize}><span className="pr">1</span><span className="wb-sug-tx"><b>{anomalies.length === 0 ? "✓ " + tr({ en: "Drivers aligned to market", ar: "موائمة", zh: "动因已对齐市场" }) : tr({ en: "Align the top driver to market benchmark", ar: "مواءمة المحرك", zh: "把最高动因对齐市场基准" })}</b></span></button>
-          <button className="wb-sug" onClick={() => { setStatus("info"); setDone(pcT("Info requested · BOM & unit-rate evidence returned to " + tr(proj.dept), "طُلبت الأدلة", "已请补充 · BOM 与单价佐证退回 " + tr(proj.dept))); }}><span className="pr">2</span><span className="wb-sug-tx"><b>{tr({ en: "Request supporting BOM & unit-rate evidence", ar: "طلب أدلة", zh: "请补充 BOM 与单价佐证" })}</b></span></button></div>
+          <button className="wb-sug" disabled={anomalies.length === 0} onClick={optimize}><span className="pr">1</span><span className="wb-sug-tx"><b>{anomalies.length === 0 ? "✓ " + tr({ en: "Drivers aligned to market", ar: "موائمة", zh: "动因已对齐市场" }) : tr({ en: "Align the top quantity driver to market", ar: "مواءمة الكمية", zh: "把最高工程量动因对齐市场基准" })}</b></span></button>
+          <button className="wb-sug" onClick={() => { setStatus("info"); setDone(pcT("Info requested · quantity & unit-rate evidence returned to " + tr(proj.dept), "طُلبت الأدلة", "已请补充 · 工程量与单价佐证退回 " + tr(proj.dept))); }}><span className="pr">2</span><span className="wb-sug-tx"><b>{tr({ en: "Request supporting quantity & unit-rate evidence", ar: "طلب أدلة", zh: "请补充工程量与单价佐证" })}</b></span></button></div>
         {done && <div className="wb-ab-done">✓ {tr(done)}</div>}</div>
       </div>
     </div>
 
-    <div className="uf-sec"><div className="uf-h">{tr({ en: "Cost waterfall · baseline → drivers → estimate", ar: "شلال التكلفة", zh: "成本瀑布图 · 基线 → 动因 → 预估" })}</div>
-      <div className="pc-wf">{(() => { const max = Math.max(total, proj.ceiling) * 1.05; let cum = 0; return drivers.map((d) => { const left = cum / max * 100; const wdt = d.a / max * 100; cum += d.a; return (<div className="pc-wf-row" key={d.id}><span className="pc-wf-lab">{tr(d.cat)}</span><div className="pc-wf-track"><span className={"pc-wf-seg" + (d.anom ? " anom" : d.dev > 8 ? " over" : "")} style={{ marginInlineStart: left + "%", width: wdt + "%" }} /></div><span className="pc-wf-val">{M(d.a)}{d.dev !== 0 && <em className={d.dev > 8 ? "up" : ""}> {d.dev > 0 ? "+" : ""}{d.dev}%</em>}</span></div>); }); })()}
-        <div className="pc-wf-tot"><span className="pc-wf-lab">{tr({ en: "Total estimate", ar: "الإجمالي", zh: "预估合计" })}</span><div className="pc-wf-track"><span className="pc-wf-ceil" style={{ insetInlineStart: proj.ceiling / (Math.max(total, proj.ceiling) * 1.05) * 100 + "%" }} /></div><span className="pc-wf-val"><b>{M(total)}</b> / {M(proj.ceiling)}</span></div>
+    <div className="bp-kpis pc-kpis">
+      <div className="bp-kpi"><div className="l">{tr({ en: "Total project budget", ar: "إجمالي ميزانية المشروع", zh: "项目预算总额" })}</div><div className="v">{M(proj.ceiling)}</div><div className="s">{tr({ en: "approved cap", ar: "الحد المعتمد", zh: "已批准上限" })}</div></div>
+      <div className={"bp-kpi" + (overCeiling > 0 ? "" : " ok")}><div className="l">{tr({ en: "Consumed ratio", ar: "نسبة الاستهلاك", zh: "已消耗比例" })}</div><div className="v">{consumed}%</div><div className="s" style={{ color: overCeiling > 0 ? "var(--danger)" : "#166534" }}>{overCeiling > 0 ? "+" + M(overCeiling) + " " + tr({ en: "over budget", ar: "فوق الميزانية", zh: "超预算" }) : tr({ en: "within budget", ar: "ضمن الميزانية", zh: "在预算内" })}</div></div>
+      <div className="bp-kpi"><div className="l">{tr({ en: "Estimated cost (original)", ar: "التكلفة المقدرة (الأصلية)", zh: "预估成本(原始)" })}</div><div className="v">{M(origTotal)}</div><div className="s">{tr({ en: "as submitted · fixed", ar: "كما قُدّم · ثابت", zh: "原始提交 · 不可变" })}</div></div>
+      <div className="bp-kpi hl"><div className="l">{tr({ en: "REVIEWED ESTIMATE", ar: "التقدير المُراجَع", zh: "复核预估 REVIEWED ESTIMATE" })}</div><div className="v">{M(revTotal)}</div><div className="s">{deltaRev !== 0 ? <b style={{ color: deltaRev > 0 ? "var(--danger)" : "#166534" }}>{(deltaRev > 0 ? "+" : "") + M(deltaRev)} {tr({ en: "vs original", ar: "مقابل الأصلي", zh: "对比原始" })}</b> : tr({ en: "= original", ar: "= الأصلي", zh: "= 原始" })} · {tr({ en: "cascades from drivers", ar: "يتغير مع المحركات", zh: "随动因级联变化" })}</div></div>
+    </div>
+
+    <div className="uf-sec pc-reqsec"><div className="uf-h">{tr({ en: "Project request (Qaboul)", ar: "طلب المشروع (قبول)", zh: "项目请求(Qaboul)" })}
+      <span className="pc-sel-right"><span className="pc-tag">Qaboul {proj.id}</span> <b>{tr(proj.name)}</b> · {tr(proj.amana)} <span className={"pc-status " + (status || (canApprove ? "ok" : "wait"))}>{statusLab}</span></span></div>
+      <div className="pc-se">
+        <div className="pc-se-bar"><span className="pc-se-ic">🔍</span><input className="pc-se-input" value={q} onChange={e => setQ(e.target.value)} placeholder={tr({ en: "Search project / Amana / request no…", ar: "ابحث عن مشروع / أمانة / رقم…", zh: "搜索项目 / Amana / 工单号…" })} />{q && <button className="pc-se-x" onClick={() => setQ("")}>✕</button>}</div>
+        {q ? <div className="pc-results">{filtered.map(p => (<button key={p.id} className={"pc-res-item" + (p.id === pid ? " on" : "")} onClick={() => selectProj(p)}><span className="pc-pid">{p.id}</span><span className="pc-pn">{tr(p.name)} · {tr(p.amana)}</span><span className="pc-pc">{tr({ en: "ceiling", ar: "السقف", zh: "上限" })} {M(p.ceiling)}</span></button>))}
+          {filtered.length === 0 && <div className="uf-note">{tr({ en: "No match.", ar: "لا نتائج.", zh: "无匹配项。" })}</div>}</div>
+          : <div className="pc-hot"><div className="pc-hot-h">🔥 {tr({ en: "Trending requests", ar: "الأكثر طلباً", zh: "热搜项目" })}</div><div className="pc-hot-chips">{PC_PROJECTS.map((p, i) => (<button key={p.id} className={"pc-hot-chip" + (p.id === pid ? " on" : "")} onClick={() => selectProj(p)}><span className="pc-hot-rk">{i + 1}</span><span className="pc-hot-tx"><b>{tr(p.name)}</b><span>{p.id} · {tr(p.amana)}</span></span></button>))}</div></div>}
       </div>
     </div>
 
-    <div className="bp-grid2">
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Cost drivers · AI reasonableness", ar: "محركات التكلفة", zh: "成本动因表 · AI 合理性评分" })} <span className="bp-agent">Scenario Simulation Agent</span></div>
-        <table className="wb-table bp-table"><thead><tr><th>{tr({ en: "Driver", ar: "المحرك", zh: "动因" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Amount", ar: "المبلغ", zh: "金额" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Market", ar: "السوق", zh: "市场基准" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Dev", ar: "الانحراف", zh: "偏差" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "AI score", ar: "التقييم", zh: "AI 评分" })}</th></tr></thead>
-          <tbody>{drivers.map(d => (<tr key={d.id} className={d.anom ? "deficit" : ""}>
-            <td>{tr(d.cat)}<div className="pc-drv-u">{tr(d.unit)}</div></td>
-            <td className="bp-mono" style={{ textAlign: "end" }}><input className="bp-edit" value={d.a} onChange={e => { const v = parseInt(e.target.value); setAmt(a => ({ ...a, [d.id]: isNaN(v) ? 0 : v })); }} /></td>
-            <td className="bp-mono" style={{ textAlign: "end" }}>{d.bm}</td>
-            <td className="bp-mono" style={{ textAlign: "end", fontWeight: 800, color: d.dev > 8 ? "var(--danger)" : "#166534" }}>{d.dev > 0 ? "+" : ""}{d.dev}%</td>
-            <td style={{ textAlign: "end" }}><span className={"pc-score " + (d.score >= 80 ? "good" : d.score >= 60 ? "mid" : "bad")}>{d.score}</span></td>
-          </tr>))}</tbody></table>
-        {anomalies.length > 0 && <div className="bp-defwarn">⚠ {anomalies.length} {tr({ en: "cost-driver anomaly detected.", ar: "شذوذ محرك.", zh: "项动因异常。" })}</div>}
-      </div>
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Market benchmark · deviation", ar: "معيار السوق", zh: "基准仪表盘 · 偏差雷达" })} <span className="bp-agent">Market Trends Agent</span></div>
-        <RC.ResponsiveContainer width="100%" height={230}><RC.RadarChart data={radar} outerRadius="72%"><RC.PolarGrid stroke="#e5e9f0" /><RC.PolarAngleAxis dataKey="k" tick={{ fontSize: 10, fill: "#64748b" }} /><RC.Radar name="market" dataKey="mkt" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.12} /><RC.Radar name="project" dataKey="proj" stroke="#1B8354" fill="#1B8354" fillOpacity={0.22} /></RC.RadarChart></RC.ResponsiveContainer>
-        <div className="uf-note">{tr({ en: "Project drivers vs market benchmark (=100).", ar: "المحركات مقابل السوق (=100).", zh: "项目动因 vs 市场基准(=100)。突出灰网之外的即高于市场。" })}</div>
+    <div className="uf-sec"><div className="uf-h">{tr({ en: "Cost variance bridge · benchmark → driver deltas → reviewed estimate", ar: "جسر تباين التكلفة", zh: "成本瀑布图 · 市场基准 → 各动因增量 → 复核预估" })} <span className="bp-agent">Market Trends Agent</span></div>
+      <div className="pc-wf-sub">{tr({ en: "Benchmark", ar: "الأساس", zh: "市场基准" })} {M(benchTotal)} → {tr({ en: "Current estimate", ar: "التقدير الحالي", zh: "复核预估" })} {M(revTotal)}</div>
+      <RC.ResponsiveContainer width="100%" height={300}><RC.BarChart data={wf} margin={{ top: 18, right: 16, left: 4, bottom: 46 }}>
+        <RC.CartesianGrid strokeDasharray="3 3" stroke="#eef2f4" vertical={false} />
+        <RC.XAxis dataKey="name" tick={{ fontSize: 9.5, fill: "#64748b" }} interval={0} angle={-16} textAnchor="end" height={54} />
+        <RC.YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} width={42} />
+        <RC.Tooltip cursor={{ fill: "rgba(27,131,84,.05)" }} formatter={(v, n, p) => [(p.payload.kind === "up" ? "+" : p.payload.kind === "down" ? "−" : "") + "SAR " + Math.abs(p.payload.tip) + "M", p.payload.kind === "base" ? tr({ en: "benchmark", ar: "أساس", zh: "基准" }) : p.payload.kind === "total" ? tr({ en: "estimate", ar: "تقدير", zh: "预估" }) : tr({ en: "contribution", ar: "مساهمة", zh: "贡献" })]} />
+        <RC.ReferenceLine y={proj.ceiling} stroke="#c53b32" strokeDasharray="5 4" label={{ value: tr({ en: "allocation", ar: "التخصيص", zh: "分配额" }) + " " + M(proj.ceiling), position: "insideTopRight", fontSize: 10, fill: "#c53b32" }} />
+        <RC.Bar dataKey="base" stackId="w" fill="transparent" isAnimationActive={false} />
+        <RC.Bar dataKey="val" stackId="w" radius={[3, 3, 0, 0]} isAnimationActive={false}>{wf.map((e, i) => <RC.Cell key={i} fill={wfColor(e.kind)} />)}</RC.Bar>
+      </RC.BarChart></RC.ResponsiveContainer>
+      <div className="pc-wf-leg"><span><i style={{ background: "#3b6ea5" }} />{tr({ en: "Benchmark", ar: "الأساس", zh: "市场基准" })}</span><span><i style={{ background: "#e0524a" }} />{tr({ en: "adds to cost (+)", ar: "يزيد (+)", zh: "增加成本 (+)" })}</span><span><i style={{ background: "#1B8354" }} />{tr({ en: "reduces cost (−)", ar: "يقلل (−)", zh: "降低成本 (−)" })}</span><span><i style={{ background: "#0b5a37" }} />{tr({ en: "reviewed estimate", ar: "التقدير", zh: "复核预估" })}</span></div>
+    </div>
+
+    <div className="bp-grid2 pc-row2">
+    <div className="uf-sec pc-drv-col"><div className="uf-h">{tr({ en: "Cost drivers · variance bridge & AI reasonableness", ar: "محركات التكلفة", zh: "成本动因表 · 差异桥接与 AI 合理性" })} <span className="bp-hint" style={{ marginInlineStart: 0 }}>{tr({ en: "edit quantity to re-estimate", ar: "حرّر الكمية لإعادة التقدير", zh: "编辑数量即重算估算额" })}</span> <span className="bp-agent" style={{ marginInlineStart: "auto" }}>Scenario Simulation Agent</span></div>
+      <div className="pc-drv-scroll"><table className="wb-table bp-table pc-drv-tbl"><thead><tr>
+        <th style={{ textAlign: "start" }}>{tr({ en: "Element", ar: "العنصر", zh: "要素" })}</th>
+        <th style={{ textAlign: "start" }}>{tr({ en: "Quantity", ar: "الكمية", zh: "数量" })}</th>
+        <th style={{ textAlign: "start" }}>{tr({ en: "Unit rate", ar: "سعر الوحدة", zh: "单价" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "Estimate", ar: "التقدير", zh: "估算额" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "Benchmark", ar: "الأساس", zh: "市场基准" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "Contribution / consumption", ar: "المساهمة / الاستهلاك", zh: "贡献 / 消耗" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "Result value", ar: "القيمة الناتجة", zh: "优值" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "YoY", ar: "سنوي", zh: "历史同比" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "Dev", ar: "الانحراف", zh: "偏差" })}</th>
+        <th style={{ textAlign: "end" }}>{tr({ en: "AI score", ar: "التقييم", zh: "AI 评分" })}</th>
+        <th style={{ minWidth: 200 }}>{tr({ en: "AI summary", ar: "ملخص الذكاء", zh: "AI 摘要说明" })}</th></tr></thead>
+        <tbody>{drivers.map(d => (<tr key={d.id} className={d.anom ? "deficit" : ""}>
+          <td>{tr(d.cat)}</td>
+          <td className="pc-qty-td"><span className="pc-qty"><input className="bp-edit pc-qty-in" value={d.qv} onChange={e => { const v = parseFloat(e.target.value); setQty(a => ({ ...a, [d.id]: isNaN(v) ? 0 : v })); }} /><i>{tr(d.unit)}</i></span></td>
+          <td className="bp-mono pc-rate-td">{d.rate} <span className="pc-u">/{tr(d.unit)}</span></td>
+          <td className="bp-mono" style={{ textAlign: "end", fontWeight: 800 }}>{d.cur}{d.cur !== d.oc && <em className={d.cur > d.oc ? "pc-dn" : "pc-up"}> {d.cur > d.oc ? "+" : ""}{d.cur - d.oc}</em>}</td>
+          <td className="bp-mono" style={{ textAlign: "end" }}>{d.base}</td>
+          <td className="bp-mono" style={{ textAlign: "end", fontWeight: 800, color: d.delta > 0 ? "#c53b32" : d.delta < 0 ? "#166534" : "#64748b" }}>{d.delta > 0 ? "+" : ""}{d.delta}</td>
+          <td className="bp-mono" style={{ textAlign: "end", color: "#085D3A", fontWeight: 800 }}>{d.cur}</td>
+          <td className="bp-mono" style={{ textAlign: "end", color: d.yoy > 0 ? "#c53b32" : d.yoy < 0 ? "#166534" : "#64748b" }}>{d.yoy > 0 ? "+" : ""}{d.yoy}%</td>
+          <td className="bp-mono" style={{ textAlign: "end", fontWeight: 800, color: d.dev > 8 ? "var(--danger)" : d.dev < 0 ? "#166534" : "#64748b" }}>{d.dev > 0 ? "+" : ""}{d.dev}%</td>
+          <td style={{ textAlign: "end" }}><span className={"pc-score " + (d.score >= 80 ? "good" : d.score >= 60 ? "mid" : "bad")}>{d.score}</span></td>
+          <td className="pc-ai"><span className="pc-ai-tx">{tr(d.note)}</span></td>
+        </tr>))}</tbody>
+        <tfoot><tr className="pc-drv-foot"><td>{tr({ en: "Total", ar: "الإجمالي", zh: "合计" })}</td><td /><td /><td className="bp-mono" style={{ textAlign: "end", fontWeight: 800 }}>{revTotal}</td><td className="bp-mono" style={{ textAlign: "end" }}>{benchTotal}</td><td className="bp-mono" style={{ textAlign: "end", fontWeight: 800, color: revTotal - benchTotal > 0 ? "var(--danger)" : "#166534" }}>{revTotal - benchTotal > 0 ? "+" : ""}{revTotal - benchTotal}</td><td className="bp-mono" style={{ textAlign: "end", color: "#085D3A", fontWeight: 800 }}>{revTotal}</td><td /><td /><td /><td /></tr></tfoot>
+      </table></div>
+      {anomalies.length > 0 && <div className="bp-defwarn">⚠ {anomalies.length} {tr({ en: "cost-driver anomaly detected (estimate ≥25% over benchmark).", ar: "شذوذ محرك.", zh: "项动因异常(估算额高于基准 ≥25%)。" })}</div>}
+    </div>
+      <div className="uf-sec pc-radar-col"><div className="uf-h">{tr({ en: "Market benchmark · deviation radar", ar: "معيار السوق", zh: "基准仪表盘 · 偏差雷达" })} <span className="bp-agent">Market Trends Agent</span></div>
+        <RC.ResponsiveContainer width="100%" height={250}><RC.RadarChart data={radar} outerRadius="70%"><RC.PolarGrid stroke="#e5e9f0" /><RC.PolarAngleAxis dataKey="k" tick={{ fontSize: 9.5, fill: "#64748b" }} /><RC.Radar name="market" dataKey="mkt" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.12} /><RC.Radar name="project" dataKey="proj" stroke="#1B8354" fill="#1B8354" fillOpacity={0.22} /></RC.RadarChart></RC.ResponsiveContainer>
+        <div className="uf-note">{tr({ en: "Each driver's estimate vs benchmark (=100); outside the grey web = over market. Updates live with quantity edits.", ar: "كل محرك مقابل الأساس (=100).", zh: "各动因估算额 vs 市场基准(=100);超出灰网即高于市场,随数量编辑实时联动。" })}</div>
       </div>
     </div>
 
-    <div className="uf-sec"><div className="uf-h">{tr({ en: "Tri-party review", ar: "المراجعة الثلاثية", zh: "三方审查(并行意见)" })} <span className="bp-hint">{tr({ en: "Planning owns the financial verdict; technical & compliance are received inputs", ar: "التخطيط يملك القرار المالي؛ الفني والامتثال مدخلات", zh: "财务裁定由规划部本方决定;技术与合规为收到的意见" })}</span></div>
+    <div className="uf-sec"><div className="uf-h">{tr({ en: "Tri-party review", ar: "المراجعة الثلاثية", zh: "三方审查(并行意见)" })} <span className="bp-hint">{tr({ en: "Planning owns the financial verdict; technical & compliance are received inputs", ar: "التخطيط يملك القرار المالي", zh: "财务裁定由规划部本方决定;技术与合规为收到的意见" })}</span></div>
       <div className="pc-rev">
-        <div className="pc-rev-card feasible"><div className="pc-rev-h"><b>{tr({ en: "Technical review", ar: "المراجعة الفنية", zh: "技术评审" })}</b><span className="pc-rev-b feasible">{tr(PC_REVS.feasible)}</span></div><div className="pc-rev-src">{tr({ en: "received · ", ar: "وارد · ", zh: "收到 · " })}{tr(proj.dept)}</div><div className="pc-rev-n">{tr({ en: "Design & buildability validated by the applicant.", ar: "التصميم سليم من مقدّم الطلب.", zh: "设计与可施工性已由申请方核验。" })}</div></div>
-        <div className={"pc-rev-card own " + finVal}><div className="pc-rev-h"><b>{tr({ en: "Financial review", ar: "المراجعة المالية", zh: "财务评审" })}</b><select className="pc-rev-sel" value={finVal} onChange={e => setFinOv(e.target.value)}>{Object.keys(PC_REVS).map(k => <option key={k} value={k}>{tr(PC_REVS[k])}</option>)}</select></div><div className="pc-rev-src own">{tr({ en: "Planning Dept · your verdict · AI suggests: ", ar: "التخطيط · قرارك · اقتراح الذكاء: ", zh: "规划部 · 本方裁定 · AI 建议: " })}<b>{tr(PC_REVS[finSuggest])}</b></div><div className="pc-rev-n">{finSuggest === "reject" ? tr({ en: "Over ceiling / fiscal space or driver anomaly.", ar: "فوق السقف.", zh: "超上限/财政空间或动因异常。" }) : tr({ en: "Within ceiling & fiscal space.", ar: "ضمن السقف.", zh: "在上限与财政空间内。" })}</div></div>
+        <div className="pc-rev-card feasible"><div className="pc-rev-h"><b>{tr({ en: "Technical review", ar: "المراجعة الفنية", zh: "技术评审" })}</b><span className="pc-rev-b feasible">{tr(PC_REVS.feasible)}</span></div><div className="pc-rev-src">{tr({ en: "received · ", ar: "وارد · ", zh: "收到 · " })}{tr(proj.dept)}</div><div className="pc-rev-n">{tr({ en: "Design & buildability validated by the applicant.", ar: "التصميم سليم.", zh: "设计与可施工性已由申请方核验。" })}</div></div>
+        <div className={"pc-rev-card own " + finVal}><div className="pc-rev-h"><b>{tr({ en: "Financial review", ar: "المراجعة المالية", zh: "财务评审" })}</b><select className="pc-rev-sel" value={finVal} onChange={e => setFinOv(e.target.value)}>{Object.keys(PC_REVS).map(k => <option key={k} value={k}>{tr(PC_REVS[k])}</option>)}</select></div><div className="pc-rev-src own">{tr({ en: "Planning Dept · your verdict · AI suggests: ", ar: "التخطيط · قرارك · اقتراح: ", zh: "规划部 · 本方裁定 · AI 建议: " })}<b>{tr(PC_REVS[finSuggest])}</b></div><div className="pc-rev-n">{finSuggest === "reject" ? tr({ en: "Over allocation / fiscal space or driver anomaly.", ar: "فوق التخصيص.", zh: "超分配额/财政空间或动因异常。" }) : tr({ en: "Within allocation & fiscal space.", ar: "ضمن التخصيص.", zh: "在分配额与财政空间内。" })}</div></div>
         <div className="pc-rev-card cond"><div className="pc-rev-h"><b>{tr({ en: "Compliance review", ar: "مراجعة الامتثال", zh: "合规评审" })}</b><span className="pc-rev-b cond">{tr(PC_REVS.cond)}</span></div><div className="pc-rev-src">{tr({ en: "received · Compliance / Audit", ar: "وارد · الامتثال", zh: "收到 · 合规/审计方" })}</div><div className="pc-rev-n">{tr({ en: "Procurement & BOM per policy · pending unit-rate evidence.", ar: "وفق السياسة.", zh: "采购与 BOM 合规 · 待单价佐证。" })}</div></div>
       </div>
-      {(finVal === "reject") && <div className="bp-defwarn">⚠ {tr({ en: "Conflict: applicant’s technical review says feasible, but Planning’s financial verdict is not — resolve the driver anomaly / over-budget before approval.", ar: "تعارض بين الفني والمالي.", zh: "矛盾:申请方技术评审「可行」,但规划部财务裁定「不可行」—— 审批前需先消解动因异常/超预算。" })}</div>}
+      {(finVal === "reject") && <div className="bp-defwarn">⚠ {tr({ en: "Conflict: applicant says feasible, but Planning's financial verdict is not — resolve the driver anomaly / over-budget before approval.", ar: "تعارض.", zh: "矛盾:申请方技术评审「可行」,但规划部财务裁定「不可行」—— 审批前需先消解动因异常/超预算。" })}</div>}
     </div>
 
     <div className="uf-sec bp-actions"><div className="uf-h">{tr({ en: "Decision", ar: "القرار", zh: "审批操作" })}</div>
       {status ? <div className="bp-next"><div className="bp-next-h">{status === "approve" ? "✓ " + tr({ en: "Approved", ar: "معتمد", zh: "已批准" }) : status === "reject" ? "✕ " + tr({ en: "Rejected", ar: "مرفوض", zh: "已驳回" }) : "✎ " + tr({ en: "Info requested", ar: "طُلبت معلومات", zh: "已请求补充信息" })}</div>
-        <div className="bp-next-b">{tr(status === "approve" ? { en: "Cost estimate approved · routed to budget commitment for " + tr(proj.amana) + " (audit-logged).", ar: "اعتُمد · تحويل للالتزام.", zh: "成本估算已批准 · 转入 " + tr(proj.amana) + " 预算承诺(已写审计)。" } : status === "reject" ? { en: "Returned to Qaboul with reasons; applicant may resubmit.", ar: "أُعيد لقبول.", zh: "附理由退回 Qaboul,申请部门可重新提交。" } : { en: "BOM & unit-rate evidence requested from " + tr(proj.dept) + " via Qaboul.", ar: "طُلبت الأدلة.", zh: "已通过 Qaboul 向 " + tr(proj.dept) + " 索取 BOM 与单价佐证。" })}</div>
+        <div className="bp-next-b">{tr(status === "approve" ? { en: "Reviewed estimate " + M(revTotal) + " (delta vs allocation " + (deltaAlloc >= 0 ? "+" : "") + M(deltaAlloc) + ") approved · routed to budget commitment for " + tr(proj.amana) + " (audit-logged).", ar: "اعتُمد التقدير المُراجَع.", zh: "复核预估 " + M(revTotal) + "(对比分配额 " + (deltaAlloc >= 0 ? "+" : "") + M(deltaAlloc) + ")已批准 · 转入 " + tr(proj.amana) + " 预算承诺(已写审计)。" } : status === "reject" ? { en: "Returned to Qaboul with reasons; applicant may resubmit.", ar: "أُعيد لقبول.", zh: "附理由退回 Qaboul,申请部门可重新提交。" } : { en: "Quantity & unit-rate evidence requested from " + tr(proj.dept) + " via Qaboul.", ar: "طُلبت الأدلة.", zh: "已通过 Qaboul 向 " + tr(proj.dept) + " 索取工程量与单价佐证。" })}</div>
         <button className="dw-btn" onClick={() => setStatus(null)}>↺ {tr({ en: "Reopen", ar: "إعادة فتح", zh: "重新评审" })}</button></div>
         : <React.Fragment>
+          <div className="pc-appr-sum"><div className="pc-appr-l">{tr({ en: "Approval object · reviewed estimate vs allocation", ar: "موضوع الاعتماد", zh: "审批对象 · 复核预估与分配额差额" })}</div>
+            <div className="pc-appr-row">
+              <div className="pc-appr-cell"><span>{tr({ en: "Project", ar: "المشروع", zh: "项目名" })}</span><b className="pc-appr-nm">{tr(proj.name)}</b></div>
+              <div className="pc-appr-cell"><span>{tr({ en: "REVIEWED ESTIMATE", ar: "التقدير المُراجَع", zh: "复核预估" })}</span><b>{M(revTotal)}</b></div>
+              <div className="pc-appr-cell"><span>{tr({ en: "DELTA VS ALLOCATION", ar: "الفرق مقابل التخصيص", zh: "对比分配额差额" })}</span><b className={deltaAlloc > 0 ? "up" : deltaAlloc < 0 ? "dn" : ""}>{deltaAlloc > 0 ? "+" : ""}{M(deltaAlloc)}</b></div>
+              <div className="pc-appr-cell"><span>{tr({ en: "REVIEW GATE", ar: "بوابة المراجعة", zh: "评审门" })}</span><b className={gateState === "ready" ? "gate-ok" : gateState === "cond" ? "gate-cond" : "gate-hold"}>{gateLab}</b></div></div></div>
           {!canApprove && <div className="bp-defwarn">⚠ {tr({ en: "Approval blocked — clear driver anomaly / over-budget first (use the recommendation above).", ar: "الاعتماد محظور.", zh: "批准被阻止 —— 需先消除动因异常/超预算(用上方建议一键对齐)。" })}</div>}
           <div className="bp-act-btns">
-            <button className="dw-btn primary" disabled={!canApprove} onClick={() => decide("approve")}>{tr({ en: "Approve", ar: "اعتماد", zh: "批准" })}</button>
+            <button className="dw-btn primary" disabled={!canApprove} onClick={() => decide("approve")}>{tr({ en: "Approve reviewed estimate", ar: "اعتماد التقدير المُراجَع", zh: "批准复核预估" })}</button>
             <button className="dw-btn danger" onClick={() => decide("reject")}>{tr({ en: "Reject", ar: "رفض", zh: "驳回" })}</button>
             <button className="dw-btn" onClick={() => decide("info")}>{tr({ en: "Request more info", ar: "طلب معلومات", zh: "请求补充信息" })}</button>
           </div></React.Fragment>}
@@ -6429,19 +6544,18 @@ function ProjectCostWorkbench() {
 const hsT = (en, ar, zh) => ({ en, ar, zh });
 const HS_TYPE = { cash: hsT("Cash", "نقدي", "现金"), kind: hsT("In-kind", "عيني", "实物"), mix: hsT("Mixed", "مزيج", "混合") };
 const HS_PROGRAMS = [
-  { id: "disabled", n: hsT("Disabled Citizens Housing", "إسكان ذوي الإعاقة", "残疾人住房"), t: "kind", bud: 480, ben: 6200, lift: 4.2, ret: 94, cov: 71 },
-  { id: "military", n: hsT("Military Personnel Housing", "إسكان العسكريين", "军人住房"), t: "cash", bud: 620, ben: 14200, lift: 3.1, ret: 88, cov: 82 },
-  { id: "widow", n: hsT("Widow & Divorcee Housing", "إسكان الأرامل والمطلقات", "寡妇与离异女性住房"), t: "mix", bud: 340, ben: 9800, lift: 3.6, ret: 90, cov: 66 },
-  { id: "lowinc", n: hsT("Low-Income Family Housing", "إسكان الأسر منخفضة الدخل", "低收入家庭住房"), t: "cash", bud: 910, ben: 28400, lift: 2.8, ret: 79, cov: 74 },
-  { id: "orphan", n: hsT("Orphan Housing Support", "دعم إسكان الأيتام", "孤儿住房支持"), t: "kind", bud: 180, ben: 3100, lift: 4.6, ret: 95, cov: 68 },
-  { id: "retiree", n: hsT("Retiree Housing", "إسكان المتقاعدين", "退休人员住房"), t: "cash", bud: 410, ben: 12600, lift: 2.4, ret: 85, cov: 70 },
-  { id: "largefam", n: hsT("Large-Family Housing", "إسكان الأسر الكبيرة", "多子女家庭住房"), t: "mix", bud: 560, ben: 17800, lift: 3.0, ret: 82, cov: 72 },
-  { id: "rural", n: hsT("Rural Housing Development", "تطوير الإسكان الريفي", "农村住房开发"), t: "kind", bud: 380, ben: 8400, lift: 3.8, ret: 87, cov: 58 },
-  { id: "firsthome", n: hsT("First-Home Buyer Subsidy", "دعم أول مسكن", "首套购房补贴"), t: "cash", bud: 1200, ben: 41000, lift: 2.2, ret: 76, cov: 80 },
-  { id: "land", n: hsT("Land Grant Program", "برنامج منح الأراضي", "土地授予计划"), t: "kind", bud: 300, ben: 5200, lift: 4.0, ret: 92, cov: 61 },
-  { id: "selfbuild", n: hsT("Self-Build Loan Support", "دعم قروض البناء الذاتي", "自建贷款支持"), t: "cash", bud: 520, ben: 15400, lift: 2.6, ret: 81, cov: 69 },
-  { id: "rental", n: hsT("Rental Assistance", "مساعدة الإيجار", "租房补贴"), t: "cash", bud: 300, ben: 9800, lift: 1.4, ret: 62, cov: 77 },
-  { id: "relief", n: hsT("Emergency / Relief Housing", "الإسكان الإغاثي", "应急/救助住房"), t: "mix", bud: 150, ben: 4100, lift: 2.0, ret: 72, cov: 55 },
+  { id: "disabled", n: hsT("Disabled Citizens Housing", "إسكان ذوي الإعاقة", "残疾人住房"), t: "kind", bud: 480, ben: 6200, lift: 4.2, ret: 94, cov: 71, elig: 15 },
+  { id: "military", n: hsT("Military Personnel Housing", "إسكان العسكريين", "军人住房"), t: "cash", bud: 620, ben: 14200, lift: 3.1, ret: 88, cov: 82, elig: 18 },
+  { id: "lowinc", n: hsT("Low-Income Family Housing", "إسكان الأسر منخفضة الدخل", "低收入家庭住房"), t: "cash", bud: 910, ben: 28400, lift: 2.8, ret: 79, cov: 74, elig: 6 },
+  { id: "orphan", n: hsT("Orphan Housing Support", "دعم إسكان الأيتام", "孤儿住房支持"), t: "kind", bud: 180, ben: 3100, lift: 4.6, ret: 95, cov: 68, elig: 12 },
+  { id: "retiree", n: hsT("Retiree Housing", "إسكان المتقاعدين", "退休人员住房"), t: "cash", bud: 410, ben: 12600, lift: 2.4, ret: 85, cov: 70, elig: 9 },
+  { id: "largefam", n: hsT("Large-Family Housing", "إسكان الأسر الكبيرة", "多子女家庭住房"), t: "mix", bud: 560, ben: 17800, lift: 3.0, ret: 82, cov: 72, elig: 8 },
+  { id: "rural", n: hsT("Rural Housing Development", "تطوير الإسكان الريفي", "农村住房开发"), t: "kind", bud: 380, ben: 8400, lift: 3.8, ret: 87, cov: 58, elig: 7 },
+  { id: "firsthome", n: hsT("First-Home Buyer Subsidy", "دعم أول مسكن", "首套购房补贴"), t: "cash", bud: 1200, ben: 41000, lift: 2.2, ret: 76, cov: 80, elig: 14 },
+  { id: "land", n: hsT("Land Grant Program", "برنامج منح الأراضي", "土地授予计划"), t: "kind", bud: 300, ben: 5200, lift: 4.0, ret: 92, cov: 61, elig: 11 },
+  { id: "selfbuild", n: hsT("Self-Build Loan Support", "دعم قروض البناء الذاتي", "自建贷款支持"), t: "cash", bud: 520, ben: 15400, lift: 2.6, ret: 81, cov: 69, elig: 12 },
+  { id: "rental", n: hsT("Rental Assistance", "مساعدة الإيجار", "租房补贴"), t: "cash", bud: 300, ben: 9800, lift: 1.4, ret: 62, cov: 77, elig: 5 },
+  { id: "relief", n: hsT("Emergency / Relief Housing", "الإسكان الإغاثي", "应急/救助住房"), t: "mix", bud: 150, ben: 4100, lift: 2.0, ret: 72, cov: 55, elig: 4 },
 ];
 /* ======= UC-05 · Financial Scenario Simulation & Alternatives Comparison (决策沙盘 · BRD-faithful) ======= */
 const scT = (en, ar, zh) => ({ en, ar, zh });
@@ -6812,6 +6926,8 @@ function CommitmentForecastWorkbench() {
   const [findMsg, setFindMsg] = useState(null);
   const [qAppr, setQAppr] = useState("");
   const [qProc, setQProc] = useState("");
+  const [apprOnlyNoPlan, setApprOnlyNoPlan] = useState(false);
+  const [procOnlyHigh, setProcOnlyHigh] = useState(false);
   const B = (n) => "SAR " + n.toFixed(2) + "B";
   const goStory = (r) => { if (r === "plnforecast") return; setBackRoute("plnforecast"); if (r === "perf") { setPerfJump({ tab: "dash" }); setDeptSub("fpa"); } setRoute(r); };
   const { months, chart } = fcBuild(period, ctype, ap);
@@ -6833,6 +6949,8 @@ function CommitmentForecastWorkbench() {
   const procRows = FC_PROCESS.filter(c => (svcKey === "all" || c.svc === svcKey) && cmatch(c, qProc));
   const noPlan = apprRows.filter(c => !c.plan);
   const highImpact = procRows.filter(c => c.amount >= 0.30);
+  const apprShown = apprOnlyNoPlan ? noPlan : apprRows;
+  const procShown = procOnlyHigh ? highImpact : procRows;
   // BR-01 置信度 + 数据来源
   const dataSources = ["Etimad", "SAP", plansMode === "complete" ? "Payment Plans" : "Payment Plans(gap)", "Cost Drivers", "City Priorities", "Historical Data"];
   const idiqShare = FC_TYPES[3].amount / FC_TYPES.reduce((a, x) => a + x.amount, 0);
@@ -6936,17 +7054,17 @@ function CommitmentForecastWorkbench() {
     </div>
 
     <div className="bp-grid2">
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Approved contracts (existing)", ar: "العقود المعتمدة", zh: "已批准合同(确定义务)" })} <span className="bp-agent">from SAP</span> <span className="fc-hint">{apprRows.length}/{FC_APPROVED.length}</span></div>
+      <div className="uf-sec"><div className="uf-h">{tr({ en: "Approved contracts (existing)", ar: "العقود المعتمدة", zh: "已批准合同(确定义务)" })} <span className="bp-agent">from SAP</span> <span className="fc-hint">{apprShown.length}/{FC_APPROVED.length}</span></div>
         <div className="fc-search"><span className="fc-search-ic">🔍</span><input placeholder={tr({ en: "Search contract / ID…", ar: "بحث عن عقد / رقم…", zh: "搜索合同 / 编号…" })} value={qAppr} onChange={e => setQAppr(e.target.value)} />{qAppr && <button onClick={() => setQAppr("")}>✕</button>}</div>
-        {noPlan.length > 0 && <div className="fc-warn">⚠ {noPlan.length} {tr({ en: "approved contract(s) without a payment plan", ar: "عقود دون خطة دفع", zh: "个已批准合同缺少付款计划" })}</div>}
+        {noPlan.length > 0 && <button className={"fc-warn fc-warn-btn" + (apprOnlyNoPlan ? " on" : "")} onClick={() => setApprOnlyNoPlan(v => !v)}>⚠ {noPlan.length} {tr({ en: "approved contract(s) without a payment plan", ar: "عقود دون خطة دفع", zh: "个已批准合同缺少付款计划" })} <em>{apprOnlyNoPlan ? tr({ en: "· ✕ clear filter", ar: "· ✕ مسح", zh: "· ✕ 取消筛选" }) : tr({ en: "· click to filter", ar: "· انقر للتصفية", zh: "· 点击筛选" })}</em></button>}
         <div className="fc-tscroll"><table className="wb-table fc-ctable fc-stick"><thead><tr><th>{tr({ en: "Contract", ar: "العقد", zh: "合同" })}</th><th>{tr({ en: "Type", ar: "النوع", zh: "类型" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Amount", ar: "المبلغ", zh: "金额" })}</th><th>{tr({ en: "Plan", ar: "خطة", zh: "付款计划" })}</th></tr></thead>
-          <tbody>{apprRows.length ? apprRows.map(c => (<tr key={c.id} className={c.plan ? "" : "deficit"}><td><span className="fc-cid">{c.id}</span> {tr(c.n)}</td><td>{tName(c.type)}</td><td className="bp-mono" style={{ textAlign: "end" }}>{B(c.amount)}</td><td>{c.plan ? "✓" : <span style={{ color: "#c53b32", fontWeight: 700 }}>{tr({ en: "missing", ar: "مفقودة", zh: "缺失" })}</span>}</td></tr>)) : <tr><td colSpan={4} className="fc-norow">{tr({ en: "No matching contract found", ar: "لا عقد مطابق", zh: "未找到匹配合同" })}</td></tr>}</tbody></table></div>
+          <tbody>{apprShown.length ? apprShown.map(c => (<tr key={c.id} className={c.plan ? "" : "deficit"}><td><span className="fc-cid">{c.id}</span> {tr(c.n)}</td><td>{tName(c.type)}</td><td className="bp-mono" style={{ textAlign: "end" }}>{B(c.amount)}</td><td>{c.plan ? "✓" : <span style={{ color: "#c53b32", fontWeight: 700 }}>{tr({ en: "missing", ar: "مفقودة", zh: "缺失" })}</span>}</td></tr>)) : <tr><td colSpan={4} className="fc-norow">{tr({ en: "No matching contract found", ar: "لا عقد مطابق", zh: "未找到匹配合同" })}</td></tr>}</tbody></table></div>
       </div>
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Contracts under process (potential)", ar: "عقود قيد الإجراء", zh: "在途合同(概率化预期)" })} <span className="bp-agent">Financial Forecasting Agent</span> <span className="fc-hint">{procRows.length}/{FC_PROCESS.length}</span></div>
+      <div className="uf-sec"><div className="uf-h">{tr({ en: "Contracts under process (potential)", ar: "عقود قيد الإجراء", zh: "在途合同(概率化预期)" })} <span className="bp-agent">Financial Forecasting Agent</span> <span className="fc-hint">{procShown.length}/{FC_PROCESS.length}</span></div>
         <div className="fc-search"><span className="fc-search-ic">🔍</span><input placeholder={tr({ en: "Search contract / ID…", ar: "بحث عن عقد / رقم…", zh: "搜索合同 / 编号…" })} value={qProc} onChange={e => setQProc(e.target.value)} />{qProc && <button onClick={() => setQProc("")}>✕</button>}</div>
-        {highImpact.length > 0 && <div className="fc-warn amber">◭ {highImpact.length} {tr({ en: "contract(s) potentially high-impact", ar: "عالية الأثر", zh: "个合同潜在高影响" })}</div>}
+        {highImpact.length > 0 && <button className={"fc-warn amber fc-warn-btn" + (procOnlyHigh ? " on" : "")} onClick={() => setProcOnlyHigh(v => !v)}>◭ {highImpact.length} {tr({ en: "contract(s) potentially high-impact", ar: "عالية الأثر", zh: "个合同潜在高影响" })} <em>{procOnlyHigh ? tr({ en: "· ✕ clear filter", ar: "· ✕ مسح", zh: "· ✕ 取消筛选" }) : tr({ en: "· click to filter", ar: "· انقر للتصفية", zh: "· 点击筛选" })}</em></button>}
         <div className="fc-tscroll"><table className="wb-table fc-ctable fc-stick"><thead><tr><th>{tr({ en: "Contract", ar: "العقد", zh: "合同" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Amount", ar: "المبلغ", zh: "金额" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Convert prob.", ar: "احتمال", zh: "转化概率" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Expected", ar: "متوقع", zh: "概率期望" })}</th></tr></thead>
-          <tbody>{procRows.length ? procRows.map(c => (<tr key={c.id} className={c.amount >= 0.30 ? "focus-row" : ""}><td><span className="fc-cid">{c.id}</span> {tr(c.n)}<span className="fc-prob-tag">{tr({ en: "probabilistic", ar: "احتمالي", zh: "概率化" })}</span></td><td className="bp-mono" style={{ textAlign: "end" }}>{B(c.amount)}</td><td className="bp-mono" style={{ textAlign: "end" }}>{Math.round(c.prob * 100)}%</td><td className="bp-mono" style={{ textAlign: "end", fontWeight: 700 }}>{B(+(c.amount * c.prob).toFixed(2))}</td></tr>)) : <tr><td colSpan={4} className="fc-norow">{tr({ en: "No matching contract found", ar: "لا عقد مطابق", zh: "未找到匹配合同" })}</td></tr>}</tbody></table></div>
+          <tbody>{procShown.length ? procShown.map(c => (<tr key={c.id} className={c.amount >= 0.30 ? "focus-row" : ""}><td><span className="fc-cid">{c.id}</span> {tr(c.n)}<span className="fc-prob-tag">{tr({ en: "probabilistic", ar: "احتمالي", zh: "概率化" })}</span></td><td className="bp-mono" style={{ textAlign: "end" }}>{B(c.amount)}</td><td className="bp-mono" style={{ textAlign: "end" }}>{Math.round(c.prob * 100)}%</td><td className="bp-mono" style={{ textAlign: "end", fontWeight: 700 }}>{B(+(c.amount * c.prob).toFixed(2))}</td></tr>)) : <tr><td colSpan={4} className="fc-norow">{tr({ en: "No matching contract found", ar: "لا عقد مطابق", zh: "未找到匹配合同" })}</td></tr>}</tbody></table></div>
       </div>
     </div>
 
@@ -6988,44 +7106,64 @@ function CommitmentForecastWorkbench() {
 }
 function HousingSubsidyWorkbench() {
   const { tr, setRoute, setBackRoute, setDeptSub, setAlertsOpen, setPerfJump } = useStore();
-  const [kindShift, setKindShift] = useState(0);
-  const [covExp, setCovExp] = useState(0);
-  const [tighten, setTighten] = useState(0);
-  const [sel, setSel] = useState(null);
+  const [picked, setPicked] = useState([]);
+  const [wf, setWf] = useState({});
+  const [approveId, setApproveId] = useState(null);
+  const [cmpOpen, setCmpOpen] = useState(false);
   const [status, setStatus] = useState(null);
   const [done, setDone] = useState(null);
   const [findMsg, setFindMsg] = useState(null);
   const goStory = (r) => { if (r === "plnhousing") return; setBackRoute("plnhousing"); if (r === "perf") { setPerfJump({ tab: "dash" }); setDeptSub("fpa"); } setRoute(r); };
-  const benF = (1 + covExp / 100) * (1 - tighten / 100);
-  const costF = 1 - kindShift / 100 * 0.25;
-  const rows = HS_PROGRAMS.map(p => { const ben = Math.round(p.ben * benF); const bud = +(p.bud * benF * costF).toFixed(0); const cpb = +(bud * 1000 / (ben || 1)).toFixed(1); const value = +(p.lift * p.ret / cpb).toFixed(2); const poor = cpb > 40 && p.ret < 72; return { ...p, ben, bud, cpb, value, poor }; });
-  const totBud = rows.reduce((s, r) => s + r.bud, 0);
-  const totBen = rows.reduce((s, r) => s + r.ben, 0);
-  const avgCpb = +(totBud * 1000 / (totBen || 1)).toFixed(1);
-  const base = { bud: HS_PROGRAMS.reduce((s, p) => s + p.bud, 0), ben: HS_PROGRAMS.reduce((s, p) => s + p.ben, 0) };
-  // 敏感社会类别(性别相关项目)不进入 AI 主动推荐/标杆选择,仅作为数据保留在矩阵/散点中
-  const HS_SENS = ["widow"];
-  const recRows = rows.filter(r => !HS_SENS.includes(r.id));
-  const worst = recRows.slice().sort((a, b) => a.value - b.value)[0];
-  const poorList = recRows.filter(r => r.poor);
-  const highCost = recRows.slice().sort((a, b) => b.cpb - a.cpb)[0];
-  const bestVal = recRows.slice().sort((a, b) => b.value - a.value)[0];
-  const lowCov = rows.filter(r => r.cov < 60).sort((a, b) => a.cov - b.cov);
-  const cashLowRet = recRows.filter(r => r.t === "cash" && r.ret < 80).sort((a, b) => a.ret - b.ret);
-  const scatter = rows.map(r => ({ x: r.cpb, y: r.ret, z: r.ben, name: tr(r.n), id: r.id }));
+  const HS_WF0 = { kind: 0, cov: 0, tighten: 0 };
+  const getWf = (id) => wf[id] || HS_WF0;
+  const pm = (p, w) => {
+    const benF = (1 + w.cov / 100) * (1 - w.tighten / 100);
+    const costF = 1 - w.kind / 100 * 0.25;
+    const ben = Math.round(p.ben * benF);
+    const bud = +(p.bud * benF * costF).toFixed(0);
+    const cpb = +(bud * 1000 / (ben || 1)).toFixed(1);
+    const cov = Math.min(100, Math.round(p.cov + w.cov * 0.4));
+    const ret = Math.min(99, Math.round(p.ret + w.kind * 0.1));
+    const value = +(p.lift * ret / cpb).toFixed(2);
+    return { ...p, ben, bud, cpb, cov, ret, value, poor: cpb > 40 && ret < 72 };
+  };
   const M = (n) => "SAR " + (n >= 1000 ? (n / 1000).toFixed(2) + "B" : n.toFixed(0) + "M");
   const K = (n) => "SAR " + n.toFixed(1) + "K";
   const nfmt = (n) => n.toLocaleString("en-US");
+  const baseRows = HS_PROGRAMS.map(p => pm(p, HS_WF0));
+  const portRows = HS_PROGRAMS.map(p => pm(p, picked.includes(p.id) ? getWf(p.id) : HS_WF0));
+  const listRows = [...picked.map(id => portRows.find(r => r.id === id)).filter(Boolean), ...portRows.filter(r => !picked.includes(r.id))];
+  const totBud = portRows.reduce((s, r) => s + r.bud, 0);
+  const totBen = portRows.reduce((s, r) => s + r.ben, 0);
+  const avgCpb = +(totBud * 1000 / (totBen || 1)).toFixed(1);
+  const owLift = +(portRows.reduce((s, r) => s + r.lift * r.ben, 0) / (totBen || 1)).toFixed(1);
+  const base = { bud: baseRows.reduce((s, r) => s + r.bud, 0), ben: baseRows.reduce((s, r) => s + r.ben, 0) };
+  const baseAvg = +(base.bud * 1000 / base.ben).toFixed(1);
+  const baseOw = +(baseRows.reduce((s, r) => s + r.lift * r.ben, 0) / base.ben).toFixed(1);
+  const worst = baseRows.slice().sort((a, b) => a.value - b.value)[0];
+  const poorList = baseRows.filter(r => r.poor);
+  const highCost = baseRows.slice().sort((a, b) => b.cpb - a.cpb)[0];
+  const bestVal = baseRows.slice().sort((a, b) => b.value - a.value)[0];
+  const lowCov = baseRows.filter(r => r.cov < 60).sort((a, b) => a.cov - b.cov);
+  const cashLowRet = baseRows.filter(r => r.t === "cash" && r.ret < 80).sort((a, b) => a.ret - b.ret);
+  const scatter = portRows.map(r => ({ x: r.cpb, y: r.ret, z: r.ben, name: tr(r.n), id: r.id }));
+  const cmpRows = picked.map(id => pm(HS_PROGRAMS.find(p => p.id === id), getWf(id))).filter(Boolean);
+  const bestOf = (arr, k, dir) => { if (!arr.length) return null; return dir > 0 ? Math.max(...arr.map(x => x[k])) : Math.min(...arr.map(x => x[k])); };
+  const win = { cpb: bestOf(cmpRows, "cpb", -1), ret: bestOf(cmpRows, "ret", 1), cov: bestOf(cmpRows, "cov", 1), lift: bestOf(cmpRows, "lift", 1), value: bestOf(cmpRows, "value", 1), ben: bestOf(cmpRows, "ben", 1) };
+  const toggleProject = (id) => { setPicked(c => { if (c.includes(id)) { const nx = c.filter(x => x !== id); if (approveId === id) setApproveId(nx[0] || null); return nx; } if (c.length >= 3) return c; if (!approveId) setApproveId(id); return [...c, id]; }); };
+  const setWfVal = (id, key, v) => setWf(w => ({ ...w, [id]: { ...(w[id] || HS_WF0), [key]: v } }));
+  const applyRecAll = (patch, msg) => { setWf(w => { const n = { ...w }; picked.forEach(id => { n[id] = { ...(n[id] || HS_WF0), ...patch }; }); return n; }); setDone(msg); };
   const findings = [
-    { k: "anom", ic: "⚠", pid: worst.id, t: hsT("Retention anomaly", "شذوذ الاستبقاء", "留存异常"), d: hsT(tr(worst.n) + " · retention " + worst.ret + "% vs 84% avg — cost " + K(worst.cpb) + "/head", tr(worst.n) + " · الاستبقاء " + worst.ret + "% مقابل متوسط 84% — التكلفة " + K(worst.cpb) + "/مستفيد", tr(worst.n) + " · 留存 " + worst.ret + "% 低于均值 84% —— 人均 " + K(worst.cpb)) },
-    { k: "anom", ic: "◎", pid: highCost.id, t: hsT("Cost outlier", "قيمة شاذة", "成本离群"), d: hsT(tr(highCost.n) + " highest at " + K(highCost.cpb) + "/head — " + (highCost.t === "cash" ? "cash-based" : "in-kind"), tr(highCost.n) + " الأعلى عند " + K(highCost.cpb) + "/مستفيد — " + (highCost.t === "cash" ? "نقدي" : "عيني"), tr(highCost.n) + " 人均最高 " + K(highCost.cpb) + " —— " + (highCost.t === "cash" ? "现金型" : "实物型")) },
-    { k: "anom", ic: "▤", pid: (lowCov[0] || {}).id, t: hsT("Coverage gaps", "فجوات التغطية", "覆盖缺口"), d: hsT(lowCov.length + " program(s) below 60% coverage: " + lowCov.map(r => tr(r.n)).join(", "), lowCov.length + " برامج تغطيتها دون 60%: " + lowCov.map(r => tr(r.n)).join("، "), lowCov.length + " 个项目覆盖率低于 60%:" + lowCov.map(r => tr(r.n)).join("、")) },
-    { k: "opt", ic: "↺", apply: () => setKindShift(15), t: hsT("Cash→in-kind opportunity", "فرصة التحويل", "现金→实物机会"), d: hsT(cashLowRet.length + " cash program(s) retain <80% — in-kind lifts stickiness & value", cashLowRet.length + " برامج نقدية استبقاؤها <80% — العيني يرفع الالتزام والقيمة", cashLowRet.length + " 个现金型项目留存 <80%,转实物可提升黏性与效益") },
-    { k: "opt", ic: "★", pid: bestVal.id, t: hsT("Best-value model", "الأفضل قيمةً", "标杆项目"), d: hsT(tr(bestVal.n) + " best value (" + bestVal.value + ") — locate as replication model", tr(bestVal.n) + " أفضل قيمة (" + bestVal.value + ") — حدّده كنموذج للتكرار", tr(bestVal.n) + " 效益最优(" + bestVal.value + "),定位为复制标杆") },
+    { k: "anom", ic: "⚠", pid: worst.id, t: hsT("Retention anomaly", "شذوذ الاستبقاء", "留存异常"), d: hsT(tr(worst.n) + " · retention " + worst.ret + "% vs 84% avg — cost " + K(worst.cpb) + "/head", tr(worst.n) + " · الاستبقاء " + worst.ret + "%", tr(worst.n) + " · 留存 " + worst.ret + "% 低于均值 84% —— 人均 " + K(worst.cpb)) },
+    { k: "anom", ic: "◎", pid: highCost.id, t: hsT("Cost outlier", "قيمة شاذة", "成本离群"), d: hsT(tr(highCost.n) + " highest at " + K(highCost.cpb) + "/head", tr(highCost.n) + " الأعلى " + K(highCost.cpb), tr(highCost.n) + " 人均最高 " + K(highCost.cpb)) },
+    { k: "anom", ic: "▤", pid: (lowCov[0] || {}).id, t: hsT("Coverage gaps", "فجوات التغطية", "覆盖缺口"), d: hsT(lowCov.length + " program(s) below 60% coverage", lowCov.length + " برامج دون 60%", lowCov.length + " 个项目覆盖率低于 60%") },
+    { k: "opt", ic: "★", pid: bestVal.id, t: hsT("Best-value model", "الأفضل قيمةً", "标杆项目"), d: hsT(tr(bestVal.n) + " best value (" + bestVal.value + ")", tr(bestVal.n) + " أفضل قيمة", tr(bestVal.n) + " 效益最优(" + bestVal.value + ")") },
   ];
-  const decide = (d) => { setStatus(d); setDone(null); };
-  const applyKind = () => { setKindShift(15); setDone(hsT("Budget Optimization Agent · in-kind ratio +15pp — avg cost/beneficiary reduced, more beneficiaries reached", "زيادة العيني +15", "预算优化智能体 · 实物比例 +15pp —— 人均成本下降、覆盖受益人增加")); };
   const sqPrompts = [hsT("Which program has the worst cost-per-beneficiary value?", "أي برنامج الأسوأ؟", "哪个项目每受益人成本效益最差?"), hsT("What if we shift 15pp from cash to in-kind?", "ماذا لو زدنا العيني؟", "若现金转实物 15pp 会怎样?"), hsT("Compare disabled vs military housing per beneficiary", "قارن ذوي الإعاقة والعسكريين", "残疾人 vs 军人住房 人均成本对比")];
+  const apM = approveId ? pm(HS_PROGRAMS.find(p => p.id === approveId), getWf(approveId)) : null;
+  const apBase = approveId ? pm(HS_PROGRAMS.find(p => p.id === approveId), HS_WF0) : null;
+  const decide = (d) => { setStatus(d); setDone(null); };
+  const HS_SLIDERS = [["kind", hsT("Cash → In-kind", "نقدي ← عيني", "现金→实物"), 30, "+", "pp"], ["cov", hsT("Coverage +", "توسيع التغطية", "覆盖扩展"), 25, "+", "%"], ["tighten", hsT("Tighten eligibility", "تشديد الأهلية", "资格收紧"), 20, "−", "%"]];
   return (<div className="fade wb"><div className="card pad wb-frame">
     <SmartQueryFab scope={hsT("Scope: Housing Subsidy · FY2027 · read-only", "النطاق: الدعم السكني", "范围:住房补贴 · FY2027 · 只读")} prompts={sqPrompts} />
     <div className="card pad wb-head">
@@ -7034,67 +7172,90 @@ function HousingSubsidyWorkbench() {
       <div className="bp-wrap-story"><G02BusinessStoryline tr={tr} current="housing" navigate={goStory} /></div>
     </div>
 
-    <div className="bp-kpis">
-      <div className="bp-kpi"><div className="l">{tr({ en: "Total subsidy budget", ar: "إجمالي الدعم", zh: "补贴总预算" })}</div><div className="v">{M(totBud)}</div><div className="s">{HS_PROGRAMS.length} {tr({ en: "programs", ar: "برامج", zh: "个项目" })}{totBud !== base.bud ? " · " + (totBud > base.bud ? "+" : "") + M(totBud - base.bud) : ""}</div></div>
-      <div className="bp-kpi"><div className="l">{tr({ en: "Beneficiaries", ar: "المستفيدون", zh: "受益人数" })}</div><div className="v">{nfmt(totBen)}</div><div className="s">{totBen !== base.ben ? (totBen > base.ben ? "+" : "") + nfmt(totBen - base.ben) : tr({ en: "citizens supported", ar: "مواطن", zh: "名公民" })}</div></div>
-      <div className="bp-kpi"><div className="l">{tr({ en: "Avg cost / beneficiary", ar: "متوسط التكلفة", zh: "人均成本" })}</div><div className="v">{K(avgCpb)}</div><div className="s">{tr({ en: "total budget ÷ beneficiaries", ar: "الميزانية ÷ المستفيدين", zh: "总预算 ÷ 受益人" })}</div></div>
-      <div className="bp-kpi ok"><div className="l">{tr({ en: "Weighted ownership lift", ar: "رفع التملك", zh: "加权拥有率提升" })}</div><div className="v">+{(rows.reduce((s, r) => s + r.lift * r.ben, 0) / totBen).toFixed(1)} pp</div><div className="s">{tr({ en: "input → output", ar: "مدخل ← مخرج", zh: "投入 → 产出" })}</div></div>
-    </div>
-
     <div className="wb-actbar"><span className="bp-agent wb-ab-agent">{tr({ en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "主动洞察智能体" })}</span>
       <div className="wb-ab-top"><div className="wb-ab-spark">✦</div><div className="wb-ab-tt">
-      <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">run #1609 · {tr({ en: "anomaly detection + policy optimization", ar: "كشف الشذوذ + تحسين السياسة", zh: "异常检测 + 政策优化" })} · {HS_PROGRAMS.length} {tr({ en: "programs", ar: "برامج", zh: "项目" })}</span></div>
-      <div className="wb-ab-insight"><Hi t={tr({ en: "**" + M(totBud) + "** supports **" + nfmt(totBen) + "** beneficiaries at **" + K(avgCpb) + "**/head. " + (poorList.length ? "~~" + poorList.length + " program(s) show poor value~~ — **" + tr(worst.n) + "** costs " + K(worst.cpb) + "/head at only " + worst.ret + "% retention. " : "") + "Shifting cash → in-kind lifts input-output efficiency.", ar: "**" + M(totBud) + "** لـ **" + nfmt(totBen) + "** مستفيد. " + (poorList.length ? "**" + tr(worst.n) + "** قيمة ضعيفة. " : ""), zh: "**" + M(totBud) + "** 支持 **" + nfmt(totBen) + "** 名受益人,人均 **" + K(avgCpb) + "**。" + (poorList.length ? "~~" + poorList.length + " 个项目效益偏差~~ —— **" + tr(worst.n) + "** 人均 " + K(worst.cpb) + " 但留存仅 " + worst.ret + "%。" : "") + "把现金转向实物可提升投入产出效率。" })} /></div>
+      <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى الذكاء", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">{tr({ en: "anomaly detection + policy optimization", ar: "كشف الشذوذ + تحسين السياسة", zh: "异常检测 + 政策优化" })} · {HS_PROGRAMS.length} {tr({ en: "programs", ar: "برامج", zh: "项目" })}</span></div>
+      <div className="wb-ab-insight"><Hi t={tr({ en: "**" + M(totBud) + "** supports **" + nfmt(totBen) + "** beneficiaries at **" + K(avgCpb) + "**/head. " + (poorList.length ? "~~" + poorList.length + " program(s) show poor value~~ — **" + tr(worst.n) + "** costs " + K(worst.cpb) + "/head at only " + worst.ret + "% retention. " : "") + "Shifting cash → in-kind lifts input-output efficiency.", ar: "**" + M(totBud) + "** لـ **" + nfmt(totBen) + "** مستفيد.", zh: "**" + M(totBud) + "** 支持 **" + nfmt(totBen) + "** 名受益人,人均 **" + K(avgCpb) + "**。" + (poorList.length ? "~~" + poorList.length + " 个项目效益偏差~~ —— **" + tr(worst.n) + "** 人均 " + K(worst.cpb) + " 但留存仅 " + worst.ret + "%。" : "") + "把现金转向实物可提升投入产出效率。" })} /></div>
     </div></div>
       <div className="wb-ab-rows hs-rows">
-        <div className="wb-ab-col"><div className="wb-ab-h">◈ {tr({ en: "ANOMALY DETECTION & POLICY OPTIMIZATION", ar: "كشف الشذوذ وتحسين السياسة", zh: "异常检测与政策优化建议" })} <span className="hs-find-hint">{tr({ en: "click to locate / apply", ar: "انقر للتحديد / التطبيق", zh: "点击定位 / 应用" })}</span></div>
+        <div className="wb-ab-col"><div className="wb-ab-h">◈ {tr({ en: "ANOMALY DETECTION & POLICY OPTIMIZATION", ar: "كشف الشذوذ وتحسين السياسة", zh: "异常检测与政策优化建议" })} <span className="hs-find-hint">{tr({ en: "click to add to comparison", ar: "انقر للإضافة للمقارنة", zh: "点击加入比对" })}</span></div>
           <div className="hs-finds">{findings.map((f, i) => (
             <div key={i} className="hs-find-wrap">
-              <button className={"hs-find " + f.k + (sel && f.pid === sel ? " on" : "")} onClick={() => {
-                if (f.apply) { f.apply(); setFindMsg({ i, t: hsT("Applied to What-if · scenario recomputed ↑", "طُبّق على المحاكاة", "已应用到 What-if · 情景已重算 ↑") }); }
-                else if (f.pid) { setSel(f.pid); const pg = HS_PROGRAMS.find(p => p.id === f.pid); setFindMsg({ i, t: hsT("Located " + tr(pg.n) + " in matrix & scatter →", "حُدّد في المصفوفة والمبعثر", "已在对比矩阵与散点图高亮「" + tr(pg.n) + "」→") }); }
-              }}><span className="hs-find-ic">{f.ic}</span><div className="hs-find-tx"><b>{tr(f.t)} <span className={"hs-find-cta " + f.k}>{f.apply ? tr({ en: "apply", ar: "تطبيق", zh: "应用" }) : tr({ en: "locate", ar: "تحديد", zh: "定位" })}</span></b><span>{tr(f.d)}</span></div></button>
+              <button className={"hs-find " + f.k + (picked.includes(f.pid) ? " on" : "")} onClick={() => { if (f.pid) { if (!picked.includes(f.pid)) toggleProject(f.pid); setApproveId(f.pid); const pg = HS_PROGRAMS.find(p => p.id === f.pid); setFindMsg({ i, t: hsT("Added " + tr(pg.n) + " to comparison →", "أُضيف للمقارنة", "已把「" + tr(pg.n) + "」加入比对 →") }); } }}><span className="hs-find-ic">{f.ic}</span><div className="hs-find-tx"><b>{tr(f.t)} <span className={"hs-find-cta " + f.k}>{picked.includes(f.pid) ? tr({ en: "in comparison", ar: "مضاف", zh: "已在比对" }) : tr({ en: "＋ compare", ar: "قارن", zh: "＋ 比对" })}</span></b><span>{tr(f.d)}</span></div></button>
               {findMsg && findMsg.i === i && <div className="hs-find-done">✓ {tr(findMsg.t)}</div>}
             </div>))}</div>
         </div>
-        <div className="wb-ab-col"><div className="wb-ab-h">⚐ {tr({ en: "RECOMMENDED · click to apply", ar: "موصى", zh: "建议 · 点击应用到情景" })} <span className="hs-find-hint">{tr({ en: "cumulative · applies to What-if", ar: "تراكمي · يطبّق على المحاكاة", zh: "可多项叠加 · 作用于 What-if" })}</span></div>
+        <div className="wb-ab-col"><div className="wb-ab-h">⚐ {tr({ en: "RECOMMENDED · apply to compared", ar: "موصى", zh: "建议 · 应用到比对项目" })} <span className="hs-find-hint">{tr({ en: "sets What-if on all compared projects", ar: "على كل المقارنة", zh: "作用于比对框内所有项目" })}</span></div>
         <div className="wb-sugs hs-sugs">
-          <button className="wb-sug" disabled={kindShift >= 15} onClick={applyKind}><span className="pr">1</span><span className="wb-sug-tx"><b>{kindShift >= 15 ? "✓ " + tr({ en: "In-kind ratio raised +15pp", ar: "زيد العيني", zh: "实物比例已 +15pp" }) : tr({ en: "Raise in-kind ratio +15pp (better value)", ar: "زيادة العيني +15", zh: "提高实物比例 +15pp(提升效益)" })}</b></span></button>
-          <button className="wb-sug" disabled={covExp >= 15} onClick={() => { setCovExp(15); setDone(hsT("Coverage expanded +15% toward under-served programs", "توسيع التغطية", "已应用:覆盖率 +15%,向覆盖不足项目倾斜")); }}><span className="pr">2</span><span className="wb-sug-tx"><b>{covExp >= 15 ? "✓ " + tr({ en: "Coverage expanded +15%", ar: "وُسّعت التغطية", zh: "覆盖率已 +15%" }) : tr({ en: "Expand coverage +15% to close gaps (" + lowCov.length + " programs)", ar: "توسيع التغطية +15%", zh: "覆盖率 +15% 补缺口(" + lowCov.length + " 个项目)" })}</b></span></button>
-          <button className="wb-sug" disabled={kindShift >= 12 && covExp >= 10} onClick={() => { setKindShift(m => Math.max(m, 12)); setCovExp(m => Math.max(m, 10)); setDone(hsT("Recommended balanced scenario applied · in-kind +12pp & coverage +10%", "طُبّق السيناريو المتوازن", "已应用推荐平衡方案 · 实物 +12pp & 覆盖 +10%")); }}><span className="pr">3</span><span className="wb-sug-tx"><b>{kindShift >= 12 && covExp >= 10 ? "✓ " + tr({ en: "Balanced scenario applied", ar: "طُبّق المتوازن", zh: "推荐平衡方案已应用" }) : tr({ en: "Apply recommended balanced scenario (efficiency + reach)", ar: "تطبيق السيناريو المتوازن الموصى", zh: "应用推荐平衡方案(效率 + 覆盖)" })}</b></span></button></div>
+          <button className="wb-sug" disabled={!picked.length} onClick={() => applyRecAll({ kind: 15 }, hsT("In-kind +15pp applied to compared projects", "طُبّق", "已对比对项目应用:实物 +15pp"))}><span className="pr">1</span><span className="wb-sug-tx"><b>{tr({ en: "Raise in-kind ratio +15pp (better value)", ar: "زيادة العيني +15", zh: "提高实物比例 +15pp(提升效益)" })}</b></span></button>
+          <button className="wb-sug" disabled={!picked.length} onClick={() => applyRecAll({ cov: 15 }, hsT("Coverage +15% applied to compared projects", "طُبّق", "已对比对项目应用:覆盖 +15%"))}><span className="pr">2</span><span className="wb-sug-tx"><b>{tr({ en: "Expand coverage +15% to close gaps", ar: "توسيع التغطية +15%", zh: "覆盖率 +15% 补缺口" })}</b></span></button>
+          <button className="wb-sug" disabled={!picked.length} onClick={() => applyRecAll({ kind: 12, cov: 10 }, hsT("Balanced scenario applied to compared projects", "طُبّق المتوازن", "已对比对项目应用平衡方案"))}><span className="pr">3</span><span className="wb-sug-tx"><b>{tr({ en: "Apply recommended balanced scenario", ar: "تطبيق المتوازن", zh: "应用推荐平衡方案" })}</b></span></button></div>
         {done && <div className="wb-ab-done">✓ {tr(done)}</div>}</div>
       </div>
     </div>
 
-    <div className="uf-sec"><div className="uf-h">{tr({ en: "What-if · subsidy parameters", ar: "ماذا لو · معايير الدعم", zh: "What-if 面板 · 补贴参数" })} <span className="bp-agent">Scenario Simulation Agent · {tr({ en: "live", ar: "حي", zh: "实时" })}</span></div>
-      <div className="bp-slider"><span className="bp-slk">{tr({ en: "Cash → In-kind shift", ar: "تحويل نقدي ← عيني", zh: "现金 → 实物 转移" })}</span><input type="range" min="0" max="30" value={kindShift} onChange={e => setKindShift(+e.target.value)} /><span className="bp-slv">+{kindShift}pp</span></div>
-      <div className="bp-slider"><span className="bp-slk">{tr({ en: "Coverage expansion", ar: "توسيع التغطية", zh: "覆盖扩展" })}</span><input type="range" min="0" max="25" value={covExp} onChange={e => setCovExp(+e.target.value)} /><span className="bp-slv">+{covExp}%</span></div>
-      <div className="bp-slider"><span className="bp-slk">{tr({ en: "Eligibility tightening", ar: "تشديد الأهلية", zh: "资格门槛收紧" })}</span><input type="range" min="0" max="20" value={tighten} onChange={e => setTighten(+e.target.value)} /><span className="bp-slv">−{tighten}%</span></div>
-      <div className="hs-whatif">{tr({ en: "Impact vs base: budget " + (totBud >= base.bud ? "+" : "") + M(totBud - base.bud) + " · beneficiaries " + (totBen >= base.ben ? "+" : "") + nfmt(totBen - base.ben) + " · avg cost/head " + K(avgCpb), ar: "الأثر مقابل الأساس", zh: "对比基线影响:预算 " + (totBud >= base.bud ? "+" : "") + M(totBud - base.bud) + " · 受益人 " + (totBen >= base.ben ? "+" : "") + nfmt(totBen - base.ben) + " · 人均 " + K(avgCpb) })}</div>
+    <div className="bp-kpis">
+      <div className="bp-kpi"><div className="l">{tr({ en: "Total subsidy budget", ar: "إجمالي الدعم", zh: "补贴总预算" })}</div><div className="v">{M(totBud)}</div><div className="s">{HS_PROGRAMS.length} {tr({ en: "programs", ar: "برامج", zh: "个项目" })}{totBud !== base.bud ? " · " + (totBud > base.bud ? "+" : "") + M(totBud - base.bud) : ""}</div></div>
+      <div className="bp-kpi"><div className="l">{tr({ en: "Beneficiaries", ar: "المستفيدون", zh: "受益人数" })}</div><div className="v">{nfmt(totBen)}</div><div className="s">{totBen !== base.ben ? (totBen > base.ben ? "+" : "") + nfmt(totBen - base.ben) : tr({ en: "citizens supported", ar: "مواطن", zh: "名公民" })}</div></div>
+      <div className="bp-kpi"><div className="l">{tr({ en: "Avg cost / beneficiary", ar: "متوسط التكلفة", zh: "人均成本" })}</div><div className="v">{K(avgCpb)}</div><div className="s">{tr({ en: "total budget ÷ beneficiaries", ar: "الميزانية ÷ المستفيدين", zh: "总预算 ÷ 受益人" })}</div></div>
+      <div className="bp-kpi"><div className="l">{tr({ en: "Weighted ownership lift", ar: "رفع التملك", zh: "加权拥有率提升" })}</div><div className="v">+{owLift} pp</div><div className="s">{tr({ en: "input → output", ar: "مدخل ← مخرج", zh: "投入 → 产出" })}</div></div>
     </div>
 
-    <div className="bp-grid2">
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Program comparison matrix", ar: "مصفوفة المقارنة", zh: "项目对比矩阵" })} <span className="bp-hint">{tr({ en: "click a row to highlight in the scatter", ar: "انقر لتمييز", zh: "点击行在散点图高亮" })}</span></div>
-        <div style={{ maxHeight: 300, overflow: "auto" }}><table className="wb-table bp-table hs-mtx"><thead><tr><th>{tr({ en: "Program", ar: "البرنامج", zh: "项目" })}</th><th>{tr({ en: "Subsidy type", ar: "نوع الدعم", zh: "补贴类型" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Cost/ben", ar: "تكلفة/مستفيد", zh: "人均成本" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Retention", ar: "الاستبقاء", zh: "留存率" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Value", ar: "القيمة", zh: "效益" })}</th></tr></thead>
-          <tbody>{rows.map(r => (<tr key={r.id} className={(r.poor ? "deficit " : "") + (sel === r.id ? "bp-sel" : "")} style={{ cursor: "pointer" }} onClick={() => setSel(sel === r.id ? null : r.id)}>
-            <td>{tr(r.n)}</td><td><span className={"hs-type " + r.t}>{tr(HS_TYPE[r.t])}</span></td><td className="bp-mono" style={{ textAlign: "end" }}>{K(r.cpb)}</td><td className="bp-mono" style={{ textAlign: "end", color: r.ret < 72 ? "var(--danger)" : "#166534" }}>{r.ret}%</td><td className="bp-mono" style={{ textAlign: "end", fontWeight: 800 }}>{r.value}</td>
-          </tr>))}</tbody></table></div>
-      </div>
-      <div className="uf-sec"><div className="uf-h">{tr({ en: "Input–output scatter", ar: "مبعثر المدخل-المخرج", zh: "投入产出散点图" })}</div>
-        <RC.ResponsiveContainer width="100%" height={260}><RC.ScatterChart margin={{ top: 8, right: 12, bottom: 20, left: 0 }}><RC.CartesianGrid stroke="#eef1f6" /><RC.XAxis type="number" dataKey="x" name={tr({ en: "cost/head (K)", ar: "التكلفة", zh: "人均成本(K)" })} tick={{ fontSize: 10 }} label={{ value: tr({ en: "cost/head", ar: "التكلفة", zh: "人均成本" }), position: "insideBottom", offset: -8, fontSize: 10 }} /><RC.YAxis type="number" dataKey="y" name={tr({ en: "retention %", ar: "الاستبقاء", zh: "留存%" })} tick={{ fontSize: 10 }} domain={[55, 100]} /><RC.ZAxis type="number" dataKey="z" range={[60, 500]} /><RC.Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(v, n) => [v, n]} labelFormatter={() => ""} /><RC.Scatter data={scatter} fill="#1B8354" fillOpacity={0.55}>{scatter.map((e, i) => <RC.Cell key={i} fill={e.id === sel ? "#F8C630" : rows.find(r => r.id === e.id).poor ? "#e0524a" : "#1B8354"} />)}</RC.Scatter></RC.ScatterChart></RC.ResponsiveContainer>
-        <div className="uf-note">{tr({ en: "X = cost/beneficiary, Y = retention, bubble = beneficiaries. Bottom-right (high cost, low retention) = poor value.", ar: "س = التكلفة، ص = الاستبقاء، الحجم = المستفيدون.", zh: "X=人均成本,Y=留存率,气泡大小=受益人数。右下(高成本·低留存)=效益差。" })}</div>
-      </div>
+    <div className="uf-sec"><div className="uf-h">{tr({ en: "Program list", ar: "قائمة البرامج", zh: "项目列表" })} <span className="bp-hint" style={{ marginInlineStart: 0 }}>{tr({ en: "check up to 3 to add to the comparison box", ar: "اختر حتى 3 للمقارنة", zh: "勾选最多 3 个加入比对框" })}</span> <span className="fc-hint">{picked.length}/3</span></div>
+      <div className="hs-cmp-wrap" style={{ maxHeight: 260 }}><table className="wb-table hs-mtx"><thead><tr><th></th><th>{tr({ en: "Program", ar: "البرنامج", zh: "项目" })}</th><th>{tr({ en: "Type", ar: "النوع", zh: "类型" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Amount", ar: "المبلغ", zh: "金额" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Coverage", ar: "التغطية", zh: "覆盖范围" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Eligibility", ar: "حد الأهلية", zh: "资格门槛" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Beneficiaries", ar: "المستفيدون", zh: "受益人数" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Cost/ben", ar: "التكلفة", zh: "人均成本" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Value", ar: "القيمة", zh: "效益" })}</th></tr></thead>
+        <tbody>{listRows.map(r => { const on = picked.includes(r.id); return (<tr key={r.id} className={(r.poor ? "deficit " : "") + (on ? "bp-sel" : "")} style={{ cursor: (!on && picked.length >= 3) ? "not-allowed" : "pointer" }} onClick={() => toggleProject(r.id)}>
+          <td><span className={"an-ck" + (on ? " on" : "")}>{on ? "✓" : ""}</span></td>
+          <td>{tr(r.n)}</td><td><span className={"hs-type " + r.t}>{tr(HS_TYPE[r.t])}</span></td><td className="bp-mono" style={{ textAlign: "end" }}>{M(r.bud)}</td><td className="bp-mono" style={{ textAlign: "end" }}>{r.cov}%</td><td className="bp-mono" style={{ textAlign: "end" }}>≤ {r.elig}K</td><td className="bp-mono" style={{ textAlign: "end" }}>{nfmt(r.ben)}</td><td className="bp-mono" style={{ textAlign: "end" }}>{K(r.cpb)}</td><td className="bp-mono" style={{ textAlign: "end", fontWeight: 800 }}>{r.value}</td>
+        </tr>); })}</tbody></table></div>
+      <div className="hs-cmp-openbar"><button className="hs-cmp-open" disabled={!picked.length} onClick={() => setCmpOpen(true)}>⊞ {tr({ en: "Compare selected", ar: "قارن المختار", zh: "进行比对" })}{picked.length ? " (" + picked.length + ")" : ""}</button></div>
     </div>
+
+    {cmpOpen && typeof document !== "undefined" && createPortal(
+      <div className="hs-modal-ov" onClick={() => setCmpOpen(false)}>
+        <div className="hs-modal" onClick={e => e.stopPropagation()}>
+          <div className="hs-modal-h"><div className="uf-h" style={{ margin: 0 }}>{tr({ en: "Comparison box · per-project What-if", ar: "صندوق المقارنة · ماذا لو لكل مشروع", zh: "比对框 · 每个项目独立 What-if" })} <span className="bp-agent">Scenario Simulation Agent · {tr({ en: "live", ar: "حي", zh: "实时" })}</span></div><button className="hs-modal-x" onClick={() => setCmpOpen(false)}>✕</button></div>
+          <div className="hs-modal-hint">{tr({ en: "Adjust each project's What-if independently, then choose one to send to the action panel.", ar: "اضبط ماذا لو لكل مشروع، ثم اختر واحداً للإجراء.", zh: "分别调整每个项目的 What-if,再选择一个送入下方“操作”栏。" })}</div>
+          <div className="hs-modal-body">{cmpRows.length ? <div className="hs-cmpbox">{cmpRows.map(r => { const bm = pm(HS_PROGRAMS.find(p => p.id === r.id), HS_WF0); const w = getWf(r.id); const D = (v, dfmt, up) => v === 0 ? null : <em className={(up ? v > 0 : v < 0) ? "up" : "dn"}>{(v >= 0 ? "+" : "") + dfmt(v)}</em>;
+            return (<div key={r.id} className={"hs-cmp-card" + (approveId === r.id ? " ap" : "")}>
+              <div className="hs-cmp-cardh"><b className="hs-cmp-nm">{tr(r.n)}</b><button className="hs-cmp-x" onClick={() => toggleProject(r.id)}>✕</button></div>
+              <div className="hs-cmp-type"><span className={"hs-type " + r.t}>{tr(HS_TYPE[r.t])}</span></div>
+              <div className="hs-cmp-sliders">{HS_SLIDERS.map(([key, lab, mx, sgn, unit]) => (<div className="hs-cmp-sl" key={key}><span>{tr(lab)}</span><input type="range" min="0" max={mx} value={w[key] || 0} onChange={e => setWfVal(r.id, key, +e.target.value)} /><i>{sgn}{w[key] || 0}{unit}</i></div>))}</div>
+              <div className="hs-cmp-mets">
+                <div className="hs-cm"><span>{tr({ en: "Budget", ar: "الميزانية", zh: "预算" })}</span><b>{M(r.bud)}</b>{D(r.bud - bm.bud, M, false)}</div>
+                <div className={"hs-cm" + (win.ben === r.ben ? " best" : "")}><span>{tr({ en: "Beneficiaries", ar: "المستفيدون", zh: "受益人数" })}</span><b>{nfmt(r.ben)}</b>{D(r.ben - bm.ben, nfmt, true)}</div>
+                <div className={"hs-cm" + (win.cpb === r.cpb ? " best" : "")}><span>{tr({ en: "Cost / ben", ar: "التكلفة", zh: "人均成本" })}</span><b>{K(r.cpb)}</b>{D(r.cpb - bm.cpb, v => "SAR " + v.toFixed(1) + "K", false)}</div>
+                <div className={"hs-cm" + (win.ret === r.ret ? " best" : "")}><span>{tr({ en: "Retention", ar: "الاستبقاء", zh: "留存率" })}</span><b>{r.ret}%</b>{D(r.ret - bm.ret, v => v + "pp", true)}</div>
+                <div className={"hs-cm" + (win.cov === r.cov ? " best" : "")}><span>{tr({ en: "Coverage", ar: "التغطية", zh: "覆盖率" })}</span><b>{r.cov}%</b>{D(r.cov - bm.cov, v => v + "pp", true)}</div>
+                <div className={"hs-cm" + (win.lift === r.lift ? " best" : "")}><span>{tr({ en: "Ownership lift", ar: "رفع التملك", zh: "拥有率提升" })}</span><b>+{r.lift} pp</b></div>
+                <div className={"hs-cm" + (win.value === r.value ? " best" : "")}><span>{tr({ en: "Value score", ar: "القيمة", zh: "效益值" })}</span><b>{r.value}</b>{D(r.value - bm.value, v => v.toFixed(2), true)}</div>
+              </div>
+              <button className={"hs-cmp-pick" + (approveId === r.id ? " on" : "")} onClick={() => { setApproveId(r.id); setCmpOpen(false); }}>{approveId === r.id ? "✓ " + tr({ en: "Selected for action", ar: "مختار للإجراء", zh: "已选入操作" }) : tr({ en: "Select for action", ar: "اختر للإجراء", zh: "选此项目进入操作" }) + " →"}</button>
+            </div>); })}</div>
+            : <div className="fc-norow">{tr({ en: "Check projects in the list above to add them to the comparison box.", ar: "اختر مشاريع من القائمة أعلاه.", zh: "在上方项目列表勾选项目以加入比对框。" })}</div>}</div>
+          <div className="hs-modal-foot"><button className="hs-modal-done" onClick={() => setCmpOpen(false)}>{tr({ en: "Done", ar: "تم", zh: "完成" })}</button></div>
+        </div>
+      </div>, document.body)}
 
     <div className="uf-sec bp-actions"><div className="uf-h">{tr({ en: "Decision", ar: "القرار", zh: "操作" })}</div>
       {status ? <div className="bp-next"><div className="bp-next-h">{status === "approve" ? "✓ " + tr({ en: "Submitted for approval", ar: "قُدّم", zh: "已提交审批" }) : status === "draft" ? "✎ " + tr({ en: "Draft saved", ar: "حُفظت", zh: "草稿已保存" }) : "✎ " + tr({ en: "Restructure review requested", ar: "طُلبت مراجعة", zh: "已请求重构评审" })}</div>
-        <div className="bp-next-b">{tr(status === "approve" ? { en: "Subsidy model version HS-2027-v1 routed to leadership (audit-logged).", ar: "نُسخة الدعم HS-2027-v1", zh: "补贴模型版本 HS-2027-v1 已下发领导层(已写审计)。" } : status === "draft" ? { en: "Saved · HS-2027-DRAFT with what-if parameters.", ar: "حُفظت المسودة.", zh: "已保存 · HS-2027-DRAFT(含 What-if 参数)。" } : { en: "Low-value program flagged for policy restructure review.", ar: "وُسم البرنامج.", zh: "低效益项目已标记进入政策重构评审。" })}</div>
+        <div className="bp-next-b">{tr(status === "approve" ? { en: "Subsidy model version HS-2027-v1 routed to leadership (audit-logged).", ar: "نُسخة HS-2027-v1", zh: "补贴模型版本 HS-2027-v1 已下发领导层(已写审计)。" } : status === "draft" ? { en: "Saved · HS-2027-DRAFT with per-project what-if.", ar: "حُفظت المسودة.", zh: "已保存 · HS-2027-DRAFT(含各项目 What-if)。" } : { en: "Low-value program flagged for review.", ar: "وُسم البرنامج.", zh: "低效益项目已标记评审。" })}</div>
         <button className="dw-btn" onClick={() => setStatus(null)}>↺ {tr({ en: "Reopen", ar: "إعادة", zh: "重新" })}</button></div>
-        : <div className="bp-act-btns">
-          <button className="dw-btn primary" onClick={() => decide("approve")}>{tr({ en: "Submit for approval", ar: "تقديم", zh: "提交审批" })}</button>
-          <button className="dw-btn" onClick={() => decide("draft")}>{tr({ en: "Save draft", ar: "حفظ", zh: "保存草稿" })}</button>
-          <button className="dw-btn" onClick={() => setDone(hsT("Subsidy impact plan exported (PDF/Excel) with matrix & scatter", "صُدّرت", "补贴影响方案已导出(PDF/Excel)含矩阵与散点"))}>{tr({ en: "Export plan", ar: "تصدير", zh: "导出方案" })}</button>
-        </div>}
+        : <React.Fragment>
+          <div className="hs-submit-sum">
+            <div className="hs-submit-lab">{tr({ en: "Submitting for approval", ar: "قيد التقديم للاعتماد", zh: "本次提交审批" })}: <b>{apM ? tr(apM.n) : tr({ en: "— select a project in the comparison box —", ar: "— اختر مشروعاً —", zh: "— 请在比对框中选择一个项目 —" })}</b></div>
+            {apM && <div className="hs-submit-kpis">
+              <div className="hs-sk"><span>{tr({ en: "Budget", ar: "الميزانية", zh: "补贴预算" })}</span><b>{M(apM.bud)}</b>{apM.bud !== apBase.bud && <em className={apM.bud > apBase.bud ? "up" : "dn"}>{(apM.bud > apBase.bud ? "+" : "") + M(apM.bud - apBase.bud)}</em>}</div>
+              <div className="hs-sk"><span>{tr({ en: "Beneficiaries", ar: "المستفيدون", zh: "受益人数" })}</span><b>{nfmt(apM.ben)}</b>{apM.ben !== apBase.ben && <em className={apM.ben > apBase.ben ? "up" : "dn"}>{(apM.ben > apBase.ben ? "+" : "") + nfmt(apM.ben - apBase.ben)}</em>}</div>
+              <div className="hs-sk"><span>{tr({ en: "Cost / beneficiary", ar: "التكلفة", zh: "人均成本" })}</span><b>{K(apM.cpb)}</b>{apM.cpb !== apBase.cpb && <em className={apM.cpb < apBase.cpb ? "up" : "dn"}>{(apM.cpb > apBase.cpb ? "+" : "") + "SAR " + (apM.cpb - apBase.cpb).toFixed(1) + "K"}</em>}</div>
+              <div className="hs-sk"><span>{tr({ en: "Ownership lift", ar: "رفع التملك", zh: "加权拥有率提升" })}</span><b>+{apM.lift} pp</b></div>
+            </div>}
+          </div>
+          <div className="bp-act-btns">
+            <button className="dw-btn primary" disabled={!approveId} onClick={() => decide("approve")}>{tr({ en: "Submit for approval", ar: "تقديم", zh: "提交审批" })}</button>
+            <button className="dw-btn" onClick={() => decide("draft")}>{tr({ en: "Save draft", ar: "حفظ", zh: "保存草稿" })}</button>
+            <button className="dw-btn" onClick={() => setDone(hsT("Subsidy comparison plan exported (PDF/Excel)", "صُدّرت", "补贴对比方案已导出(PDF/Excel)"))}>{tr({ en: "Export plan", ar: "تصدير", zh: "导出方案" })}</button>
+          </div>
+        </React.Fragment>}
       {done && !status && <div className="bp-done">✓ {tr(done)}</div>}
     </div>
   </div></div>);
@@ -7495,13 +7656,22 @@ function AnomalyDetectionWorkbench() {
   const avgDays = (rows0.reduce((a, it) => a + it.days, 0) / total).toFixed(1);
   const a = rows0.find(x => x.id === sel) || rows0[0];
   const aStage = a.st;
+  const sevTxt = { high: anT("High", "مرتفع", "高"), med: anT("Medium", "متوسط", "中"), low: anT("Low", "منخفض", "低") };
+  const anomScore = a.sev === "high" ? "0.92" : a.sev === "med" ? "0.74" : "0.55";
+  const TY = AN_TYPES[a.type].n;
+  const keyFindings = [
+    { c: "red", t: { en: "Isolation Forest flagged a " + TY.en.toLowerCase() + " pattern — anomaly score " + anomScore + " vs 0.30 baseline (top 2% outlier)", ar: "غابة العزل رصدت نمط \"" + TY.ar + "\" — درجة الشذوذ " + anomScore + " مقابل خط أساس 0.30 (ضمن أعلى 2%)", zh: "孤立森林检测到「" + TY.zh + "」模式 —— 异常评分 " + anomScore + "(基线 0.30,处于前 2% 离群)" } },
+    { c: "amber", t: { en: "Financial exposure " + M(a.amount) + " traced across " + a.links.length + " linked transactions (" + a.links.join(", ") + ")", ar: "التعرّض المالي " + M(a.amount) + " متتبَّع عبر " + a.links.length + " معاملات مرتبطة", zh: "涉及金额 " + M(a.amount) + ",已追溯至 " + a.links.length + " 笔关联交易(" + a.links.join("、") + ")" } },
+    { c: "blue", t: { en: "Cross-system reconciliation on " + a.src + " confirms the deviation is a genuine exception, not a timing/lag artifact", ar: "التسوية عبر " + a.src + " تؤكد أن الانحراف استثناء حقيقي وليس بسبب التوقيت", zh: a.src + " 跨系统对账确认此偏差为真实异常,非时序/延迟造成" } },
+    { c: "green", t: { en: "Auto-classified " + tr(sevTxt[a.sev]) + " severity, routed to " + tr(a.owner) + " with a " + a.days + "-day SLA timer", ar: "صُنّف تلقائياً بخطورة " + tr(sevTxt[a.sev]) + " وأُحيل إلى " + tr(a.owner) + " بمؤقّت SLA " + a.days + " يوم", zh: "已自动判定为「" + tr(sevTxt[a.sev]) + "」严重度,分派至" + tr(a.owner) + ",并设 " + a.days + " 天处理时效" } },
+  ];
+  const kpiFilter = (st) => { setFStat(st); setFSev("all"); setFBiz("all"); };
   const advance = () => { if (aStage >= 5) return; setProg(p => ({ ...p, [a.id]: aStage + 1 })); pushLog({ en: "UC-02 " + a.id + " → " + tr(AN_STAGES[aStage + 1]), ar: "UC-02", zh: "UC-02 " + a.id + " → " + tr(AN_STAGES[aStage + 1]) }); setAct(anT(a.id + " advanced to «" + tr(AN_STAGES[aStage + 1]) + "»", "", a.id + " 已推进到「" + tr(AN_STAGES[aStage + 1]) + "」")); };
   const addCmt = () => { const v = cin.trim(); if (!v) return; setCmts(c => ({ ...c, [a.id]: [...(c[a.id] || []), { t: v, ts: "10:0" + ((c[a.id] || []).length + 2) }] })); setCin(""); };
   const onFiles = (fileList) => { const names = Array.from(fileList || []).map(f => f.name + " · " + (f.size > 1024 ? Math.round(f.size / 1024) + "KB" : f.size + "B")); if (!names.length) return; setAtts(x => ({ ...x, [a.id]: [...(x[a.id] || []), ...names] })); setAct(anT(names.length + " file(s) attached to " + a.id, "", "已为 " + a.id + " 上传 " + names.length + " 个文件")); };
   const pickCount = Object.values(picked).filter(Boolean).length;
   const togglePick = (id) => setPicked(p => ({ ...p, [id]: !p[id] }));
   const batchAssign = () => { if (!pickCount) { setAct(anT("Select anomalies first (checkbox)", "", "请先勾选异常项")); return; } const ids = Object.keys(picked).filter(k => picked[k]); setProg(p => { const n = { ...p }; ids.forEach(id => { const it = AN_ITEMS.find(x => x.id === id); const s = n[id] != null ? n[id] : it.stage; if (s < 2) n[id] = 2; }); return n; }); setAct(anT(ids.length + " anomalies batch-assigned to owners (Orchestrator)", "", "已批量分配 " + ids.length + " 项异常至责任人(编排器)")); setPicked({}); };
-  const sevTxt = { high: anT("High", "مرتفع", "高"), med: anT("Medium", "متوسط", "中"), low: anT("Low", "منخفض", "低") };
   const clusters = rows0.filter(it => it.type === "dup" && it.st < 5).length;
   const overdue = rows0.filter(it => it.type === "claim" && it.st < 5).length;
   const highOpen = rows0.filter(it => it.sev === "high" && it.st < 5);
@@ -7532,9 +7702,9 @@ function AnomalyDetectionWorkbench() {
     </div>
 
     <div className="bp-kpis an-kpis">
-      <div className="bp-kpi"><div className="l">{tr({ en: "Total anomalies", ar: "إجمالي الشذوذ", zh: "异常总数" })}</div><div className="v">{total}</div><div className="s">{tr({ en: "13 systems scanned", ar: "13 نظاماً", zh: "已扫描 13 系统" })}</div></div>
-      <div className="bp-kpi danger"><div className="l">{tr({ en: "Pending", ar: "قيد المعالجة", zh: "待处理" })}</div><div className="v">{pending}</div><div className="s">{highOpen.length} {tr({ en: "high severity", ar: "مرتفع", zh: "高严重度" })}</div></div>
-      <div className="bp-kpi ok"><div className="l">{tr({ en: "Resolved", ar: "محلول", zh: "已解决" })}</div><div className="v">{resolved}</div><div className="s">{tr({ en: "closed-loop", ar: "حلقة مغلقة", zh: "闭环关闭" })}</div></div>
+      <div className={"bp-kpi an-kpi-click" + (fStat === "all" ? " on" : "")} onClick={() => kpiFilter("all")}><div className="l">{tr({ en: "Total anomalies", ar: "إجمالي الشذوذ", zh: "异常总数" })} ▾</div><div className="v">{total}</div><div className="s">{tr({ en: "click to show all", ar: "انقر لعرض الكل", zh: "点击显示全部" })}</div></div>
+      <div className={"bp-kpi danger an-kpi-click" + (fStat === "open" ? " on" : "")} onClick={() => kpiFilter("open")}><div className="l">{tr({ en: "Pending", ar: "قيد المعالجة", zh: "待处理" })} ▾</div><div className="v">{pending}</div><div className="s">{highOpen.length} {tr({ en: "high · click to filter", ar: "مرتفع · انقر", zh: "高 · 点击筛选" })}</div></div>
+      <div className={"bp-kpi ok an-kpi-click" + (fStat === "closed" ? " on" : "")} onClick={() => kpiFilter("closed")}><div className="l">{tr({ en: "Resolved", ar: "محلول", zh: "已解决" })} ▾</div><div className="v">{resolved}</div><div className="s">{tr({ en: "closed · click to filter", ar: "مغلق · انقر", zh: "闭环 · 点击筛选" })}</div></div>
       <div className="bp-kpi"><div className="l">{tr({ en: "Avg handling", ar: "متوسط المعالجة", zh: "平均处理时长" })}</div><div className="v">{avgDays}<i style={{ fontSize: 13 }}> d</i></div><div className="s">{tr({ en: "days to resolve", ar: "أيام", zh: "天/项" })}</div></div>
       <div className="bp-kpi"><div className="l">{tr({ en: "Resolution rate", ar: "معدل الحل", zh: "处理率" })}</div><div className="v">{rate}%</div><div className="s">{resolved}/{total}</div></div>
     </div>
@@ -7552,18 +7722,28 @@ function AnomalyDetectionWorkbench() {
         <div className="an-tscroll"><table className="wb-table an-table"><thead><tr><th></th><th>{tr({ en: "Type", ar: "النوع", zh: "类型" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Amount", ar: "المبلغ", zh: "金额" })}</th><th>{tr({ en: "Date", ar: "التاريخ", zh: "日期" })}</th><th>{tr({ en: "Sev", ar: "الخطورة", zh: "等级" })}</th><th>{tr({ en: "Status", ar: "الحالة", zh: "状态" })}</th><th>{tr({ en: "Owner", ar: "المالك", zh: "责任人" })}</th></tr></thead>
           <tbody>{rows.length ? rows.map(it => (<tr key={it.id} className={(sel === it.id ? "an-sel " : "") + (it.sev === "high" && it.st < 5 ? "an-hot" : "")} onClick={() => setSel(it.id)}>
             <td onClick={e => { e.stopPropagation(); togglePick(it.id); }}><span className={"an-ck" + (picked[it.id] ? " on" : "")}>{picked[it.id] ? "✓" : ""}</span></td>
-            <td><span className="an-tic">{AN_TYPES[it.type].ic}</span> {tr(AN_TYPES[it.type].n)}<span className="an-id">{it.id}</span></td>
+            <td>{tr(AN_TYPES[it.type].n)}<span className="an-id">{it.id}</span></td>
             <td className="bp-mono" style={{ textAlign: "end" }}>{M(it.amount)}</td><td className="bp-mono">{it.date.slice(5)}</td>
             <td><span className={"an-sev s-" + it.sev}>{tr(sevTxt[it.sev])}</span></td>
             <td><span className={"an-stat st" + it.st}>{tr(AN_STAGES[it.st])}</span></td>
             <td className="an-owner">{tr(it.owner)}</td></tr>)) : <tr><td colSpan={7} className="fc-norow">{tr({ en: "No anomaly matches the filters", ar: "لا نتائج", zh: "无匹配异常" })}</td></tr>}</tbody></table></div>
       </div>
 
-      <div className="uf-sec an-detail"><div className="uf-h">{tr({ en: "Detail & closed-loop", ar: "التفاصيل والحلقة المغلقة", zh: "详情与闭环" })} <span className="bp-agent">Proactive Insights Agent</span></div>
+      <div className="uf-sec an-detail"><div className="uf-h"><span className="bp-agent" style={{ margin: 0 }}>✦ Proactive Insights Agent</span></div>
         <div className="an-dh"><span className="an-tic big">{AN_TYPES[a.type].ic}</span><div><b>{tr(AN_TYPES[a.type].n)} · {a.id}</b><div className="an-dmeta">{M(a.amount)} · {a.date} · <span className={"an-sev s-" + a.sev}>{tr(sevTxt[a.sev])}</span> · {a.src}</div></div></div>
-        <div className="an-block"><span className="an-blab">{tr({ en: "Root-cause analysis", ar: "تحليل السبب", zh: "根因分析" })}</span><p>{tr(a.why)}</p></div>
-        <div className="an-block"><span className="an-blab">{tr({ en: "Linked transactions", ar: "المعاملات المرتبطة", zh: "关联交易" })}</span><div className="an-links">{a.links.map((l, i) => <span key={i} className="an-link">{l}</span>)}</div></div>
-        <div className="an-block"><span className="an-blab">{tr({ en: "Recommendation", ar: "التوصية", zh: "处理建议" })}</span><p>{tr(a.rec)}</p></div>
+        <div className="an-narr">
+          <div className="an-narr-eyebrow">{tr({ en: "AI NARRATIVE", ar: "سرد الذكاء الاصطناعي", zh: "AI 根因叙事" })}</div>
+          <div className="an-narr-card">
+            <div className="an-narr-h">{tr({ en: "Summary", ar: "الملخّص", zh: "摘要" })}</div>
+            <p>{tr(a.why)}</p>
+            <div className="an-narr-h">{tr({ en: "Key findings", ar: "أبرز النتائج", zh: "关键发现" })}</div>
+            <ul className="an-kf">{keyFindings.map((f, i) => <li key={i} className={"an-kf-" + f.c}><span className="an-kf-dot" /><span>{tr(f.t)}</span></li>)}</ul>
+            <div className="an-narr-h">{tr({ en: "Recommended next action", ar: "الإجراء الموصى به", zh: "建议后续行动" })}</div>
+            <p>{tr(a.rec)}</p>
+            <div className="an-narr-foot">{tr({ en: "generated · today · citations attached", ar: "مُولّد · اليوم · مع الاستشهادات", zh: "AI 生成 · 今日 · 已附引用" })} ({a.links.length})</div>
+          </div>
+        </div>
+        <div className="an-block"><span className="an-blab">{tr({ en: "Linked transactions (citations)", ar: "المعاملات المرتبطة (استشهادات)", zh: "关联交易(引用)" })}</span><div className="an-links">{a.links.map((l, i) => <span key={i} className="an-link">{l}</span>)}</div></div>
         <div className="an-steps">{AN_STEPS.map((s, i) => (<div key={i} className={"an-step" + (aStage > i ? " done" : aStage === i ? " active" : "")}><span className="an-step-n">{aStage > i ? "✓" : i + 1}</span><span>{tr(s)}</span></div>))}</div>
         <div className="an-wf">
           {aStage < 5 ? <button className="dw-btn primary" onClick={advance}>{tr({ en: "Advance → ", ar: "تقدّم ← ", zh: "推进 → " })}{tr(AN_STEPS[aStage])}</button> : <span className="an-closed">✓ {tr({ en: "Closed-loop complete", ar: "اكتملت الحلقة", zh: "闭环已完成" })}</span>}
@@ -8721,12 +8901,19 @@ function Shell() {
       <TopBar />
       <div className="shell" style={{ height: "calc(100vh - var(--topbar-h))", minHeight: 0, overflow: "hidden" }}>
         <Sidebar />
-        <div className="uc06-root" style={{ flex: "1 1 auto", minWidth: 0, height: "100%", overflow: "hidden" }}>
+        <div className="uc06-root" style={{ flex: "1 1 auto", minWidth: 0, height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          {sub === "performanceAnalysis" && <div className="card pad wb-head uc06-g02head">
+            <div><div className="wb-title"><button className="pg-back" onClick={onBack || (() => { setDeptSub("plan"); setRoute("plnwork"); })}>‹</button><span className="wb-dot green" /> {tr({ en: "Financial Performance Analysis", ar: "تحليل الأداء المالي", zh: "财务绩效分析部" })} · {tr({ en: "Dashboard", ar: "لوحة الأداء", zh: "绩效看板" })}</div>
+              <div className="wb-subt">{ucl("UC-06", tr({ en: "Performance, Expenditure & Executive Reports", ar: "الأداء والإنفاق والتقارير التنفيذية", zh: "绩效、支出分析与执行报告" }))}</div></div>
+            <div className="bp-wrap-story"><G02BusinessStoryline tr={tr} current="performance" navigate={(r) => { if (r === "perf") return; setBackRoute("perf"); if (["plnbudget", "plncost", "plnhousing", "plnforecast", "plnscenario"].includes(r)) setDeptSub("plan"); setRoute(r); }} /></div>
+          </div>}
+          <div style={{ flex: "1 1 auto", minWidth: 0, minHeight: 0, overflow: "hidden" }}>
           <React.Suspense fallback={<div style={{ padding: 40, fontSize: 15, color: "#4b5563" }}>Loading…</div>}>
             <EmbedErrorBoundary key={sub}>
-              <Uc06App embedded subDept={sub} appLang={lang} initialTab={initTab} autoGenerate={!!(perfJump && perfJump.generate)} onBack={onBack} onConsumeJump={() => setPerfJump(null)} key={sub} />
+              <Uc06App embedded hostHeader={sub === "performanceAnalysis"} subDept={sub} appLang={lang} initialTab={initTab} autoGenerate={!!(perfJump && perfJump.generate)} onBack={onBack} onConsumeJump={() => setPerfJump(null)} key={sub} />
             </EmbedErrorBoundary>
           </React.Suspense>
+          </div>
         </div>
       </div>
     </>);
