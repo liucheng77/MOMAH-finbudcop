@@ -7,6 +7,7 @@ import { FLOW_AUD } from "./flow";
 
 const WS_CFG_AUDIT = {
   uc: "UC-03 (+UC-02)", kpiTone: "violet", flow: FLOW_AUD, plazaModel: PLAZA_G04, plazaSel: "uc03", flowRoute: "g04audflow",
+  flowHideUc: true,
   title: { en: "Audit Department", ar: "إدارة التدقيق", zh: "审计部" },
   mandate: { en: "Mandate: last financial control point before payment — review supplier / company / employee / court-ruling / utility claim packages and accept, return or defer (UC-03/UC-02). Surface key evidence inside 100+-page packages, standardize checklists, and reflect budget-execution & liquidity status to leadership.", ar: "المهمة: نقطة الضبط المالي الأخيرة قبل الدفع — مراجعة حِزم مطالبات الموردين / الشركات / الموظفين / الأحكام القضائية / المرافق وقبولها أو إعادتها أو تأجيلها (UC-03/UC-02). إبراز الأدلة الرئيسية داخل حزم تتجاوز 100 صفحة، وتوحيد قوائم الفحص، وعكس حالة التنفيذ والسيولة للقيادة.", zh: "职责:付款前最后财务控制点——审核供应商/公司/员工/法院判决/水电等索赔包,决定受理、退回或延后(UC-03/UC-02)。在 100+ 页附件中快速定位关键证据、标准化审核清单,并向领导反映预算执行与流动性状态。" },
   sqScope: { en: "Scope: Audit · cross-department read-only", ar: "النطاق: التدقيق · للقراءة عبر الإدارات", zh: "范围:审计 · 跨部门只读" },
@@ -63,6 +64,7 @@ const WS_CFG_AUDIT = {
       { act: { en: "Brief leadership: paid / approved-unpaid / no-liquidity", ar: "إطلاع القيادة: مدفوع / معتمد غير مدفوع / بلا سيولة", zh: "向领导汇报:已付/已批未付/无流动性" }, owner: "Yousef Al-Nasser", role: { en: "Audit Analyst", ar: "محلل تدقيق", zh: "审计分析师" }, phone: "+966 53 667 2210" },
     ],
   },
+  /* Proactive Insights Agent 卡片已按需求移除(不再在审计部主页渲染)。 */
 };
 function AuditWorkspace() { return <DeptWorkspace cfg={WS_CFG_AUDIT} />; }
 export { WS_CFG_AUDIT, AuditWorkspace };

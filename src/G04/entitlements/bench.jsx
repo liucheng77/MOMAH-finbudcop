@@ -1,16 +1,16 @@
-/* 财务权益部 — UC-08 analysis workbench config (UcBench). Verbatim from src/App.jsx. */
+/* 财务权益部 — UC-08 analysis workbench config (UcBench). Verbatim from src/App.jsx.
+   tool: "uc08" mounts the Uc08Entitlements review panel (key cost driver
+   layout) below the standard bench header, matching the UC-15 / UC-01
+   pattern used elsewhere in the project. */
+import { g04ChainHere } from "../g04Chain.js";
+
 const BENCH_UC08 = {
-  route: "bench08", back: "entwork", dept: "entitle", tone: "violet", uc: "UC-08", run: "#8033",
+  route: "bench08", back: "entwork", dept: "entitle", tone: "violet", uc: "UC-08", run: "#8033", tool: "uc08", chainHideUc: true,
   deptName: { en: "Financial Entitlements Department", ar: "إدارة الاستحقاقات المالية", zh: "财务权益部" },
+  benchLabel: { en: "Contracts, Claims, Disbursements, and Entitlements", ar: "العقود والمطالبات والصرف والاستحقاقات", zh: "合同、索赔、拨付与权益" },
   subt: { en: "Contracts, Claims, Disbursements, and Entitlements", ar: "العقود والمطالبات والصرف والاستحقاقات", zh: "合同、索赔、拨付与权益" },
   chainLab: { en: "G-04 CHAIN", ar: "سلسلة ج-04", zh: "G-04 链路" },
-  chain: [
-    { code: "UC-01", pos: "up", name: { en: "Financial Data Standardization and Data Quality", ar: "توحيد البيانات المالية وجودتها", zh: "财务数据整合与数据质量" } },
-    { code: "UC-08", pos: "here", here: true, name: { en: "Contracts, Claims, Disbursements, and Entitlements", ar: "العقود والمطالبات والصرف والاستحقاقات", zh: "合同、索赔、拨付与权益" } },
-    { code: "UC-02", pos: "down", name: { en: "Anomaly Detection", ar: "كشف الشذوذ", zh: "异常检测" } },
-    { code: "UC-09", pos: "down", name: { en: "Financial Closing, Reconciliation and Settlements", ar: "الإقفال المالي والمطابقة والتسويات", zh: "财务关账、对账与结算" } },
-    { code: "UC-10/03", pos: "down", name: { en: "Generating Reports and Narrative Commentaries / Smart Query, Audit Log, and Permissions", ar: "توليد التقارير / الاستعلام الذكي وسجل التدقيق", zh: "报告生成与叙述 / 智能查询、审计日志与权限" } },
-  ],
+  chain: g04ChainHere("UC-08"),
   agent: { en: "Entitlements agent", ar: "وكيل الاستحقاقات", zh: "权益智能体" },
   summary: { en: "Know-before-it-arrives: annual payment plans aligned with Etimad actuals (**1,240 rows auto-mapped**, plan-vs-actual variance **18%**). Forecast for weeks 28–35: **SAR 412M expected claims (96)**; **2 budget lines short SAR 57M** vs SAP availability — an Arabic transfer / enhancement request to Budget Execution is drafted and awaiting review. Batch of ~~16 verified claims (SAR 268M)~~ ready.", ar: "المعرفة قبل الوصول: خطط الدفع السنوية مطابقة مع فعليات اعتماد (**1,240 صفاً آلياً**، انحراف **18%**). توقع الأسابيع 28–35: **412 مليوناً مطالبات متوقعة (96)**؛ **بندان بعجز 57 مليوناً** مقابل توافر ساب — وصيغ طلب مناقلة/تعزيز بالعربية بانتظار المراجعة. ودفعة ~~16 مطالبة متحققة (268 مليوناً)~~ جاهزة.", zh: "「索赔到来前先知道」:年度付款计划已与 Etimad 实际对齐(**自动映射 1,240 行**,计划 vs 实际偏差 **18%**)。第 28–35 周预测:**预期索赔 SAR 412M(96 笔)**;**2 条预算行对 SAP 可用资金短缺 SAR 57M**——发往预算执行部的阿语转移/增强申请已起草待审。~~16 笔已核验索赔(SAR 268M)~~ 批次就绪。" },
   recs: [
@@ -28,7 +28,7 @@ const BENCH_UC08 = {
     { k: { en: "Status", ar: "الحالة", zh: "状态" }, opts: ["All claims", "Verified", "Held (evidence)"] },
   ],
   resultsH: { en: "Claims & Liquidity Results", ar: "نتائج المطالبات والسيولة", zh: "索赔与流动性结果" },
-  resultsSub: { en: "UC-08 outputs · produced by agents", ar: "مخرجات UC-08 · أُنتجت بواسطة الوكلاء", zh: "UC-08 输出 · 由智能体生成" },
+  resultsSub: { en: "合同、索赔、拨付与权益 outputs · produced by agents", ar: "مخرجات 合同、索赔、拨付与权益 · أُنتجت بواسطة الوكلاء", zh: "合同、索赔、拨付与权益 输出 · 由智能体生成" },
   outputs: [
     { l: { en: "Plan ↔ Actual Alignment", ar: "مطابقة الخطة والفعلي", zh: "计划 ↔ 实际对齐" }, v: "1,240", s: { en: "rows auto-mapped · variance 18%", ar: "صفوف آلية · انحراف 18%", zh: "行自动映射 · 偏差 18%" }, rows: [
       { k: { en: "Matched projects & lines", ar: "مشاريع وبنود مطابقة", zh: "已匹配项目与预算行" }, v: "94%", pct: 94 },
@@ -48,8 +48,8 @@ const BENCH_UC08 = {
   ],
   sources: [{ n: "Annual payment-plan Excel (Amanat/agencies)", s: "synced" }, { n: "Etimad / Etimad Plus exports", s: "loading" }, { n: "SAP / Asas availability", s: "synced" }, { n: "Contracts & payment orders", s: "synced" }, { n: "Vision-portfolio weekly PPT", s: "synced" }, { n: "Unified layer (UC-01)", s: "synced" }],
   roles: [
-    { name: { en: "Anomaly Detection Agent", ar: "وكيل كشف الشذوذ", zh: "异常检测智能体" }, sub: { en: "Flags plan-vs-actual gaps & missing evidence", ar: "يرصد فجوات الخطة والفعلي والأدلة الناقصة", zh: "标记计划实际差异与缺证索赔" }, status: "running", cls: "r-violet" },
-    { name: { en: "Financial Forecasting Agent", ar: "وكيل التنبؤ المالي", zh: "财务预测智能体" }, sub: { en: "Projects claims 4–8 weeks ahead vs availability", ar: "يتنبأ بالمطالبات 4–8 أسابيع مقابل التوافر", zh: "对可用资金预测未来 4–8 周索赔" }, status: "active", cls: "r-blue" },
+    { name: { en: "Proactive Insights Agent", ar: "وكيل الرؤى الاستباقية", zh: "主动洞察智能体" }, sub: { en: "Monitors plan-vs-actual gaps & flags missing evidence", ar: "يرصد فجوات الخطة والفعلي والأدلة الناقصة", zh: "监控计划实际差异与缺证索赔" }, status: "running", cls: "r-violet" },
+    { name: { en: "Anomaly Detection Agent", ar: "وكيل كشف الشذوذ", zh: "异常检测智能体" }, sub: { en: "Flags plan-vs-actual gaps & missing evidence", ar: "يرصد فجوات الخطة والفعلي والأدلة الناقصة", zh: "标记计划实际差异与缺证索赔" }, status: "active", cls: "r-blue" },
     { name: { en: "Compliance / Rules Agent", ar: "وكيل الامتثال / القواعد", zh: "合规/规则智能体" }, sub: { en: "Verifies entitlements & drafts the Arabic request", ar: "يتحقق من الاستحقاقات ويصوغ الطلب بالعربية", zh: "核验权益并起草阿语申请" }, status: "active", cls: "r-blue" },
   ],
   logs: [
@@ -81,7 +81,7 @@ const BENCH_UC08 = {
     { en: "18% overall; the top 3 gaps sit in housing-infrastructure projects where Amanat templates under-planned Q3 — 74 rows are queued for manual confirmation.", ar: "18% إجمالاً؛ أكبر ثلاث فجوات في مشاريع بنية الإسكان حيث قللت قوالب الأمانات تقدير الربع الثالث — و74 صفاً بانتظار التأكيد اليدوي.", zh: "总体 18%;前三大缺口在住房基础设施项目——相关阿玛纳模版低估了 Q3,74 行待人工确认。" },
     { en: "It cites the 2 lines, weekly claim schedule, SAP availability snapshots and requested amounts (43M + 14M), proposes source lines from the idle list, and requests action before week 28 — pending your approval to send.", ar: "يذكر البندين وجدول المطالبات ولقطات توافر ساب والمبالغ (43+14)، ويقترح بنوداً مصدرية من قائمة الخمول، ويطلب الإجراء قبل الأسبوع 28 — بانتظار موافقتك للإرسال.", zh: "申请引用 2 条预算行、按周索赔计划、SAP 可用性快照与申请金额(43M+14M),从闲置清单提出来源行,并请求在第 28 周前办理——待你批准后发送。" },
   ],
-  genAns: { en: "From UC-08: plans aligned (1,240 rows · 18% variance) · SAR 412M claims forecast · 2 lines short 57M · Arabic request drafted, human review pending.", ar: "من UC-08: مطابقة الخطط (1,240 صفاً · 18%) · توقع 412 مليوناً · بندان بعجز 57 · طلب عربي بانتظار المراجعة.", zh: "依据 UC-08:计划已对齐(1,240 行 · 偏差 18%)· 索赔预测 SAR 412M · 2 行短缺 57M · 阿语申请已起草待人工审阅。" },
+  genAns: { en: "From 合同、索赔、拨付与权益: plans aligned (1,240 rows · 18% variance) · SAR 412M claims forecast · 2 lines short 57M · Arabic request drafted, human review pending.", ar: "من 合同、索赔、拨付与权益: مطابقة الخطط (1,240 صفاً · 18%) · توقع 412 مليوناً · بندان بعجز 57 · طلب عربي بانتظار المراجعة.", zh: "依据 合同、索赔、拨付与权益:计划已对齐(1,240 行 · 偏差 18%)· 索赔预测 SAR 412M · 2 行短缺 57M · 阿语申请已起草待人工审阅。" },
 };
 
 /* ---- Bench cfg · UC-09 Financial Closing, Reconciliation and Settlements (G-04/G-05) ---- */

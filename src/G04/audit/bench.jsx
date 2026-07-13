@@ -1,16 +1,15 @@
-/* 审计部 — UC-03 analysis workbench config (UcBench). Verbatim from src/App.jsx. */
+/* 审计部 — UC-03 analysis workbench config (UcBench).
+   已对齐财务权益部做法:部门名=审计部、链路=统一 G-04 审计链路
+   (g04AuditChainHere),chainHideUc 隐藏链路 UC 前缀。其余业务内容沿用。 */
+import { g04AuditChainHere } from "../g04AuditChain.js";
+
 const BENCH_UC03 = {
-  route: "bench03", back: "audwork", dept: "audit", tone: "violet", uc: "UC-03", run: "#1503",
-  deptName: { en: "Shared Foundation (G-01)", ar: "الأساس المشترك (ج-01)", zh: "共享基础层(G-01)" },
+  route: "bench03", back: "audwork", dept: "audit", tone: "violet", uc: "UC-03", run: "#1503", chainHideUc: true,
+  deptName: { en: "Audit Department", ar: "إدارة التدقيق", zh: "审计部" },
+  benchLabel: { en: "Smart Query, Audit Log & Permissions", ar: "الاستعلام الذكي وسجل التدقيق والصلاحيات", zh: "智能查询、审计日志与权限" },
   subt: { en: "Smart Query, Audit Log & Permissions", ar: "الاستعلام الذكي وسجل التدقيق والصلاحيات", zh: "智能查询、审计日志与权限" },
-  chainLab: { en: "G-01 CHAIN", ar: "سلسلة ج-01", zh: "G-01 链路" },
-  chain: [
-    { code: "UC-01", pos: "up", name: { en: "Data Unification & Quality", ar: "توحيد البيانات وجودتها", zh: "数据统一与质量" } },
-    { code: "UC-02", pos: "up", name: { en: "Detecting Deviations, Alerts, and Exceptions", ar: "كشف الانحرافات والتنبيهات والاستثناءات", zh: "异常检测、告警与例外" } },
-    { code: "UC-03", pos: "here", here: true, name: { en: "Smart Query, Audit Log, and Permissions", ar: "الاستعلام الذكي وسجل التدقيق والصلاحيات", zh: "智能查询、审计日志与权限" } },
-    { code: "UC-10", pos: "down", name: { en: "Reports & Dashboards", ar: "التقارير ولوحات المعلومات", zh: "报告与仪表盘" } },
-    { code: "EXPORT", pos: "down", name: { en: "Permissioned exports", ar: "تصدير مصرّح", zh: "授权导出" } },
-  ],
+  chainLab: { en: "G-04 CHAIN", ar: "سلسلة ج-04", zh: "G-04 链路" },
+  chain: g04AuditChainHere("UC-03"),
   agent: { en: "Smart-Query agent", ar: "وكيل الاستعلام الذكي", zh: "智能查询智能体" },
   summary: { en: "Natural-language answers over the unified layer — **28,140 events indexed**, average answer confidence **92%**, every answer carries sources & lineage. ~~38 audit-log entries in 24h~~; all queries and exports are permission-scoped and fully traceable.", ar: "إجابات بلغة طبيعية فوق الطبقة الموحّدة — **28,140 حدثاً مفهرساً**، متوسط الثقة **92%**، كل إجابة تحمل المصادر والتتبع. ~~38 إدخال سجل في 24 ساعة~~؛ وكل الاستعلامات والتصدير محكومة بالصلاحيات.", zh: "在统一数据层上的自然语言问答——**已索引 28,140 个事件**,回答平均置信度 **92%**,每个答案附来源与血缘。~~24 小时 38 条审计日志~~;所有查询与导出均受权限约束、全程可审计。" },
   recs: [
@@ -19,8 +18,8 @@ const BENCH_UC03 = {
     { t: { en: "Tighten 2 over-broad scopes", ar: "تضييق نطاقين واسعين", zh: "收紧 2 个过宽权限范围" }, d: { en: "role scopes exceeding department read-only policy", ar: "نطاقات أدوار تتجاوز سياسة القراءة", zh: "角色范围超出部门只读策略" } },
   ],
   ctas: [
-    { uc: "UC-10", label: { en: "Generating Financial and Administrative Reports and Narrative Commentaries", ar: "التقارير ولوحات المعلومات", zh: "报告与仪表盘" }, to: "reports", dept: "frep" },
-    { uc: "UC-02", label: { en: "Detecting Deviations, Alerts, and Exceptions", ar: "كشف الانحرافات والتنبيهات والاستثناءات", zh: "异常检测、告警与例外" }, to: "alerts" },
+    { uc: "UC-10", label: { en: "Generating Financial and Administrative Reports and Narrative Commentaries", ar: "التقارير ولوحات المعلومات", zh: "报告与仪表盘" }, to: "g04bench10", dept: "audit" },
+    { uc: "UC-02", label: { en: "Detecting Deviations, Alerts, and Exceptions", ar: "كشف الانحرافات والتنبيهات والاستثناءات", zh: "异常检测、告警与例外" }, to: "g04bench02", dept: "audit" },
   ],
   scope: [
     { k: { en: "Scope", ar: "النطاق", zh: "范围" }, opts: ["Cross-department", "G-02 only", "G-03 only", "G-04 only"] },

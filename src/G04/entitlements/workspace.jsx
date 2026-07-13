@@ -7,6 +7,7 @@ import { FLOW_ENT } from "./flow";
 
 const WS_CFG_ENT = {
   uc: "UC-08", kpiTone: "violet", flow: FLOW_ENT, plazaModel: PLAZA_G04, plazaSel: "uc08", flowRoute: "g04entflow",
+  flowHideUc: true,
   title: { en: "Financial Entitlements Department", ar: "إدارة الاستحقاقات المالية", zh: "财务权益部" },
   mandate: { en: "Mandate: supplier & contractor payments — shift from claim-triggered processing to know-before-it-arrives (UC-08). Annual payment plans vs Etimad actuals expose the next 4–8 weeks of liquidity gaps and trigger transfer / enhancement requests to Budget Execution.", ar: "المهمة: مدفوعات الموردين والمقاولين — التحول من المعالجة عند ورود المطالبة إلى المعرفة المسبقة وتجهيز السيولة (UC-08). مقارنة خطط الدفع السنوية بمدفوعات اعتماد الفعلية تكشف فجوات سيولة الأسابيع 4–8 القادمة وتُطلق طلبات مناقلة / تعزيز لتنفيذ الميزانية.", zh: "职责:供应商与承包商付款——从「索赔来了才处理」转向「索赔到来前先知道、先备资金」(UC-08)。以年度付款计划对比 Etimad 实际付款,提前暴露未来 4–8 周流动性缺口,并向预算执行部触发转移/增强请求。" },
   sqScope: { en: "Scope: Entitlements · read-only", ar: "النطاق: الاستحقاقات", zh: "范围:财务权益 · 只读" },
@@ -63,6 +64,7 @@ const WS_CFG_ENT = {
       { act: { en: "Track Etimad Plus migration impact on exports", ar: "متابعة أثر انتقال اعتماد بلس على التصدير", zh: "跟踪 Etimad Plus 迁移对导出报表的影响" }, owner: "Mona Al-Harbi", role: { en: "Contracts Coordinator", ar: "منسقة العقود", zh: "合同协调员" }, phone: "+966 53 220 9914" },
     ],
   },
+  /* Proactive Insights Agent 卡片已按需求移除(不再在财务权益部主页渲染)。 */
 };
 
 /* ---- Accounting Department (UC-09 +11) ---- */

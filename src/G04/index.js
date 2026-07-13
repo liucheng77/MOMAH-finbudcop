@@ -8,15 +8,16 @@
    ========================================================================= */
 export { PLAZA_G04 } from "./plazaG04.js";
 export { MF_G04, FlowG04 } from "./flowG04.jsx";
+export { default as UcBenchG04 } from "./benchG04.jsx";
 
 export {
   MF_G04_ENT, FLOW_ENT, FlowG04Ent,
   WS_CFG_ENT, EntitlementsWorkspace,
-  BENCH_UC08,
+  BENCH_UC08, BENCH_UC01, BENCH_UC09, ReportsEnt,
 } from "./entitlements/index.js";
 
 export {
   MF_G04_AUD, FLOW_AUD, FlowG04Aud,
   WS_CFG_AUDIT, AuditWorkspace,
-  BENCH_UC03,
+  BENCH_UC03, BENCH_UC02_AUD, BENCH_UC10_AUD, Uc03QueryAudit,
 } from "./audit/index.js";
