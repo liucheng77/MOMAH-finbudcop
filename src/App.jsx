@@ -17,6 +17,18 @@ import { PLAZA_G04,
   WS_CFG_AUDIT, AuditWorkspace, BENCH_UC02_AUD, BENCH_UC10_AUD, Uc03QueryAudit,
   UcBenchG04,
 } from "./G04";
+
+// G-05 · 财务报告总局 (General Directorate of Financial Reporting) — extracted
+// to ./G05 (mirrors the ./G04 split). App.jsx imports the directorate-level
+// flow + plaza and the four sub-department workspace/flow pages back from here.
+import { PLAZA_G05,
+  MF_G05, FlowG05,
+  MF_G05_REP, FLOW_REP, FlowG05Rep, WS_CFG_REPORTING, ReportingWorkspace,
+  MF_G05_COMP, FLOW_COMP, FlowG05Comp, WS_CFG_COMPLIANCE, ComplianceWorkspace,
+  MF_G05_COST, FLOW_COST, FlowG05Cost, WS_CFG_COST, CostWorkspace,
+  MF_G05_ACCT, FLOW_ACCT, FlowG05Acct, WS_CFG_ACCT, AccountingWorkspace,
+  BENCH_UC09_G05,
+} from "./G05";
 // Rich UC review panels (key cost driver layout) for the G-04 Financial
 // Entitlements Department. Mounted below the standard UcBench header when
 // `cfg.tool === "uc01" / "uc08" / "uc09"`. Defined in shared/ucTools.jsx
@@ -1017,7 +1029,7 @@ const I18N = {
 let logSeq = 0;
 
 function StoreProvider({ children }) {
-  const [lang, setLang] = useState(URL_LANG || "en");
+  const [lang, setLang] = useState(URL_LANG || "zh");
   const [user, setUser] = useState(null);
   const [route, setRoute] = useState("plnwork");
   const [deptSub, setDeptSub] = useState("plan");
@@ -2571,167 +2583,6 @@ const MF_G03 = {
 
 // 鈹€鈹€鈹€ MF_G04* inline definitions removed 鈥?see imports at top of file (./G04) 鈹€鈹€鈹€
 
-const MF_G05 = {
-  back: "frepwork", cw: 1760, ch: 840,
-  title: { en: "G-05 Financial Reports Directorate — Use-case storyline & agent I/O flow", ar: "مديرية التقارير المالية ج-05 — قصة الحالات وتدفّق الوكلاء", zh: "G-05 财务报告总局 — 用例故事线与代理输入/输出流程" },
-  subtitle: { en: "Shared directorate flow (Reporting + Compliance + Cost + Accounting depts) · sources → costs / closure / compliance → reporting → human gate → financial reports & memos", ar: "تدفّق مشترك (التقارير + الامتثال + التكاليف + المحاسبة) · المصادر ← التكاليف/الإقفال/الامتثال ← التقارير ← البوابة ← التقارير والمذكرات", zh: "总局共享流程(报告+合规+成本+会计部)· 数据源 → 成本/关账/合规 → 报告 → 人工关卡 → 财务报告与备忘" },
-  src: { x: 10, y: 80, w: 184, h: 320, list: ["SAP / Asas", "Etimad", "Esnad", { en: "Invoices", ar: "الفواتير", zh: "发票" }, { en: "Completion certs", ar: "شهادات الإنجاز", zh: "完工证明" }, { en: "Policies / standards", ar: "السياسات/المعايير", zh: "政策/准则" }, { en: "Bank statements", ar: "كشوف بنكية", zh: "银行对账单" }, "Excel / PDF"] },
-  nodes: {
-    uc01: { code: "UC-01", x: 260, y: 300, w: 220, h: 150, title: { en: "Financial Data Standardization and Data Quality", ar: "توحيد البيانات وجودتها", zh: "财务数据统一与质量" }, ags: ["orch", "dataq", "insight"] },
-    uc08: { code: "UC-08", x: 260, y: 540, w: 220, h: 130, title: { en: "Contracts, Claims & Disbursements", ar: "العقود والمطالبات والصرف", zh: "合同、索赔与拨付" }, ags: ["dataq", "anom", "repgen"] },
-    uc12: { code: "UC-12", x: 575, y: 110, w: 230, h: 160, title: { en: "Costs, Assignment Orders & Funds", ar: "التكاليف وأوامر الإسناد والصناديق", zh: "成本、派工单与资金" }, ags: ["dataq", "repgen", "anom"] },
-    uc09: { code: "UC-09", x: 575, y: 330, w: 230, h: 160, title: { en: "Closure, Reconciliation & Adjustments", ar: "الإقفال والمطابقة والتسويات", zh: "关账、对账与调整" }, ags: ["dataq", "anom", "comp"] },
-    uc11: { code: "UC-11", x: 575, y: 570, w: 230, h: 160, title: { en: "Compliance, Policies & Accounting Memos", ar: "الامتثال والسياسات والمذكرات", zh: "合规、政策与会计备忘" }, ags: ["comp", "repgen", "dataq"] },
-    uc14: { code: "UC-14", x: 905, y: 120, w: 220, h: 150, title: { en: "Assets — Capitalization (cost basis)", ar: "الأصول — الرسملة (أساس التكلفة)", zh: "资产 — 资本化(成本基础)" }, ags: ["dataq", "market", "comp"] },
-    uc10: { code: "UC-10", x: 920, y: 380, w: 236, h: 170, title: { en: "Reports & Dashboards (Periodic / Executive)", ar: "التقارير ولوحات المعلومات", zh: "报告与仪表盘(周期/执行)" }, ags: ["repgen", "narr", "dataq"] },
-    uc03: { code: "UC-03", x: 905, y: 610, w: 220, h: 140, title: { en: "Smart Query, Audit Log & Permissions", ar: "الاستعلام الذكي وسجل التدقيق", zh: "智能查询、审计日志与权限" }, ags: ["dataq", "orch", "insight"] },
-  },
-  gate: { x: 1290, y: 390, w: 220, h: 180, sub: { en: "Validate & approve · reports · memos & entries · authorize export", ar: "تحقّق واعتمد · التقارير · المذكرات والقيود · التصدير", zh: "验证并批准 · 报告 · 备忘与分录 · 授权导出" } },
-  del: { x: 1560, y: 400, w: 190, h: 160, sub: { en: "Approved financial reports, memos & dashboards", ar: "تقارير ومذكرات ولوحات معتمدة", zh: "已批准的财务报告、备忘与仪表盘" } },
-  edges: [
-    { from: "src", fa: "R", to: "uc01", ta: "L", c: "g", t: { en: "Ledgers, invoices, policies", ar: "الدفاتر والفواتير والسياسات", zh: "总账/发票/政策" } },
-    { from: "uc01", fa: "R", to: "uc12", ta: "L", c: "b", t: { en: "Unified cost & order data", ar: "بيانات التكاليف والأوامر", zh: "统一成本与派工数据" } },
-    { from: "uc01", fa: "R", to: "uc09", ta: "L", c: "b", t: { en: "Consolidated, validated data", ar: "بيانات موحّدة ومعتمدة", zh: "统一校验数据" } },
-    { from: "uc08", fa: "R", to: "uc09", ta: "L", c: "b", t: { en: "Claims & disbursement outputs", ar: "مخرجات المطالبات والصرف", zh: "索赔与拨付输出" } },
-    { from: "uc12", fa: "R", to: "uc14", ta: "L", c: "b", t: { en: "Assignment-order costs", ar: "تكاليف أوامر الإسناد", zh: "派工单成本" } },
-    { from: "uc09", fa: "B", to: "uc11", ta: "T", c: "b", t: { en: "Differences & proposed adjustments", ar: "الفروق والتسويات المقترحة", zh: "差异与建议调整" } },
-    { from: "uc12", fa: "R", to: "uc10", ta: "L", c: "b", t: { en: "Costs, unit cost & fund balances", ar: "التكاليف وأرصدة الصناديق", zh: "成本/单元成本/资金余额" } },
-    { from: "uc09", fa: "R", to: "uc10", ta: "L", c: "b", t: { en: "Closing entries & balances", ar: "قيود الإقفال والأرصدة", zh: "关账分录与余额" } },
-    { from: "uc11", fa: "R", to: "uc10", ta: "L", c: "b", t: { en: "Compliance findings & memos", ar: "نتائج الامتثال والمذكرات", zh: "合规结论与备忘" } },
-    { from: "uc14", fa: "B", to: "uc10", ta: "T", c: "b", t: { en: "Asset cost basis", ar: "أساس تكلفة الأصول", zh: "资产成本基础" } },
-    { from: "uc10", fa: "R", to: "gate", ta: "L", c: "b", t: { en: "Draft reports & narrative", ar: "مسودات التقارير والسرد", zh: "报告草稿与叙述" } },
-    { from: "uc03", fa: "R", to: "gate", ta: "L", c: "b", t: { en: "Audit trail & exports", ar: "سجل التدقيق والتصدير", zh: "审计轨迹与导出" } },
-    { from: "gate", fa: "R", to: "del", ta: "L", c: "o", t: { en: "Approved reports & memos", ar: "تقارير ومذكرات معتمدة", zh: "已批准报告与备忘" } },
-  ],
-};
-
-const MF_G05_REP = {
-  back: "frepwork", cw: 1400, ch: 560,
-  title: { en: "Financial Reporting Department — Multi-Agent Flow (G-05)", ar: "إدارة التقارير المالية — تدفّق متعدد الوكلاء (ج-05)", zh: "财务报告部 — 多智能体流程(G-05)" },
-  subtitle: { en: "UC-10-centric · upstream UC-09/UC-11/UC-12/UC-14 + unified data → reports & narrative → parallel deviation & smart query → executive/exception outputs", ar: "متمحور حول UC-10 · المدخلات العليا ← التقارير والسرد ← الانحراف والاستعلام المتوازي ← المخرجات", zh: "以 UC-10 为核心 · 上游 UC-09/11/12/14 + 统一数据 → 报告与叙述 → 并行偏差与智能查询 → 执行/例外输出" },
-  src: { x: 14, y: 96, w: 204, h: 372, list: [
-    { en: "Financial Close Results (UC-09)", ar: "نتائج الإقفال (UC-09)", zh: "财务关账结果(UC-09)" },
-    { en: "Compliance Reports (UC-11)", ar: "تقارير الامتثال (UC-11)", zh: "合规报告(UC-11)" },
-    { en: "Cost Reports (UC-12)", ar: "تقارير التكاليف (UC-12)", zh: "成本报告(UC-12)" },
-    { en: "Asset Reports (UC-14)", ar: "تقارير الأصول (UC-14)", zh: "资产报告(UC-14)" },
-    { en: "Unified Data (UC-01)", ar: "بيانات موحّدة (UC-01)", zh: "统一数据(UC-01)" },
-  ] },
-  nodes: {
-    uc10: { code: "UC-10", x: 450, y: 158, w: 310, h: 280, title: { en: "Financial & Administrative Reports + Narrative Commentary", ar: "التقارير المالية والإدارية والتعليق السردي", zh: "财务与行政报告 + 叙述评述" }, ags: ["repgen", "narr", "dataq"] },
-    uc02: { code: "UC-02", x: 900, y: 110, w: 280, h: 178, title: { en: "Deviation Alerts (parallel)", ar: "تنبيهات الانحراف (متوازٍ)", zh: "偏差告警(并行)" }, ags: ["anom", "insight", "orch"] },
-    uc03: { code: "UC-03", x: 900, y: 360, w: 280, h: 178, title: { en: "Smart Query & Audit (parallel)", ar: "الاستعلام والتدقيق (متوازٍ)", zh: "智能查询与审计(并行)" }, ags: ["dataq", "orch", "insight"] },
-  },
-  del: { x: 1360, y: 96, w: 320, h: 396,
-    head: { en: "Outputs", ar: "المخرجات", zh: "输出" },
-    items: [
-      { t: { en: "Periodic Financial Reports", ar: "تقارير مالية دورية", zh: "周期财务报告" }, d: { en: "scheduled & ad-hoc", ar: "مجدولة وعند الطلب", zh: "定期与即席" } },
-      { t: { en: "Executive Reports", ar: "تقارير تنفيذية", zh: "执行报告" }, d: { en: "leadership summaries", ar: "ملخصات للقيادة", zh: "领导摘要" } },
-      { t: { en: "Exception Reports", ar: "تقارير الاستثناءات", zh: "例外报告" }, d: { en: "deviation highlights", ar: "أبرز الانحرافات", zh: "偏差要点" } },
-      { t: { en: "Narrative Commentary", ar: "تعليق سردي", zh: "叙述评述" }, d: { en: "AI-generated analysis", ar: "تحليل بالذكاء الاصطناعي", zh: "AI 生成分析" } },
-      { t: { en: "Performance Summaries", ar: "ملخصات الأداء", zh: "绩效摘要" }, d: { en: "KPI & metric dashboards", ar: "لوحات المؤشرات", zh: "KPI 与指标仪表盘" } },
-    ],
-    foot: { en: "Downstream consumers · Senior Leadership · External Stakeholders · Audit Bodies.", ar: "المستهلكون اللاحقون · القيادة · الجهات الخارجية · جهات التدقيق.", zh: "下游消费方 · 高层领导 · 外部相关方 · 审计机构。" },
-  },
-  edges: [
-    { from: "src", fa: "R", to: "uc10", ta: "L", c: "g", t: { en: "Report templates, approved upstream data, KPIs, deviations", ar: "قوالب وبيانات معتمدة ومؤشرات وانحرافات", zh: "报告模板、批准的上游数据、KPI、偏差" } },
-    { from: "uc10", fa: "R", to: "uc02", ta: "L", c: "b", t: { en: "Deviation alerts", ar: "تنبيهات الانحراف", zh: "偏差告警" } },
-    { from: "uc10", fa: "R", to: "uc03", ta: "L", c: "b", t: { en: "Reports for query / audit", ar: "تقارير للاستعلام / التدقيق", zh: "报告 → 查询/审计" } },
-    { from: "uc10", fa: "R", to: "del", ta: "L", c: "o", t: { en: "Periodic & executive reports", ar: "تقارير دورية وتنفيذية", zh: "周期与执行报告" } },
-  ],
-};
-
-const MF_G05_COMP = {
-  back: "compwork", cw: 1010, ch: 600,
-  title: { en: "Compliance Department — Multi-Agent Flow (G-05)", ar: "إدارة الامتثال — تدفّق متعدد الوكلاء (ج-05)", zh: "合规部 — 多智能体流程(G-05)" },
-  subtitle: { en: "UC-11-centric · standards & policy inputs → compliance, policies & memos → compliance outputs · upstream UC-09, downstream UC-10, parallel UC-12/UC-14 · all outputs require specialist review before finalization", ar: "متمحور حول UC-11 · المدخلات المعيارية ← الامتثال والسياسات والمذكرات ← المخرجات · كل المخرجات تتطلب مراجعة المختص قبل الاعتماد", zh: "以 UC-11 为核心 · 准则与政策输入 → 合规/政策/备忘 → 合规输出 · 上游 UC-09、下游 UC-10、并行 UC-12/UC-14 · 所有输出定稿前均需专家复核" },
-  src: { x: 14, y: 80, w: 204, h: 640, list: [
-    { en: "IPSAS Standards", ar: "معايير IPSAS", zh: "IPSAS 准则" }, { en: "Comprehensive Guide", ar: "الدليل الشامل", zh: "综合指南" },
-    { en: "Policies & Procedures", ar: "السياسات والإجراءات", zh: "政策与程序" }, { en: "Royal Orders", ar: "الأوامر الملكية", zh: "皇室令" },
-    { en: "MoF Instructions", ar: "تعليمات المالية", zh: "财政部指示" }, { en: "Chart of Accounts", ar: "دليل الحسابات", zh: "会计科目表" },
-    { en: "Previous Memos", ar: "المذكرات السابقة", zh: "历史备忘" },
-    { en: "Accounting Cases", ar: "حالات محاسبية", zh: "会计案例" }, { en: "Audit Observations", ar: "ملاحظات التدقيق", zh: "审计观察" },
-    { en: "New Policies & Standards", ar: "سياسات ومعايير جديدة", zh: "新政策与准则" },
-    { en: "Amanat TB · journals · statements · reporting packages (Excel)", ar: "ميزان المراجعة والقيود والقوائم وحزم التقارير من الأمانات (إكسل)", zh: "阿玛纳试算表/分录/报表/报告包(Excel)" },
-    { en: "Existing Excel compliance engine (mappings · rules · formulas)", ar: "محرك الامتثال الحالي في إكسل (مطابقات، قواعد، معادلات)", zh: "现有 Excel 合规引擎(映射表/规则/公式)" },
-    { en: "12 accounting-cycle guides & working-paper templates", ar: "أدلة 12 دورة محاسبية وقوالب أوراق العمل", zh: "12 个会计周期流程指南与底稿模版" },
-  ] },
-  nodes: {
-    uc11: { code: "UC-11", x: 460, y: 170, w: 320, h: 320, title: { en: "Compliance, Policies & Accounting Memos", ar: "الامتثال والسياسات والمذكرات المحاسبية", zh: "合规、政策与会计备忘" }, ags: ["comp", "repgen", "dataq"] },
-  },
-  del: { x: 1040, y: 120, w: 320, h: 432,
-    head: { en: "Outputs", ar: "المخرجات", zh: "输出" },
-    items: [
-      { t: { en: "Compliance Reports", ar: "تقارير الامتثال", zh: "合规报告" }, d: { en: "compliance assessment", ar: "تقييم الامتثال", zh: "合规评估" } },
-      { t: { en: "Accounting Memos", ar: "مذكرات محاسبية", zh: "会计备忘" }, d: { en: "position memos", ar: "مذكرات موقف", zh: "立场备忘" } },
-      { t: { en: "Proposed Journal Entries", ar: "قيود مقترحة", zh: "建议分录" }, d: { en: "draft entries for review", ar: "قيود مسودة للمراجعة", zh: "待复核草稿分录" } },
-      { t: { en: "Policy Gap Analysis", ar: "تحليل فجوات السياسات", zh: "政策差距分析" }, d: { en: "current vs required", ar: "الحالي مقابل المطلوب", zh: "现状 vs 要求" } },
-      { t: { en: "Audit Response Drafts", ar: "مسودات الرد على التدقيق", zh: "审计回应草稿" }, d: { en: "responses to observations", ar: "ردود على الملاحظات", zh: "对观察项的回应" } },
-    ],
-    foot: { en: "All outputs require specialist review before finalization.", ar: "كل المخرجات تتطلب مراجعة المختص قبل الاعتماد.", zh: "所有输出定稿前均需专家复核。" },
-  },
-  edges: [
-    { from: "src", fa: "R", to: "uc11", ta: "L", c: "g", t: { en: "Standards, policies, prior memos, accounting cases, audit observations", ar: "المعايير والسياسات والمذكرات السابقة والحالات وملاحظات التدقيق", zh: "准则、政策、历史备忘、会计案例、审计观察" } },
-    { from: "uc11", fa: "R", to: "del", ta: "L", c: "o", t: { en: "Compliance reports, memos & outputs", ar: "تقارير الامتثال والمذكرات والمخرجات", zh: "合规报告、备忘与输出" } },
-  ],
-};
-
-const MF_G05_COST = {
-  back: "costwork", cw: 1280, ch: 560,
-  title: { en: "Cost Management Department — Multi-Agent Flow (G-05)", ar: "إدارة التكاليف — تدفّق متعدد الوكلاء (ج-05)", zh: "成本管理部 — 多智能体流程(G-05)" },
-  subtitle: { en: "UC-12-centric · cost & fund data → costs, assignment orders & funds → reports, surpluses & alerts · upstream UC-11, parallel UC-14, downstream UC-10", ar: "متمحور حول UC-12 · بيانات التكاليف والصناديق ← التكاليف وأوامر الإسناد والصناديق ← التقارير والفوائض والتنبيهات", zh: "以 UC-12 为核心 · 成本与资金数据 → 成本/派工单/资金 → 报告、结余与告警 · 上游 UC-11、并行 UC-14、下游 UC-10" },
-  src: { x: 14, y: 90, w: 204, h: 424, list: [
-    { en: "SAP", ar: "ساب", zh: "SAP" }, { en: "Etimad", ar: "اعتماد", zh: "Etimad" }, { en: "Esnad", ar: "إسناد", zh: "Esnad" },
-    { en: "Invoices", ar: "الفواتير", zh: "发票" }, { en: "Completion Certificates", ar: "شهادات الإنجاز", zh: "完工证明" }, { en: "Liquidity Requests", ar: "طلبات السيولة", zh: "流动性申请" },
-    { en: "Payment Orders", ar: "أوامر الدفع", zh: "付款单" }, { en: "Bank Statements", ar: "كشوف بنكية", zh: "银行对账单" }, { en: "Dev. Fund Data", ar: "بيانات صناديق التطوير", zh: "开发基金数据" },
-  ] },
-  nodes: {
-    uc12: { code: "UC-12", x: 460, y: 150, w: 320, h: 300, title: { en: "Costs, Assignment Orders & Funds", ar: "التكاليف وأوامر الإسناد والصناديق", zh: "成本、派工单与资金" }, ags: ["dataq", "repgen", "anom"] },
-  },
-  del: { x: 1040, y: 96, w: 320, h: 424,
-    head: { en: "Outputs", ar: "المخرجات", zh: "输出" },
-    items: [
-      { t: { en: "Assignment Order Reports", ar: "تقارير أوامر الإسناد", zh: "派工单报告" }, d: { en: "per order", ar: "لكل أمر", zh: "按单" } },
-      { t: { en: "Cost per Unit / Land", ar: "تكلفة الوحدة / الأرض", zh: "单元/地块成本" }, d: { en: "unit costing", ar: "احتساب الوحدة", zh: "单元成本核算" } },
-      { t: { en: "Financial Consideration", ar: "المقابل المالي", zh: "财务对价" }, d: { en: "compensation values", ar: "قيم التعويض", zh: "补偿金额" } },
-      { t: { en: "Surpluses & Fund Reports", ar: "الفوائض وتقارير الصناديق", zh: "结余与基金报告" }, d: { en: "fund balances", ar: "أرصدة الصناديق", zh: "基金余额" } },
-      { t: { en: "Matching Results & Alerts", ar: "نتائج المطابقة والتنبيهات", zh: "匹配结果与告警" }, d: { en: "reconciliation & anomalies", ar: "مطابقة وشذوذ", zh: "对账与异常" } },
-    ],
-    foot: { en: "Surplus tracking rule — surplus must be tracked from original order to beneficiary project.", ar: "قاعدة تتبّع الفائض — يجب تتبّع الفائض من الأمر الأصلي إلى المشروع المستفيد.", zh: "结余追踪规则 —— 结余须从原始派工单追踪至受益项目。" },
-  },
-  edges: [
-    { from: "src", fa: "R", to: "uc12", ta: "L", c: "g", t: { en: "Assignment orders, invoices, liquidity reqs, completion certs, fund agreements", ar: "أوامر الإسناد والفواتير وطلبات السيولة والشهادات واتفاقيات الصناديق", zh: "派工单、发票、流动性申请、完工证明、基金协议" } },
-    { from: "uc12", fa: "R", to: "del", ta: "L", c: "o", t: { en: "Assignment-order reports, unit cost, surpluses, fund reports", ar: "تقارير الأوامر وتكلفة الوحدة والفوائض وتقارير الصناديق", zh: "派工单报告、单元成本、结余、基金报告" } },
-  ],
-};
-
-const MF_G05_ACCT = {
-  back: "acctwork", cw: 1280, ch: 540,
-  title: { en: "Accounting Department — Multi-Agent Flow (G-05)", ar: "إدارة المحاسبة — تدفّق متعدد الوكلاء (ج-05)", zh: "会计部 — 多智能体流程(G-05)" },
-  subtitle: { en: "UC-09-centric · financial transactions & balances → financial close, reconciliation & adjustments → close outputs · upstream UC-01/UC-08, downstream UC-11/UC-10 · cycle: trial balance → reconciliation → adjustments → close → reports", ar: "متمحور حول UC-09 · المعاملات والأرصدة ← الإقفال والمطابقة والتسويات ← المخرجات", zh: "以 UC-09 为核心 · 财务交易与余额 → 财务关账/对账/调整 → 关账输出 · 上游 UC-01/UC-08、下游 UC-11/UC-10 · 周期:试算 → 对账 → 调整 → 关账 → 报告" },
-  src: { x: 14, y: 90, w: 204, h: 400, list: [
-    { en: "SAP", ar: "ساب", zh: "SAP" }, { en: "GRP", ar: "GRP", zh: "GRP" }, { en: "Hyperion", ar: "هايبريون", zh: "Hyperion" },
-    { en: "Chart of Accounts", ar: "دليل الحسابات", zh: "会计科目表" }, { en: "Journal Entries", ar: "قيود اليومية", zh: "日记账分录" }, { en: "Trial Balances", ar: "موازين المراجعة", zh: "试算平衡表" },
-    { en: "Bank Statements", ar: "كشوف بنكية", zh: "银行对账单" }, { en: "Contracts", ar: "العقود", zh: "合同" },
-  ] },
-  nodes: {
-    uc09: { code: "UC-09", x: 460, y: 150, w: 320, h: 290, title: { en: "Financial Close, Reconciliation & Adjustments", ar: "الإقفال المالي والمطابقة والتسويات", zh: "财务关账、对账与调整" }, ags: ["repgen", "comp", "anom"] },
-  },
-  del: { x: 1040, y: 96, w: 320, h: 406,
-    head: { en: "Outputs", ar: "المخرجات", zh: "输出" },
-    items: [
-      { t: { en: "Reconciliation Reports", ar: "تقارير المطابقة", zh: "对账报告" }, d: { en: "reconciled balances", ar: "أرصدة مطابقة", zh: "对账后余额" } },
-      { t: { en: "Adjustment Entries", ar: "قيود التسوية", zh: "调整分录" }, d: { en: "corrective entries", ar: "قيود تصحيحية", zh: "更正分录" } },
-      { t: { en: "Trial Balance", ar: "ميزان المراجعة", zh: "试算平衡表" }, d: { en: "balanced ledger", ar: "دفتر متوازن", zh: "平衡账簿" } },
-      { t: { en: "Financial Close Reports", ar: "تقارير الإقفال", zh: "关账报告" }, d: { en: "period close", ar: "إقفال الفترة", zh: "期末关账" } },
-      { t: { en: "Compliance Verification", ar: "التحقق من الامتثال", zh: "合规核验" }, d: { en: "standards check", ar: "فحص المعايير", zh: "准则检查" } },
-    ],
-    foot: { en: "Upstream UC-01 / UC-08 · downstream UC-11 / UC-10.", ar: "أعلى UC-01 / UC-08 · أسفل UC-11 / UC-10.", zh: "上游 UC-01 / UC-08 · 下游 UC-11 / UC-10。" },
-  },
-  edges: [
-    { from: "src", fa: "R", to: "uc09", ta: "L", c: "g", t: { en: "Financial transactions, trial balances, bank statements, contracts, policies", ar: "المعاملات وموازين المراجعة والكشوف والعقود والسياسات", zh: "财务交易、试算平衡、银行对账单、合同、政策" } },
-    { from: "uc09", fa: "R", to: "del", ta: "L", c: "o", t: { en: "Reconciliation reports, adjustments, trial balance, close reports", ar: "تقارير المطابقة والتسويات وميزان المراجعة وتقارير الإقفال", zh: "对账报告、调整、试算平衡、关账报告" } },
-  ],
-};
 
 const MF_G02_FPA = {
   back: "fpawork",
@@ -2908,11 +2759,6 @@ function FlowG02Fpa() { return <DirectorateFlow flow={MF_G02_FPA} />; }
 
 function FlowG03() { return <DirectorateFlow flow={MF_G03} />; }
 // FlowG04 / FlowG04Ent / FlowG04Aud now live in ./G04 (imported above).
-function FlowG05() { return <DirectorateFlow flow={MF_G05} />; }
-function FlowG05Rep() { return <DirectorateFlow flow={MF_G05_REP} />; }
-function FlowG05Comp() { return <DirectorateFlow flow={MF_G05_COMP} />; }
-function FlowG05Cost() { return <DirectorateFlow flow={MF_G05_COST} />; }
-function FlowG05Acct() { return <DirectorateFlow flow={MF_G05_ACCT} />; }
 
 function RcWorkbench() {
   const { t, tr, setRoute, pushLog, setPerfJump, setBackRoute, backRoute, setDeptSub, setAlertsOpen } = useStore();
@@ -3346,35 +3192,6 @@ const PLAZA_G03 = {
 
 // 鈹€鈹€鈹€ G-04 inline definitions removed 鈥?see imports at top of file (./G04) 鈹€鈹€鈹€
 
-const PLAZA_G05 = {
-  lanes: [
-    { key: "acct", label: { en: "ACCOUNTING DEPARTMENT", ar: "إدارة المحاسبة", zh: "会计部" }, cls: "rev" },
-    { key: "comp", label: { en: "COMPLIANCE DEPARTMENT", ar: "إدارة الامتثال", zh: "合规部" }, cls: "ast" },
-    { key: "cost", label: { en: "COST MANAGEMENT DEPARTMENT", ar: "إدارة التكاليف", zh: "成本管理部" }, cls: "c3" },
-    { key: "rep", label: { en: "FINANCIAL REPORTING DEPARTMENT", ar: "إدارة التقارير المالية", zh: "财务报告部" }, cls: "c4" },
-  ],
-  title: { en: "G-05 second-level departments — Financial Reports directorate", ar: "إدارات ج-05 — التقارير المالية", zh: "G-05 二级部门 — 财务报告总局" },
-  nodes: [
-    pzNode("uc09", "acct", 2),
-    pzNode("uc11", "comp", 1),
-    pzNode("uc02", "comp", 4),
-    pzNode("uc12", "cost", 1),
-    pzNode("uc14", "cost", 2),
-    pzNode("uc01", "rep", 0),
-    pzNode("uc10", "rep", 3),
-    pzNode("uc03", "rep", 4),
-  ],
-  intra: [],
-  cross: [
-    { from: "uc09", to: "uc11", label: { en: "Reconciliation diffs & settlements", ar: "فروق المطابقة والتسويات", zh: "对账差异与结算" } },
-    { from: "uc11", to: "uc12", label: { en: "Compliant treatment & policy refs", ar: "المعالجة المتوافقة ومراجع السياسات", zh: "合规处理与政策依据" } },
-    { from: "uc11", to: "uc14", label: { en: "Compliant treatment & policy refs", ar: "المعالجة المتوافقة ومراجع السياسات", zh: "合规处理与政策依据" } },
-    { from: "uc12", to: "uc10", label: { en: "Cost / fund data", ar: "بيانات التكاليف / الصناديق", zh: "成本 / 资金数据" } },
-    { from: "uc14", to: "uc10", label: { en: "Asset cost & capitalization", ar: "تكلفة الأصول والرسملة", zh: "资产成本与资本化" } },
-    { from: "uc10", to: "uc02", label: { en: "Reports for monitoring", ar: "تقارير للمراقبة", zh: "报告 → 监控" } },
-    { from: "uc10", to: "uc03", label: { en: "Reports for query / audit", ar: "تقارير للاستعلام / التدقيق", zh: "报告 → 查询 / 审计" } },
-  ],
-};
 
 /* Oversight (Audit) — common control layer (G-01) monitoring all groups */
 const PLAZA_AUDIT = {
@@ -3422,14 +3239,6 @@ const FLOW_BUD = [
   { code: "UC-03", label: { en: "Smart query", ar: "الاستعلام الذكي", zh: "智能查询" }, cls: "down" },
   { code: "UC-10", label: { en: "Reports", ar: "التقارير", zh: "报告" }, cls: "down" },
 ]
-const FLOW_ACCT = [
-  { code: "UC-01", label: { en: "Unified data", ar: "بيانات موحّدة", zh: "统一数据" }, cls: "in" },
-  { code: "UC-09", label: { en: "Closing & reconciliation", ar: "الإقفال والمطابقة", zh: "关账与对账" }, cls: "focus", star: true },
-  { code: "UC-11", label: { en: "Compliance & memos", ar: "الامتثال والمذكرات", zh: "合规与备忘" }, cls: "down" },
-  { code: "UC-12 / UC-14", label: { en: "Costs & assets", ar: "التكاليف والأصول", zh: "成本与资产" }, cls: "down" },
-  { code: "UC-10", label: { en: "Reports & narrative", ar: "التقارير والسرد", zh: "报告与叙述" }, cls: "down" },
-  { code: "UC-02 / UC-03", label: { en: "Alerts & smart query", ar: "التنبيهات والاستعلام", zh: "告警与智能查询" }, cls: "down" },
-];
 
 function BusinessPlaza({ model, defaultSel }) {
   const M = model || PLAZA_G06;
@@ -3454,7 +3263,7 @@ function BusinessPlaza({ model, defaultSel }) {
     if (n.open === "perf") { setPerfJump({ tab: "dash" }); setBackRoute(route); setRoute("perf"); return; }
     if (n.open === "report") { setPerfJump({ tab: "params" }); setBackRoute(route); setRoute("rcreports"); return; }
     if (["plnbudget","plncost","plnhousing","plnforecast","plnscenario","g02query"].includes(n.open)) { setBackRoute(route); setDeptSub("plan"); setRoute(n.open); return; }
-    const MM = { rcbench: ["revcol", "rcbench"], asbench: ["assets", "asbench"], csfunds: ["cost", "csfunds"], compmemo: ["comp", "compmemo"], reports: ["frep", "reports"], bench01: ["acct", "bench01"], bench03: ["audit", "bench03"], bench04: ["fpa", "bench04"], bench05: ["plan", "bench05"], bench07: ["plan", "bench07"], bench08: ["entitle", "bench08"], bench09: ["acct", "bench09"], bench15: ["plan", "bench15"], bench16: ["plan", "bench16"], bench17: ["budexec", "bench17"], g04bench01: ["entitle", "g04bench01"], g04bench02: ["audit", "g04bench02"], g04bench09: ["entitle", "g04bench09"], g04bench10: ["audit", "g04bench10"], g04reports: ["entitle", "g04reports"] }[n.open];
+    const MM = { rcbench: ["revcol", "rcbench"], asbench: ["assets", "asbench"], csfunds: ["cost", "csfunds"], compmemo: ["comp", "compmemo"], reports: ["frep", "reports"], bench01: ["acct", "bench01"], bench03: ["audit", "bench03"], bench04: ["fpa", "bench04"], bench05: ["plan", "bench05"], bench07: ["plan", "bench07"], bench08: ["entitle", "bench08"], bench09: ["acct", "bench09"], bench15: ["plan", "bench15"], bench16: ["plan", "bench16"], bench17: ["budexec", "bench17"], g04bench01: ["entitle", "g04bench01"], g04bench02: ["audit", "g04bench02"], g04bench09: ["entitle", "g04bench09"], g04bench10: ["audit", "g04bench10"], g04reports: ["entitle", "g04reports"], g05bench09: ["acct", "g05bench09"] }[n.open];
     if (MM) { setBackRoute(route); setRoute(MM[1]); }
   };
   const ovScale = (plazaBox.w || 480) / PZ.W;
@@ -7495,6 +7304,157 @@ function AnomalyDetectionWorkbench() {
       </div>, document.body)}
   </div></div>);
 }
+/* G-04 审计部 UC-02 异常/告警工作台 —— 监控内容直接复制自 AnomalyDetectionWorkbench
+   (持续监控层 · 告警与异常中心),顶部沿用 G-04 审计部头部(当前样式),返回至审计部广场。 */
+function G04Uc02Anomaly() {
+  const { tr, setRoute, route, backRoute, setBackRoute, pushLog } = useStore();
+  const cfg = BENCH_UC02_AUD;
+  const [prog, setProg] = useState({});
+  const [sel, setSel] = useState("AN-4102");
+  const [fSev, setFSev] = useState("all");
+  const [fBiz, setFBiz] = useState("all");
+  const [fStat, setFStat] = useState("open");
+  const [picked, setPicked] = useState({});
+  const [cmts, setCmts] = useState({});
+  const [cin, setCin] = useState("");
+  const [atts, setAtts] = useState({});
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [act, setAct] = useState(null);
+  const M = (n) => "SAR " + (n >= 1 ? n.toFixed(2) + "M" : (n * 1000).toFixed(0) + "K");
+  const stageOf = (it) => prog[it.id] != null ? prog[it.id] : it.stage;
+  const back = () => { const b = backRoute || cfg.back; setBackRoute(null); setRoute(b); };
+  const rows0 = AN_ITEMS.map(it => ({ ...it, st: stageOf(it) }));
+  const rows = rows0.filter(it => (fSev === "all" || it.sev === fSev) && (fBiz === "all" || it.biz === fBiz) && (fStat === "all" || (fStat === "open" ? it.st < 5 : it.st === 5)));
+  const total = rows0.length, pending = rows0.filter(it => it.st < 5).length, resolved = rows0.filter(it => it.st === 5).length;
+  const rate = Math.round(resolved / total * 100);
+  const avgDays = (rows0.reduce((a, it) => a + it.days, 0) / total).toFixed(1);
+  const a = rows0.find(x => x.id === sel) || rows0[0];
+  const aStage = a.st;
+  const sevTxt = { high: anT("High", "مرتفع", "高"), med: anT("Medium", "متوسط", "中"), low: anT("Low", "منخفض", "低") };
+  const anomScore = a.sev === "high" ? "0.92" : a.sev === "med" ? "0.74" : "0.55";
+  const TY = AN_TYPES[a.type].n;
+  const keyFindings = [
+    { c: "red", t: { en: "Isolation Forest flagged a " + TY.en.toLowerCase() + " pattern — anomaly score " + anomScore + " vs 0.30 baseline (top 2% outlier)", ar: "غابة العزل رصدت نمط \"" + TY.ar + "\" — درجة الشذوذ " + anomScore + " مقابل خط أساس 0.30 (ضمن أعلى 2%)", zh: "孤立森林检测到「" + TY.zh + "」模式 —— 异常评分 " + anomScore + "(基线 0.30,处于前 2% 离群)" } },
+    { c: "amber", t: { en: "Financial exposure " + M(a.amount) + " traced across " + a.links.length + " linked transactions (" + a.links.join(", ") + ")", ar: "التعرّض المالي " + M(a.amount) + " متتبَّع عبر " + a.links.length + " معاملات مرتبطة", zh: "涉及金额 " + M(a.amount) + ",已追溯至 " + a.links.length + " 笔关联交易(" + a.links.join("、") + ")" } },
+    { c: "blue", t: { en: "Cross-system reconciliation on " + a.src + " confirms the deviation is a genuine exception, not a timing/lag artifact", ar: "التسوية عبر " + a.src + " تؤكد أن الانحراف استثناء حقيقي وليس بسبب التوقيت", zh: a.src + " 跨系统对账确认此偏差为真实异常,非时序/延迟造成" } },
+    { c: "green", t: { en: "Auto-classified " + tr(sevTxt[a.sev]) + " severity, routed to " + tr(a.owner) + " with a " + a.days + "-day SLA timer", ar: "صُنّف تلقائياً بخطورة " + tr(sevTxt[a.sev]) + " وأُحيل إلى " + tr(a.owner) + " بمؤقّت SLA " + a.days + " يوم", zh: "已自动判定为「" + tr(sevTxt[a.sev]) + "」严重度,分派至" + tr(a.owner) + ",并设 " + a.days + " 天处理时效" } },
+  ];
+  const kpiFilter = (st) => { setFStat(st); setFSev("all"); setFBiz("all"); };
+  const advance = () => { if (aStage >= 5) return; setProg(p => ({ ...p, [a.id]: aStage + 1 })); pushLog({ en: "UC-02 " + a.id + " → " + tr(AN_STAGES[aStage + 1]), ar: "UC-02", zh: "UC-02 " + a.id + " → " + tr(AN_STAGES[aStage + 1]) }); setAct(anT(a.id + " advanced to «" + tr(AN_STAGES[aStage + 1]) + "»", "", a.id + " 已推进到「" + tr(AN_STAGES[aStage + 1]) + "」")); };
+  const addCmt = () => { const v = cin.trim(); if (!v) return; setCmts(c => ({ ...c, [a.id]: [...(c[a.id] || []), { t: v, ts: "10:0" + ((c[a.id] || []).length + 2) }] })); setCin(""); };
+  const onFiles = (fileList) => { const names = Array.from(fileList || []).map(f => f.name + " · " + (f.size > 1024 ? Math.round(f.size / 1024) + "KB" : f.size + "B")); if (!names.length) return; setAtts(x => ({ ...x, [a.id]: [...(x[a.id] || []), ...names] })); setAct(anT(names.length + " file(s) attached to " + a.id, "", "已为 " + a.id + " 上传 " + names.length + " 个文件")); };
+  const pickCount = Object.values(picked).filter(Boolean).length;
+  const togglePick = (id) => setPicked(p => ({ ...p, [id]: !p[id] }));
+  const batchAssign = () => { if (!pickCount) { setAct(anT("Select anomalies first (checkbox)", "", "请先勾选异常项")); return; } const ids = Object.keys(picked).filter(k => picked[k]); setProg(p => { const n = { ...p }; ids.forEach(id => { const it = AN_ITEMS.find(x => x.id === id); const s = n[id] != null ? n[id] : it.stage; if (s < 2) n[id] = 2; }); return n; }); setAct(anT(ids.length + " anomalies batch-assigned to owners (Orchestrator)", "", "已批量分配 " + ids.length + " 项异常至责任人(编排器)")); setPicked({}); };
+  const clusters = rows0.filter(it => it.type === "dup" && it.st < 5).length;
+  const overdue = rows0.filter(it => it.type === "claim" && it.st < 5).length;
+  const highOpen = rows0.filter(it => it.sev === "high" && it.st < 5);
+  const APOS = { up: { en: "UPSTREAM", ar: "منبع", zh: "上游" }, para: { en: "PARALLEL", ar: "متوازٍ", zh: "并行" }, down: { en: "DOWNSTREAM", ar: "المصب", zh: "下游" }, here: { en: "THIS", ar: "هذه", zh: "本环节" } };
+  return (<div className="fade wb"><div className="card pad wb-frame">
+    <div className="card pad wb-head">
+      <div><div className="wb-title"><button className="pg-back" onClick={back}>‹</button><span className={"wb-dot " + (cfg.tone || "violet")} /> {tr(cfg.deptName)}{cfg.benchLabel ? " · " + tr(cfg.benchLabel) : ""}</div>
+        <div className="wb-subt">{ucl(cfg.uc, tr(cfg.subt))}</div></div>
+      <div className="bp-wrap-story"><div className="wb-chain g2-wb-chain">
+        <span className="wb-clab">{tr(cfg.chainLab)}</span>
+        {cfg.chain.flatMap((c, i) => { const pill = <span key={"p" + i} className={"wb-cpill g2-cpill" + (c.here ? " here" : "") + (c.route && !c.here ? " link" : "")} onClick={() => { if (c.route && !c.here) { setBackRoute(cfg.route); setRoute(c.route); } }} title={tr(c.name)}><span className="wb-cpos">{tr(APOS[c.pos] || { en: "", ar: "", zh: "" })}</span>{tr(c.name)}</span>; return i > 0 ? [<span key={"a" + i} className="wb-carr">→</span>, pill] : [pill]; })}
+      </div></div>
+    </div>
+
+    <div className="wb-actbar"><span className="bp-agent wb-ab-agent">{tr({ en: "Anomaly Detection Agent", ar: "وكيل كشف الشذوذ", zh: "异常检测智能体" })}</span>
+      <div className="wb-ab-top"><div className="wb-ab-spark">✦</div><div className="wb-ab-tt">
+        <div><span className="wb-ab-lab">{tr({ en: "AI INSIGHT & NEXT ACTIONS", ar: "رؤى وإجراءات", zh: "AI 洞察与后续行动" })}</span><span className="wb-ab-meta">run #0202 · {tr({ en: "Detection + Proactive Insights + Orchestrator", ar: "كشف + رؤى + منسّق", zh: "检测 + 主动洞察 + 编排" })} · {total} {tr({ en: "anomalies", ar: "شذوذ", zh: "异常" })}</span></div>
+        <div className="wb-ab-insight"><Hi t={tr({ en: "**" + total + "** anomalies detected across 13 systems · **" + pending + " open** (" + highOpen.length + " high). Recurring **duplicate-invoice** cluster (" + clusters + ") and **" + overdue + " overdue claims** carry the most risk. Resolution rate **" + rate + "%**, avg handling **" + avgDays + "d**. Assign & close the high-severity open items.", ar: "**" + total + "** شذوذ · **" + pending + "** مفتوح.", zh: "在 13 个系统中检测到 **" + total + "** 项异常 · **" + pending + " 项未决**(" + highOpen.length + " 高)。反复出现的**重复发票**簇(" + clusters + ")与 **" + overdue + " 项逾期索赔**风险最高。处理率 **" + rate + "%**、平均处理 **" + avgDays + " 天**。请分配并关闭高严重度未决项。" })} /></div>
+      </div></div>
+      <div className="wb-ab-rows">
+        <div className="wb-ab-col"><div className="wb-ab-h">◈ {tr({ en: "ROOT-CAUSE CLUSTERS · click to filter", ar: "عناقيد السبب الجذري", zh: "根因聚类(主动洞察)· 点击筛选" })}</div>
+          <div className="hs-finds an-finds3">
+            <div className="hs-find-wrap"><button className="hs-find anom" onClick={() => { setFSev("high"); setFStat("open"); }}><span className="hs-find-ic">⚠</span><div className="hs-find-tx"><b>{tr({ en: "High-severity open", ar: "مفتوح مرتفع", zh: "高严重度未决" })} <span className="hs-find-cta anom">{tr({ en: "＋ filter", ar: "تصفية", zh: "＋ 筛选" })}</span></b><span>{highOpen.length} {tr({ en: "items need escalation review", ar: "بنود للتصعيد", zh: "项需升级复核" })}</span></div></button></div>
+            <div className="hs-find-wrap"><button className="hs-find anom" onClick={() => { setFBiz("ent"); setFStat("open"); }}><span className="hs-find-ic">⏱</span><div className="hs-find-tx"><b>{tr({ en: "Overdue-claim pattern", ar: "نمط المطالبات المتأخرة", zh: "逾期索赔模式" })} <span className="hs-find-cta anom">{tr({ en: "＋ filter", ar: "تصفية", zh: "＋ 筛选" })}</span></b><span>{overdue} {tr({ en: "claims beyond SLA (liquidity risk)", ar: "مطالبات تجاوزت SLA", zh: "项索赔超 SLA(流动性风险)" })}</span></div></button></div>
+            <div className="hs-find-wrap"><button className="hs-find opt" onClick={() => { setFSev("all"); setFBiz("all"); setFStat("all"); }}><span className="hs-find-ic">↺</span><div className="hs-find-tx"><b>{tr({ en: "Clear filters", ar: "مسح", zh: "清除筛选" })} <span className="hs-find-cta opt">{tr({ en: "reset", ar: "إعادة", zh: "重置" })}</span></b><span>{tr({ en: "show all anomalies", ar: "عرض الكل", zh: "显示全部异常" })}</span></div></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="bp-kpis an-kpis">
+      <div className={"bp-kpi an-kpi-click" + (fStat === "all" ? " on" : "")} onClick={() => kpiFilter("all")}><div className="l">{tr({ en: "Total anomalies", ar: "إجمالي الشذوذ", zh: "异常总数" })} ▾</div><div className="v">{total}</div><div className="s">{tr({ en: "click to show all", ar: "انقر لعرض الكل", zh: "点击显示全部" })}</div></div>
+      <div className={"bp-kpi danger an-kpi-click" + (fStat === "open" ? " on" : "")} onClick={() => kpiFilter("open")}><div className="l">{tr({ en: "Pending", ar: "قيد المعالجة", zh: "待处理" })} ▾</div><div className="v">{pending}</div><div className="s">{highOpen.length} {tr({ en: "high · click to filter", ar: "مرتفع · انقر", zh: "高 · 点击筛选" })}</div></div>
+      <div className={"bp-kpi ok an-kpi-click" + (fStat === "closed" ? " on" : "")} onClick={() => kpiFilter("closed")}><div className="l">{tr({ en: "Resolved", ar: "محلول", zh: "已解决" })} ▾</div><div className="v">{resolved}</div><div className="s">{tr({ en: "closed · click to filter", ar: "مغلق · انقر", zh: "闭环 · 点击筛选" })}</div></div>
+      <div className="bp-kpi"><div className="l">{tr({ en: "Avg handling", ar: "متوسط المعالجة", zh: "平均处理时长" })}</div><div className="v">{avgDays}<i style={{ fontSize: 13 }}> d</i></div><div className="s">{tr({ en: "days to resolve", ar: "أيام", zh: "天/项" })}</div></div>
+      <div className="bp-kpi"><div className="l">{tr({ en: "Resolution rate", ar: "معدل الحل", zh: "处理率" })}</div><div className="v">{rate}%</div><div className="s">{resolved}/{total}</div></div>
+    </div>
+
+    <div className="fc-scope an-filters">
+      <span className="fc-flab">{tr({ en: "FILTERS", ar: "المرشحات", zh: "筛选器" })}</span>
+      <label className="fc-sf" style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>{tr({ en: "Severity", ar: "الخطورة", zh: "异常等级" })}<span className="fc-seg">{[["all", { en: "All", ar: "الكل", zh: "全部" }], ["high", { en: "High", ar: "مرتفع", zh: "高" }], ["med", { en: "Med", ar: "متوسط", zh: "中" }], ["low", { en: "Low", ar: "منخفض", zh: "低" }]].map(([k, l]) => <button key={k} className={fSev === k ? "on" : ""} onClick={() => setFSev(k)}>{tr(l)}</button>)}</span></label>
+      <label className="fc-sf" style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>{tr({ en: "Business line", ar: "خط العمل", zh: "业务线" })}<select className="sc-in sm" value={fBiz} onChange={e => setFBiz(e.target.value)}>{AN_BIZ.map((b, i) => <option key={i} value={AN_BIZK[i]}>{tr(b)}</option>)}</select></label>
+      <label className="fc-sf" style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>{tr({ en: "Status", ar: "الحالة", zh: "处理状态" })}<span className="fc-seg">{[["all", { en: "All", ar: "الكل", zh: "全部" }], ["open", { en: "Open", ar: "مفتوح", zh: "未决" }], ["closed", { en: "Closed", ar: "مغلق", zh: "已关闭" }]].map(([k, l]) => <button key={k} className={fStat === k ? "on" : ""} onClick={() => setFStat(k)}>{tr(l)}</button>)}</span></label>
+      <span className="fc-hint">{rows.length}/{total}</span>
+    </div>
+
+    <div className="an-main">
+      <div className="uf-sec an-listsec"><div className="uf-h">{tr({ en: "Alert list", ar: "قائمة التنبيهات", zh: "告警列表" })} {pickCount > 0 && <button className="sc-mini primary" onClick={batchAssign}>⇉ {tr({ en: "Assign", ar: "إسناد", zh: "分配" })} {pickCount}</button>}</div>
+        <div className="an-tscroll"><table className="wb-table an-table"><thead><tr><th></th><th>{tr({ en: "Type", ar: "النوع", zh: "类型" })}</th><th style={{ textAlign: "end" }}>{tr({ en: "Amount", ar: "المبلغ", zh: "金额" })}</th><th>{tr({ en: "Date", ar: "التاريخ", zh: "日期" })}</th><th>{tr({ en: "Sev", ar: "الخطورة", zh: "等级" })}</th><th>{tr({ en: "Status", ar: "الحالة", zh: "状态" })}</th><th>{tr({ en: "Owner", ar: "المالك", zh: "责任人" })}</th></tr></thead>
+          <tbody>{rows.length ? rows.map(it => (<tr key={it.id} className={(sel === it.id ? "an-sel " : "") + (it.sev === "high" && it.st < 5 ? "an-hot" : "")} onClick={() => setSel(it.id)}>
+            <td onClick={e => { e.stopPropagation(); togglePick(it.id); }}><span className={"an-ck" + (picked[it.id] ? " on" : "")}>{picked[it.id] ? "✓" : ""}</span></td>
+            <td>{tr(AN_TYPES[it.type].n)}<span className="an-id">{it.id}</span></td>
+            <td className="bp-mono" style={{ textAlign: "end" }}>{M(it.amount)}</td><td className="bp-mono">{it.date.slice(5)}</td>
+            <td><span className={"an-sev s-" + it.sev}>{tr(sevTxt[it.sev])}</span></td>
+            <td><span className={"an-stat st" + it.st}>{tr(AN_STAGES[it.st])}</span></td>
+            <td className="an-owner">{tr(it.owner)}</td></tr>)) : <tr><td colSpan={7} className="fc-norow">{tr({ en: "No anomaly matches the filters", ar: "لا نتائج", zh: "无匹配异常" })}</td></tr>}</tbody></table></div>
+      </div>
+
+      <div className="uf-sec an-detail"><div className="uf-h"><span className="bp-agent" style={{ margin: 0 }}>✦ Proactive Insights Agent</span></div>
+        <div className="an-dh"><span className="an-tic big">{AN_TYPES[a.type].ic}</span><div><b>{tr(AN_TYPES[a.type].n)} · {a.id}</b><div className="an-dmeta">{M(a.amount)} · {a.date} · <span className={"an-sev s-" + a.sev}>{tr(sevTxt[a.sev])}</span> · {a.src}</div></div></div>
+        <div className="an-narr">
+          <div className="an-narr-eyebrow">{tr({ en: "AI NARRATIVE", ar: "سرد الذكاء الاصطناعي", zh: "AI 根因叙事" })}</div>
+          <div className="an-narr-card">
+            <div className="an-narr-h">{tr({ en: "Summary", ar: "الملخّص", zh: "摘要" })}</div>
+            <p>{tr(a.why)}</p>
+            <div className="an-narr-h">{tr({ en: "Key findings", ar: "أبرز النتائج", zh: "关键发现" })}</div>
+            <ul className="an-kf">{keyFindings.map((f, i) => <li key={i} className={"an-kf-" + f.c}><span className="an-kf-dot" /><span>{tr(f.t)}</span></li>)}</ul>
+            <div className="an-narr-h">{tr({ en: "Recommended next action", ar: "الإجراء الموصى به", zh: "建议后续行动" })}</div>
+            <p>{tr(a.rec)}</p>
+            <div className="an-narr-foot">{tr({ en: "generated · today · citations attached", ar: "مُولّد · اليوم · مع الاستشهادات", zh: "AI 生成 · 今日 · 已附引用" })} ({a.links.length})</div>
+          </div>
+        </div>
+        <div className="an-block"><span className="an-blab">{tr({ en: "Linked transactions (citations)", ar: "المعاملات المرتبطة (استشهادات)", zh: "关联交易(引用)" })}</span><div className="an-links">{a.links.map((l, i) => <span key={i} className="an-link">{l}</span>)}</div></div>
+        <div className="an-steps">{AN_STEPS.map((s, i) => (<div key={i} className={"an-step" + (aStage > i ? " done" : aStage === i ? " active" : "")}><span className="an-step-n">{aStage > i ? "✓" : i + 1}</span><span>{tr(s)}</span></div>))}</div>
+        <div className="an-wf">
+          {aStage < 5 ? <button className="dw-btn primary" onClick={advance}>{tr({ en: "Advance → ", ar: "تقدّم ← ", zh: "推进 → " })}{tr(AN_STEPS[aStage])}</button> : <span className="an-closed">✓ {tr({ en: "Closed-loop complete", ar: "اكتملت الحلقة", zh: "闭环已完成" })}</span>}
+          <button className="dw-btn" onClick={() => setAttachOpen(true)}>📎 {tr({ en: "Attach", ar: "إرفاق", zh: "附件" })} {(atts[a.id] || []).length ? "(" + atts[a.id].length + ")" : ""}</button>
+        </div>
+        {(atts[a.id] || []).length > 0 && <div className="an-atts">{atts[a.id].map((fn, i) => <span key={i} className="an-att">📄 {fn}</span>)}</div>}
+        <div className="an-cmts">{(cmts[a.id] || []).map((c, i) => <div key={i} className="an-cmt"><b>{c.ts}</b> {c.t}</div>)}</div>
+        <div className="an-cin"><input placeholder={tr({ en: "Add a comment…", ar: "أضف تعليقاً…", zh: "添加评论…" })} value={cin} onChange={e => setCin(e.target.value)} onKeyDown={e => { if (e.key === "Enter") addCmt(); }} /><button onClick={addCmt}>{tr({ en: "Post", ar: "نشر", zh: "发表" })}</button></div>
+      </div>
+    </div>
+
+    <div className="uf-sec"><div className="uf-h">{tr({ en: "Anomaly trend by severity", ar: "اتجاه الشذوذ حسب الخطورة", zh: "异常趋势(按等级)" })} <span className="bp-agent">Anomaly Detection Agent</span></div>
+      <RC.ResponsiveContainer width="100%" height={200}><RC.LineChart data={AN_TREND} margin={{ top: 8, right: 12, bottom: 0, left: -12 }}><RC.CartesianGrid stroke="#eef1f6" vertical={false} /><RC.XAxis dataKey="m" tick={{ fontSize: 10 }} /><RC.YAxis tick={{ fontSize: 10 }} /><RC.Tooltip /><RC.Legend wrapperStyle={{ fontSize: 10 }} />
+        <RC.Line type="monotone" dataKey="high" stroke="#e0524a" strokeWidth={2} name={tr({ en: "High", ar: "مرتفع", zh: "高" })} /><RC.Line type="monotone" dataKey="med" stroke="#f59e0b" strokeWidth={2} name={tr({ en: "Medium", ar: "متوسط", zh: "中" })} /><RC.Line type="monotone" dataKey="low" stroke="#1B8354" strokeWidth={2} name={tr({ en: "Low", ar: "منخفض", zh: "低" })} />
+      </RC.LineChart></RC.ResponsiveContainer>
+      <div className="uf-note">{tr({ en: "From reactive audit discovery (~3-month lag) to proactive real-time detection.", ar: "من الاكتشاف المتأخر إلى الكشف الاستباقي.", zh: "从被动审计发现(约滞后 3 个月)转为主动实时检测。" })}</div>
+    </div>
+
+    <div className="uf-sec sc-actionbar">
+      <button className="dw-btn primary" onClick={batchAssign}>⇉ {tr({ en: "Batch assign", ar: "إسناد جماعي", zh: "批量分配" })} {pickCount ? "(" + pickCount + ")" : ""}</button>
+      <button className="dw-btn" onClick={() => setAct(anT("Anomaly list exported (Excel) · " + rows.length + " rows", "", "异常清单已导出(Excel)· " + rows.length + " 行"))}>⬇ {tr({ en: "Export list", ar: "تصدير", zh: "导出清单" })}</button>
+      <button className="dw-btn" onClick={() => setAct(anT("Ticket created for " + a.id + " and routed to " + tr(a.owner), "", "已为 " + a.id + " 创建工单并转 " + tr(a.owner)))}>🎫 {tr({ en: "Create ticket", ar: "إنشاء تذكرة", zh: "创建工单" })}</button>
+      <button className="dw-btn" onClick={() => setAct(anT("Detection-rule editor opened (thresholds & patterns)", "", "已打开检测规则编辑器(阈值与模式)"))}>⚙ {tr({ en: "Set rules", ar: "ضبط القواعد", zh: "设置规则" })}</button>
+      {act && <div className="sc-actmsg">✓ {tr(act)}</div>}
+    </div>
+    {attachOpen && typeof document !== "undefined" && createPortal(
+      <div className="an-modal-ov" onClick={() => setAttachOpen(false)}>
+        <div className="an-modal" onClick={e => e.stopPropagation()}>
+          <div className="an-modal-h"><b>{tr({ en: "Upload attachments", ar: "رفع مرفقات", zh: "上传附件" })} · {a.id}</b><button className="an-modal-x" onClick={() => setAttachOpen(false)}>✕</button></div>
+          <label className="an-drop"><input type="file" multiple style={{ display: "none" }} onChange={e => onFiles(e.target.files)} /><span className="an-drop-ic">⬆</span><span>{tr({ en: "Click to choose files", ar: "انقر لاختيار الملفات", zh: "点击选择文件" })}</span><em>{tr({ en: "PDF · Excel · images — demo only, not uploaded to a server", ar: "عرض تجريبي فقط", zh: "PDF · Excel · 图片 —— 仅演示,不会真正上传服务器" })}</em></label>
+          <div className="an-modal-list">{(atts[a.id] || []).length ? atts[a.id].map((fn, i) => <div key={i} className="an-att"><span>📄 {fn}</span><button onClick={() => setAtts(x => ({ ...x, [a.id]: x[a.id].filter((_, j) => j !== i) }))}>✕</button></div>) : <div className="fc-norow">{tr({ en: "No files attached yet", ar: "لا مرفقات", zh: "暂无附件" })}</div>}</div>
+          <div className="an-modal-f"><button className="dw-btn primary" onClick={() => setAttachOpen(false)}>{tr({ en: "Done", ar: "تم", zh: "完成" })}</button></div>
+        </div>
+      </div>, document.body)}
+  </div></div>);
+}
 function AlertsCenter({ drawer, onClose }) {
   const { tr, setRoute, backRoute, setBackRoute, pushLog } = useStore();
   const [sel, setSel] = useState("a1");
@@ -8136,281 +8096,9 @@ const WS_CFG_PLANNING = {
 
 /* ---- Financial Entitlements Department (UC-08) ---- */
 
-/* ---- Accounting Department (UC-09 +11) ---- */
-const WS_CFG_ACCT = {
-  uc: "UC-09 (+11)", kpiTone: "violet", flow: FLOW_ACCT, plazaModel: PLAZA_G05, plazaSel: "uc09", flowRoute: "g05acctflow",
-  title: { en: "Accounting Department", ar: "إدارة المحاسبة", zh: "会计部" },
-  mandate: { en: "Mandate: financial closing, reconciliation & settlements (UC-09, +UC-11 memos). KPI metrics + Business Plaza for cross-dept hand-off + floating Smart Query.", ar: "المهمة: الإقفال المالي والتسوية والتسويات (UC-09). مؤشرات + ساحة الأعمال + استعلام ذكي عائم.", zh: "职责:关账、对账与结算(UC-09,+UC-11 备忘)。关键指标 + Business Plaza 跨部门协同 + 浮动智能查询。" },
-  sqScope: { en: "Scope: Accounting · read-only", ar: "النطاق: المحاسبة", zh: "范围:会计 · 只读" },
-  sqPrompts: [{ en: "What blocks the period close?", ar: "ما الذي يعيق الإقفال؟", zh: "什么阻碍期末关账?" }, { en: "Show the SAP↔Etimad differences", ar: "أظهر فروق ساب↔اعتماد", zh: "显示 SAP↔Etimad 差异" }, { en: "Draft the adjusting entries", ar: "صياغة قيود التسوية", zh: "起草调整分录" }],
-  kpiSlides: [
-    [
-      { lab: { en: "Close Progress", ar: "تقدّم الإقفال", zh: "关账进度" }, v: "82%", d: { en: "pre-close checklist (UC-09)", ar: "قائمة ما قبل الإقفال (UC-09)", zh: "关账前清单(UC-09)" }, up: true },
-      { lab: { en: "Reconciliation", ar: "المطابقة", zh: "对账率" }, v: "98%", d: { en: "matched · 2 diffs open", ar: "مطابق · فرقان", zh: "已匹配 · 2 项差异" } },
-      { lab: { en: "Proposed Adjustments", ar: "قيود تسوية مقترحة", zh: "建议调整分录" }, v: "2", d: { en: "entries to post (UC-09)", ar: "قيود للترحيل (UC-09)", zh: "待过账(UC-09)" } },
-      { lab: { en: "Accounting Memos", ar: "مذكرات محاسبية", zh: "会计备忘" }, v: "1", d: { en: "needs review (UC-11)", ar: "للمراجعة (UC-11)", zh: "待复核(UC-11)" } },
-    ],
-    [
-      { lab: { en: "Unmatched Difference", ar: "الفرق غير المطابق", zh: "未匹配差异" }, v: "SAR 25M", d: { en: "Esnad +15M, Tahseel +10M", ar: "إسناد +15، تحصيل +10", zh: "Esnad +15M, Tahseel +10M" } },
-      { lab: { en: "SAP ↔ Etimad Diffs", ar: "فروق ساب↔اعتماد", zh: "SAP↔Etimad 差异" }, v: "2", d: { en: "open items", ar: "بنود مفتوحة", zh: "未结项" } },
-      { lab: { en: "Within Tolerance", ar: "ضمن الحدود", zh: "容差内" }, v: "Yes", d: { en: "bank fees 0.4M auto", ar: "رسوم بنكية 0.4 تلقائي", zh: "银行费 0.4M 自动" }, up: true },
-      { lab: { en: "Days to Close", ar: "أيام للإقفال", zh: "距关账" }, v: "1 d", d: { en: "Q2 FY2026", ar: "الربع 2 2026", zh: "FY2026 Q2" } },
-    ],
-    [
-      { lab: { en: "Diffs by Materiality", ar: "الفروق حسب الأهمية", zh: "按重要性差异" }, aging: [["Esnad", 60, "+15M"], ["Tahseel", 40, "+10M"], ["Bank", 5, "0.4M"]] },
-      { lab: { en: "IPSAS Compliant", ar: "متوافق IPSAS", zh: "符合 IPSAS" }, v: "✓", d: { en: "entries validated (UC-11)", ar: "قيود مُتحقّقة (UC-11)", zh: "分录已校验(UC-11)" }, up: true },
-      { lab: { en: "Observations", ar: "ملاحظات", zh: "观察项" }, v: "1", d: { en: "initial response drafted", ar: "رد أولي مُصاغ", zh: "已起草初步回应" } },
-      { lab: { en: "Memo Pending", ar: "مذكرة معلّقة", zh: "待办备忘" }, v: "1", d: { en: "legal basis attached", ar: "الأساس القانوني مرفق", zh: "附法律依据" } },
-    ],
-  ],
-  orch: {
-    uc: "UC-09", run: "#9027", agent: { en: "Accounting agent", ar: "وكيل المحاسبة", zh: "会计智能体" },
-    chips: ["scope: FY2026 Q2", "dept: close", "policy: IPSAS"],
-    defaultPrompt: { en: "Identify what blocks the period close, reconcile the SAP↔Etimad differences, and draft the adjusting entries to clear the SAR 25M gap for approval.", ar: "حدّد ما يعيق إقفال الفترة، وسوِّ فروق ساب↔اعتماد، وصُغ قيود التسوية لإغلاق فرق 25 مليون للاعتماد.", zh: "识别阻碍期末关账的因素,对平 SAP↔Etimad 差异,并起草调整分录以清除 SAR 25M 差异供审批。" },
-    startLog: { en: "Orchestrator started — reconciling SAP↔Etimad for period close (Q2)", ar: "بدأ المنسّق — مطابقة ساب↔اعتماد للإقفال", zh: "编排器已启动——为期末关账对平 SAP↔Etimad(Q2)" },
-    reviewLog: { en: "Draft ready — 2 adjusting entries await accounting approval", ar: "المسودة جاهزة — قيدا تسوية بانتظار اعتماد المحاسبة", zh: "草稿就绪——2 项调整分录等待会计审批" },
-    approveLog: { en: "Adjusting entries posted; pre-close checklist cleared", ar: "رُحّلت قيود التسوية؛ وأُغلقت قائمة ما قبل الإقفال", zh: "调整分录已过账;关账前清单已清空" },
-    returnLog: { en: "Entries returned to the Accounting agent for rework", ar: "أُعيدت القيود لوكيل المحاسبة", zh: "分录已退回会计智能体重新处理" },
-    prompts: [{ t: { en: "What blocks the close", ar: "ما الذي يعيق الإقفال", zh: "什么阻碍关账" }, s: { en: "open items", ar: "بنود مفتوحة", zh: "未结项" } }, { t: { en: "SAP↔Etimad differences", ar: "فروق ساب↔اعتماد", zh: "SAP↔Etimad 差异" }, s: { en: "net SAR 25M", ar: "صافي 25 مليون", zh: "净 SAR 25M" } }, { t: { en: "Draft adjusting entries", ar: "صياغة قيود التسوية", zh: "起草调整分录" }, s: { en: "clear the gap", ar: "أغلق الفرق", zh: "清除差异" } }],
-    tlMeta: [
-      { code: "UC-01", t: { en: "pull ledgers", ar: "سحب الدفاتر", zh: "拉取总账" }, s: { en: "SAP & Etimad balances loaded · 0.7s", ar: "أرصدة ساب واعتماد · 0.7 ث", zh: "SAP 与 Etimad 余额加载 · 0.7s" } },
-      { code: "UC-09", t: { en: "reconcile SAP ↔ Etimad", ar: "مطابقة ساب ↔ اعتماد", zh: "对平 SAP ↔ Etimad" }, s: { en: "98% matched · SAR 25M net diff", ar: "98% مطابق · فرق 25 مليون", zh: "匹配 98% · 净差 SAR 25M" } },
-      { code: "UC-11", t: { en: "check policy & memo basis", ar: "فحص السياسة وأساس المذكرة", zh: "核查政策与备忘依据" }, s: { en: "IPSAS-compliant · within tolerance", ar: "متوافق IPSAS · ضمن الحدود", zh: "符合 IPSAS · 在容差内" } },
-      { code: "UC-09", t: { en: "draft adjusting entries", ar: "صياغة قيود التسوية", zh: "起草调整分录" }, s: { en: "waits for human approval", ar: "بانتظار الاعتماد البشري", zh: "等待人工审批" } },
-    ],
-    reviewBody: { en: "Posting 2 adjusting entries to clear the SAR 25M reconciliation difference requires accounting approval before the period closes.", ar: "يتطلب ترحيل قيدي تسوية لإغلاق فرق المطابقة 25 مليون اعتماد المحاسبة قبل إقفال الفترة.", zh: "过账 2 项调整分录以清除 SAR 25M 对账差异,需会计审批后方可关账。" },
-    approveLabel: { en: "Post entries", ar: "ترحيل القيود", zh: "过账分录" },
-    approvedChip: { en: "Posted · pre-close checklist cleared", ar: "رُحّلت · أُغلقت قائمة ما قبل الإقفال", zh: "已过账 · 关账前清单已清空" },
-    diff: [
-      { k: "rem", t: { en: "Esnad assignment · SAR +15M unmatched", ar: "إسناد إسناد · +15 مليون غير مطابق", zh: "Esnad 派工 · SAR +15M 未匹配" } },
-      { k: "add", t: { en: "Esnad assignment · adjusted", ar: "إسناد إسناد · مُسوّى", zh: "Esnad 派工 · 已调整" } },
-      { k: "rem", t: { en: "Tahseel revenue · SAR +10M unmatched", ar: "إيراد تحصيل · +10 مليون غير مطابق", zh: "Tahseel 收入 · SAR +10M 未匹配" } },
-      { k: "add", t: { en: "Tahseel revenue · adjusted", ar: "إيراد تحصيل · مُسوّى", zh: "Tahseel 收入 · 已调整" } },
-    ],
-    returnBody: { en: "Entries sent back to the Accounting agent. Edit the prompt and run again.", ar: "أُعيدت القيود لوكيل المحاسبة. عدّل الطلب وأعد التشغيل.", zh: "分录已退回会计智能体。请修改提示后重新运行。" },
-    nextActions: [
-      { act: { en: "Post 2 adjusting entries (clear SAR 25M)", ar: "ترحيل قيدي تسوية (إغلاق 25 مليون)", zh: "过账 2 项调整分录(清除 SAR 25M)" }, owner: "Nada Al-Shamrani", role: { en: "Accounting Lead", ar: "قائدة المحاسبة", zh: "会计负责人" }, phone: "+966 55 118 4420" },
-      { act: { en: "Attach UC-11 memo & legal basis", ar: "إرفاق مذكرة UC-11 والأساس القانوني", zh: "附 UC-11 备忘与法律依据" }, owner: "Ibrahim Al-Faleh", role: { en: "Compliance Officer", ar: "مسؤول الامتثال", zh: "合规专员" }, phone: "+966 50 662 7781" },
-      { act: { en: "Close period & issue statements", ar: "إقفال الفترة وإصدار القوائم", zh: "关闭期间并出具报表" }, owner: "Sami Al-Rashidi", role: { en: "Financial Controller", ar: "المراقب المالي", zh: "财务总监" }, phone: "+966 53 904 2216" },
-    ],
-  },
-};
-
-
-/* ===== G-05 storyline flows (Financial Reports group) ===== */
-const FLOW_COST = [
-  { code: "UC-01", label: { en: "Unified data", ar: "بيانات موحّدة", zh: "统一数据" }, cls: "in" },
-  { code: "UC-09", label: { en: "Closing & reconciliation", ar: "الإقفال والمطابقة", zh: "关账与对账" }, cls: "in" },
-  { code: "UC-11", label: { en: "Compliance & memos", ar: "الامتثال والمذكرات", zh: "合规与备忘" }, cls: "in" },
-  { code: "UC-12 / UC-14", label: { en: "Costs & assets", ar: "التكاليف والأصول", zh: "成本与资产" }, cls: "focus", star: true },
-  { code: "UC-10", label: { en: "Reports & narrative", ar: "التقارير والسرد", zh: "报告与叙述" }, cls: "down" },
-  { code: "UC-02 / UC-03", label: { en: "Alerts & smart query", ar: "التنبيهات والاستعلام", zh: "告警与智能查询" }, cls: "down" },
-];
-const FLOW_COMP = [
-  { code: "UC-01", label: { en: "Unified data", ar: "بيانات موحّدة", zh: "统一数据" }, cls: "in" },
-  { code: "UC-09", label: { en: "Closing & reconciliation", ar: "الإقفال والمطابقة", zh: "关账与对账" }, cls: "in" },
-  { code: "UC-11", label: { en: "Compliance & memos", ar: "الامتثال والمذكرات", zh: "合规与备忘" }, cls: "focus", star: true },
-  { code: "UC-12 / UC-14", label: { en: "Costs & assets", ar: "التكاليف والأصول", zh: "成本与资产" }, cls: "down" },
-  { code: "UC-10", label: { en: "Reports & narrative", ar: "التقارير والسرد", zh: "报告与叙述" }, cls: "down" },
-  { code: "UC-02 / UC-03", label: { en: "Alerts & smart query", ar: "التنبيهات والاستعلام", zh: "告警与智能查询" }, cls: "down" },
-];
-const FLOW_REP = [
-  { code: "UC-01", label: { en: "Unified data", ar: "بيانات موحّدة", zh: "统一数据" }, cls: "in" },
-  { code: "UC-09", label: { en: "Closing & reconciliation", ar: "الإقفال والمطابقة", zh: "关账与对账" }, cls: "in" },
-  { code: "UC-11", label: { en: "Compliance & memos", ar: "الامتثال والمذكرات", zh: "合规与备忘" }, cls: "in" },
-  { code: "UC-12 / UC-14", label: { en: "Costs & assets", ar: "التكاليف والأصول", zh: "成本与资产" }, cls: "in" },
-  { code: "UC-10", label: { en: "Reports & narrative", ar: "التقارير والسرد", zh: "报告与叙述" }, cls: "focus", star: true },
-  { code: "UC-02 / UC-03", label: { en: "Alerts & smart query", ar: "التنبيهات والاستعلام", zh: "告警与智能查询" }, cls: "down" },
-];
-
-/* ---- Cost Management Department (UC-12 · G-05) ---- */
-const WS_CFG_COST = {
-  uc: "UC-12", kpiTone: "violet", flow: FLOW_COST, plazaModel: PLAZA_G05, plazaSel: "uc12", flowRoute: "g05costflow",
-  title: { en: "Cost Management Department", ar: "إدارة التكاليف", zh: "成本管理部" },
-  mandate: { en: "Mandate: costs, assignment orders, unit cost & funds (UC-12). KPI metrics + Business Plaza for cross-dept hand-off + floating Smart Query.", ar: "المهمة: التكاليف وأوامر الإسناد وتكلفة الوحدة والصناديق (UC-12). مؤشرات + ساحة الأعمال + استعلام ذكي عائم.", zh: "职责:成本、派工单、单元成本与资金(UC-12)。关键指标 + Business Plaza 跨部门协同 + 浮动智能查询。" },
-  sqScope: { en: "Scope: Cost & Funds · read-only", ar: "النطاق: التكاليف والصناديق", zh: "范围:成本与资金 · 只读" },
-  sqPrompts: [{ en: "Why is AO-2207 surplus idle?", ar: "لماذا فائض AO-2207 خامل؟", zh: "AO-2207 结余为何闲置?" }, { en: "Which orders lack completion certificates?", ar: "ما الأوامر بلا شهادات إنجاز؟", zh: "哪些派工单缺完工证明?" }, { en: "Resolve the SAP ↔ Etimad difference", ar: "تسوية فرق ساب↔اعتماد", zh: "对平 SAP↔Etimad 差异" }],
-  kpiSlides: [
-    [
-      { lab: { en: "Project Cost Allocated", ar: "تكلفة المشاريع الموزّعة", zh: "已分摊项目成本" }, v: "SAR 2.14B", d: { en: "across 1,780 units", ar: "على 1,780 وحدة", zh: "分摊至 1,780 单元" } },
-      { lab: { en: "Idle Surplus", ar: "فائض خامل", zh: "闲置结余" }, v: "SAR 85M", d: { en: "AO-2207 · 120d no disb.", ar: "AO-2207 · 120 يوماً بلا صرف", zh: "AO-2207 · 120天无支付" } },
-      { lab: { en: "Aged Orders (>90d)", ar: "أوامر متقادمة (>90ي)", zh: "逾期派工单 (>90天)" }, v: "9", d: { en: "missing certificates", ar: "بلا شهادات", zh: "缺完工证明" } },
-      { lab: { en: "Match Rate", ar: "نسبة المطابقة", zh: "匹配率" }, v: "98%", d: { en: "SAP ↔ Etimad · 2% diff", ar: "ساب↔اعتماد · 2% فرق", zh: "SAP↔Etimad · 2% 差异" } },
-    ],
-    [
-      { lab: { en: "Avg Unit Cost", ar: "متوسط تكلفة الوحدة", zh: "平均单元成本" }, v: "SAR 1.20M", d: { en: "land + build (UC-12)", ar: "أرض + إنشاء (UC-12)", zh: "土地+建造(UC-12)" } },
-      { lab: { en: "Assignment Orders", ar: "أوامر الإسناد", zh: "派工单" }, v: "1,840", d: { en: "matched ↔ Etimad", ar: "مطابقة ↔ اعتماد", zh: "已匹配 ↔ Etimad" } },
-      { lab: { en: "Funds Tracked", ar: "صناديق متتبَّعة", zh: "跟踪基金" }, v: "2", d: { en: "Industrial · Real-Estate", ar: "الصناعي · العقاري", zh: "工业 · 房地产" } },
-      { lab: { en: "SAP↔Etimad Gap", ar: "فجوة ساب↔اعتماد", zh: "SAP↔Etimad 差额" }, v: "SAR 25M", d: { en: "2 reconciliation items", ar: "بندا مطابقة", zh: "2 项对账" } },
-    ],
-    [
-      { lab: { en: "Idle Surplus by Fund", ar: "الفائض الخامل حسب الصندوق", zh: "按基金闲置结余" }, aging: [["Real-Estate", 100, "85M"], ["Industrial", 35, "30M"], ["Other", 10, "8M"]] },
-      { lab: { en: "Releasable Now", ar: "قابل للإفراج الآن", zh: "可立即释放" }, v: "SAR 85M", d: { en: "AO-2207 · milestone met", ar: "AO-2207 · المرحلة منجزة", zh: "AO-2207 · 里程碑达成" }, up: true },
-      { lab: { en: "Unblocked by Certs", ar: "يُفك بالشهادات", zh: "凭证释放" }, v: "SAR 60M", d: { en: "9 aged orders", ar: "9 أوامر متقادمة", zh: "9 个逾期派工单" } },
-      { lab: { en: "Cost Alerts", ar: "تنبيهات التكلفة", zh: "成本告警" }, v: "1", d: { en: "dormant order (UC-02)", ar: "أمر خامل (UC-02)", zh: "休眠派工单(UC-02)" } },
-    ],
-  ],
-  orch: {
-    uc: "UC-12", run: "#1242", agent: { en: "Costs & Funds agent", ar: "وكيل التكاليف والصناديق", zh: "成本与资金智能体" },
-    chips: ["scope: FY2026", "dept: Cost", "policy: Esnad/Etimad"],
-    defaultPrompt: { en: "Match assignment orders to payment orders, flag idle surplus and missing completion certificates, and draft a fund-release note for review.", ar: "طابق أوامر الإسناد بأوامر الدفع، وحدّد الفائض الخامل والشهادات المفقودة، وصُغ مذكرة إفراج عن الأموال للمراجعة.", zh: "将派工单与付款单匹配,标记闲置结余与缺失完工证明,并起草供复核的资金释放说明。" },
-    startLog: { en: "Orchestrator started — matching orders & tracing idle surplus (UC-12)", ar: "بدأ المنسّق — مطابقة الأوامر وتتبع الفائض الخامل", zh: "编排器已启动——匹配派工单并追溯闲置结余(UC-12)" },
-    reviewLog: { en: "Draft ready — SAR 85M surplus release awaits fund-owner approval", ar: "المسودة جاهزة — الإفراج عن 85 مليون بانتظار اعتماد مالك الصندوق", zh: "草稿就绪——SAR 85M 结余释放等待基金所有者审批" },
-    approveLog: { en: "Fund owner approved release; transfer routed for sign-off", ar: "اعتمد مالك الصندوق الإفراج؛ وأُرسل التحويل للتوقيع", zh: "基金所有者已批准释放;转账已转交签核" },
-    returnLog: { en: "Release note returned to the Costs & Funds agent for rework", ar: "أُعيدت المذكرة لوكيل التكاليف", zh: "释放说明已退回成本与资金智能体重新处理" },
-    prompts: [{ t: { en: "Match AO ↔ payment orders", ar: "مطابقة الأوامر ↔ الدفع", zh: "匹配派工单 ↔ 付款单" }, s: { en: "Esnad / Etimad / SAP", ar: "إسناد / اعتماد / ساب", zh: "Esnad / Etimad / SAP" } }, { t: { en: "Flag idle surplus & missing certs", ar: "رصد الفائض والشهادات المفقودة", zh: "标记闲置结余与缺证" }, s: { en: ">90 days", ar: "> 90 يوماً", zh: ">90 天" } }, { t: { en: "Draft fund-release note", ar: "صياغة مذكرة إفراج", zh: "起草资金释放说明" }, s: { en: "for review", ar: "للمراجعة", zh: "供复核" } }],
-    tlMeta: [
-      { code: "UC-01", t: { en: "pull cost & order data", ar: "سحب بيانات التكلفة والأوامر", zh: "拉取成本与派工数据" }, s: { en: "1,840 orders ↔ Etimad · 0.9s", ar: "1,840 أمراً ↔ اعتماد · 0.9 ث", zh: "1,840 派工单 ↔ Etimad · 0.9s" } },
-      { code: "UC-12", t: { en: "calculate unit / land cost", ar: "احتساب تكلفة الوحدة / الأرض", zh: "计算单元/地块成本" }, s: { en: "SAR 2.14B across 1,780 units", ar: "2.14 مليار على 1,780 وحدة", zh: "SAR 2.14B 分摊至 1,780 单元" } },
-      { code: "UC-02", t: { en: "flag idle surplus & certs", ar: "رصد الفائض والشهادات", zh: "标记闲置结余与缺证" }, s: { en: "AO-2207 idle SAR 85M · 9 missing", ar: "AO-2207 خامل 85 مليون · 9 ناقصة", zh: "AO-2207 闲置 SAR 85M · 9 缺证" } },
-      { code: "UC-12", t: { en: "draft fund-release note", ar: "صياغة مذكرة الإفراج", zh: "起草资金释放说明" }, s: { en: "waits for human approval", ar: "بانتظار الاعتماد البشري", zh: "等待人工审批" } },
-    ],
-    reviewBody: { en: "Releasing the SAR 85M idle surplus on AO-2207 requires fund-owner approval before the transfer is created.", ar: "يتطلب الإفراج عن فائض 85 مليون الخامل على AO-2207 اعتماد مالك الصندوق قبل إنشاء التحويل.", zh: "释放 AO-2207 上 SAR 85M 闲置结余需基金所有者审批后方可创建转账。" },
-    approveLabel: { en: "Approve release", ar: "اعتماد الإفراج", zh: "批准释放" },
-    approvedChip: { en: "Approved · surplus release routed", ar: "معتمد · أُرسل الإفراج", zh: "已批准 · 结余释放已转交" },
-    diff: [
-      { k: "rem", t: { en: "AO-2207 surplus · idle 120d", ar: "فائض AO-2207 · خامل 120 يوماً", zh: "AO-2207 结余 · 闲置 120 天" } },
-      { k: "add", t: { en: "AO-2207 · SAR 85M released to fund", ar: "AO-2207 · إفراج 85 مليون للصندوق", zh: "AO-2207 · 释放 SAR 85M 至基金" } },
-      { k: "rem", t: { en: "completion certificates · 9 missing", ar: "شهادات الإنجاز · 9 ناقصة", zh: "完工证明 · 9 缺失" } },
-      { k: "add", t: { en: "completion certificates · chased (9 orders)", ar: "شهادات الإنجاز · متابعة (9 أوامر)", zh: "完工证明 · 已催办(9 派工单)" } },
-    ],
-    returnBody: { en: "Release note sent back to the Costs & Funds agent. Edit the prompt and run again.", ar: "أُعيدت المذكرة لوكيل التكاليف. عدّل الطلب وأعد التشغيل.", zh: "释放说明已退回成本与资金智能体。请修改提示后重新运行。" },
-    nextActions: [
-      { act: { en: "Approve SAR 85M idle-surplus release (AO-2207)", ar: "اعتماد الإفراج عن فائض 85 مليون (AO-2207)", zh: "批准 SAR 85M 闲置结余释放(AO-2207)" }, owner: "Khalid Al-Mutlaq", role: { en: "Cost Management Lead", ar: "قائد إدارة التكاليف", zh: "成本管理负责人" }, phone: "+966 55 412 9930" },
-      { act: { en: "Chase 9 completion certificates (> 90d)", ar: "متابعة 9 شهادات إنجاز (> 90 يوماً)", zh: "催办 9 份完工证明(>90天)" }, owner: "Reem Al-Juhani", role: { en: "Funds Officer", ar: "مسؤولة الصناديق", zh: "资金专员" }, phone: "+966 50 771 4408" },
-      { act: { en: "Resolve SAP↔Etimad SAR 25M mismatch", ar: "حل عدم تطابق ساب↔اعتماد 25 مليون", zh: "解决 SAP↔Etimad SAR 25M 差异" }, owner: "Tariq Al-Amri", role: { en: "Reconciliation Analyst", ar: "محلل المطابقة", zh: "对账分析师" }, phone: "+966 53 668 1175" },
-    ],
-  },
-};
-
-/* ---- Compliance Department (UC-11 · G-05) ---- */
-const WS_CFG_COMPLIANCE = {
-  uc: "UC-11", kpiTone: "violet", flow: FLOW_COMP, plazaModel: PLAZA_G05, plazaSel: "uc11", flowRoute: "g05compflow",
-  title: { en: "Compliance Department", ar: "إدارة الامتثال", zh: "合规部" },
-  mandate: { en: "Mandate: IPSAS & public-sector compliance review of Ministry and Amanat statements (UC-11). Standardize inputs (TB, journals, statements, reporting packages), modernize the existing Excel compliance engine — not rewrite its logic — add traceability, and deepen transaction-level anomaly checks.", ar: "المهمة: مراجعة امتثال IPSAS لقوائم الوزارة والأمانات (UC-11): توحيد المدخلات (ميزان المراجعة، القيود، القوائم، حزم التقارير)، وتحديث محرك الامتثال الحالي في إكسل دون إعادة كتابة منطقه، وإضافة التتبع وفحوصات الشذوذ على مستوى المعاملات.", zh: "职责:对部里及各阿玛纳财务报表进行 IPSAS 与公共部门会计合规审查(UC-11)。标准化输入(试算表、分录、报表、报告包),现代化既有 Excel 合规引擎——不重写专业逻辑——增加可追溯性,并深入交易级异常检测。" },
-  sqScope: { en: "Scope: Compliance · read-only", ar: "النطاق: الامتثال", zh: "范围:合规 · 只读" },
-  sqPrompts: [{ en: "Suggest account mappings for this Amanah's TB", ar: "اقترح مطابقات الحسابات لميزان مراجعة هذه الأمانة", zh: "为这套阿玛纳试算表建议科目映射" }, { en: "Which accounts are one-sided or missing depreciation?", ar: "ما الحسابات أحادية الاتجاه أو بلا إهلاك؟", zh: "哪些科目长期单向借/贷或缺折旧分录?" }, { en: "Run the 4 compliance indicators for this period", ar: "شغّل مؤشرات الامتثال الأربعة لهذه الفترة", zh: "运行本期 4 项合规指标" }],
-  kpiSlides: [
-    [
-      { lab: { en: "Open Memos", ar: "مذكرات مفتوحة", zh: "未结备忘" }, v: "3", d: { en: "1 needs sign-off", ar: "1 بانتظار التوقيع", zh: "1 待签核" } },
-      { lab: { en: "IPSAS Findings", ar: "نتائج IPSAS", zh: "IPSAS 发现" }, v: "2", d: { en: "componentization gaps", ar: "فجوات المكوّنات", zh: "组件折旧缺口" } },
-      { lab: { en: "Policy Conflicts", ar: "تعارضات السياسات", zh: "政策冲突" }, v: "1", d: { en: "useful-life · MEMO-1142", ar: "العمر الإنتاجي · MEMO-1142", zh: "使用年限 · MEMO-1142" } },
-      { lab: { en: "Compliance Score", ar: "درجة الامتثال", zh: "合规评分" }, v: "94%", d: { en: "+2pp QoQ", ar: "+2 ربعياً", zh: "环比 +2pp" }, up: true },
-    ],
-    [
-      { lab: { en: "Proposed Entries", ar: "قيود مقترحة", zh: "建议分录" }, v: "4", d: { en: "from UC-09 close", ar: "من إقفال UC-09", zh: "来自 UC-09 关账" } },
-      { lab: { en: "Observations", ar: "ملاحظات", zh: "观察项" }, v: "5", d: { en: "2 responded", ar: "2 مُجاب عنها", zh: "2 已回应" } },
-      { lab: { en: "Legal Docs Logged", ar: "وثائق قانونية", zh: "法律文档" }, v: "12", d: { en: "audit-traceable", ar: "قابلة للتدقيق", zh: "可审计追溯" } },
-      { lab: { en: "Rulings Issued", ar: "قرارات صادرة", zh: "已出裁定" }, v: "2", d: { en: "this period", ar: "هذه الفترة", zh: "本期" } },
-    ],
-    [
-      { lab: { en: "Mapping Coverage", ar: "تغطية المطابقة", zh: "科目映射覆盖率" }, v: "91%", d: { en: "TB accounts auto-mapped to unified CoA", ar: "مطابقة آلية لدليل الحسابات الموحّد", zh: "试算表科目自动映射至统一科目表" }, up: true },
-      { lab: { en: "Dormant Accounts", ar: "حسابات ساكنة", zh: "静止科目" }, v: "14", d: { en: "should move monthly · static > 90d", ar: "يفترض تحركها شهرياً · ساكنة > 90 يوماً", zh: "应每月有动 · 静止>90天" } },
-      { lab: { en: "Missing Depreciation", ar: "إهلاك مفقود", zh: "缺折旧分录" }, v: "6", d: { en: "asset classes with no entries", ar: "فئات أصول بلا قيود", zh: "资产类别无折旧分录" } },
-      { lab: { en: "Engine Indicators", ar: "مؤشرات المحرك", zh: "引擎合规指标" }, v: "4/4", d: { en: "computed with lineage & docs", ar: "محسوبة مع التتبع والتوثيق", zh: "带追溯与文档计算完成" }, up: true },
-    ],
-  ],
-  orch: {
-    uc: "UC-11", run: "#1142", agent: { en: "Compliance Engine agent", ar: "وكيل محرك الامتثال", zh: "合规引擎智能体" },
-    chips: ["scope: Amanah pkg", "engine: modernized", "policy: IPSAS + local"],
-    defaultPrompt: { en: "Standardize the uploaded Amanah package (TB + journals + statements + reporting package), map accounts to the unified chart of accounts, run the modernized compliance engine (4 indicators), list transaction-level anomalies — one-sided accounts, missing depreciation, dormant accounts — and draft the working-paper memo for review.", ar: "وحّد حزمة الأمانة المرفوعة (ميزان المراجعة + القيود + القوائم + حزمة التقارير)، وطابق الحسابات مع الدليل الموحّد، وشغّل محرك الامتثال المحدّث (4 مؤشرات)، واسرد شذوذ مستوى المعاملات — حسابات أحادية الاتجاه، إهلاك مفقود، حسابات ساكنة — وصُغ مذكرة ورقة العمل للمراجعة.", zh: "标准化上传的阿玛纳文件包(试算表+分录+报表+报告包),映射至统一会计科目表,运行现代化合规引擎(4 项指标),列出交易级异常——单向借贷、缺折旧、静止科目——并起草工作底稿备忘供审阅。" },
-    startLog: { en: "Orchestrator started — standardizing Amanah package & mapping accounts", ar: "بدأ المنسّق — توحيد حزمة الأمانة ومطابقة الحسابات", zh: "编排器已启动——标准化阿玛纳文件包并映射科目" },
-    reviewLog: { en: "Draft ready — working paper (4 indicators · 28 anomalies) awaits sign-off", ar: "المسودة جاهزة — ورقة العمل (4 مؤشرات · 28 شذوذاً) بانتظار التوقيع", zh: "草稿就绪——工作底稿(4 指标 · 28 项异常)等待签核" },
-    approveLog: { en: "Compliance approved the working paper; memo logged with lineage", ar: "اعتمد الامتثال ورقة العمل؛ سُجّلت المذكرة مع التتبع", zh: "合规已批准工作底稿;备忘已连同追溯记录归档" },
-    returnLog: { en: "Working paper returned to the Compliance agent for rework", ar: "أُعيدت ورقة العمل لوكيل الامتثال", zh: "底稿已退回合规智能体重新处理" },
-    prompts: [{ t: { en: "Standardize & map package", ar: "توحيد الحزمة ومطابقتها", zh: "标准化并映射文件包" }, s: { en: "TB → unified CoA", ar: "الميزان ← الدليل الموحّد", zh: "试算表 → 统一科目表" } }, { t: { en: "Run compliance engine", ar: "تشغيل محرك الامتثال", zh: "运行合规引擎" }, s: { en: "4 indicators · with lineage", ar: "4 مؤشرات · مع التتبع", zh: "4 项指标 · 带追溯" } }, { t: { en: "Find transaction anomalies", ar: "إيجاد شذوذ المعاملات", zh: "查找交易级异常" }, s: { en: "one-sided · no depreciation · dormant", ar: "أحادية · بلا إهلاك · ساكنة", zh: "单向 · 缺折旧 · 静止" } }],
-    tlMeta: [
-      { code: "UC-01", t: { en: "standardize TB / journals / statements", ar: "توحيد الميزان والقيود والقوائم", zh: "标准化试算表/分录/报表" }, s: { en: "3 formats unified · 2,180 accounts · 0.8s", ar: "توحيد 3 صيغ · 2,180 حساباً · 0.8 ث", zh: "统一 3 种格式 · 2,180 科目 · 0.8s" } },
-      { code: "UC-11", t: { en: "map accounts & run engine", ar: "مطابقة الحسابات وتشغيل المحرك", zh: "映射科目并运行引擎" }, s: { en: "91% auto-mapped · 4 indicators computed", ar: "مطابقة آلية 91% · حساب 4 مؤشرات", zh: "自动映射 91% · 计算 4 项指标" } },
-      { code: "UC-02", t: { en: "scan transaction-level anomalies", ar: "فحص شذوذ مستوى المعاملات", zh: "扫描交易级异常" }, s: { en: "8 one-sided · 6 no-depreciation · 14 dormant", ar: "8 أحادية · 6 بلا إهلاك · 14 ساكنة", zh: "8 单向 · 6 缺折旧 · 14 静止" } },
-      { code: "UC-11", t: { en: "draft working-paper memo", ar: "صياغة مذكرة ورقة العمل", zh: "起草工作底稿备忘" }, s: { en: "waits for human approval", ar: "بانتظار الاعتماد البشري", zh: "等待人工审批" } },
-    ],
-    reviewBody: { en: "The working-paper memo consolidates 4 compliance indicators and 28 transaction-level findings for this Amanah — compliance sign-off required before release to leadership / external audit.", ar: "تجمع مذكرة ورقة العمل 4 مؤشرات امتثال و28 نتيجة على مستوى المعاملات لهذه الأمانة — يلزم توقيع الامتثال قبل الإصدار للقيادة / التدقيق الخارجي.", zh: "工作底稿备忘汇总该阿玛纳 4 项合规指标与 28 项交易级发现——需合规签核后方可提交领导/外部审计。" },
-    approveLabel: { en: "Approve working paper", ar: "اعتماد ورقة العمل", zh: "批准工作底稿" },
-    approvedChip: { en: "Approved · memo logged with lineage", ar: "معتمد · سُجّلت مع التتبع", zh: "已批准 · 备忘带追溯归档" },
-    diff: [
-      { k: "rem", t: { en: "account mapping · manual Excel upkeep", ar: "مطابقة الحسابات · صيانة يدوية في إكسل", zh: "科目映射 · 人工维护 Excel" } },
-      { k: "add", t: { en: "account mapping · versioned & documented (91% auto)", ar: "مطابقة الحسابات · مُوثّقة وذات إصدارات (91% آلياً)", zh: "科目映射 · 版本化+文档化(自动 91%)" } },
-      { k: "rem", t: { en: "transaction review · not performed (no capacity)", ar: "مراجعة المعاملات · غير منفذة (نقص موارد)", zh: "交易级复核 · 无人力执行" } },
-      { k: "add", t: { en: "transaction review · 28 findings, engine logic preserved", ar: "مراجعة المعاملات · 28 نتيجة مع الحفاظ على منطق المحرك", zh: "交易级复核 · 28 项发现,引擎逻辑保留" } },
-    ],
-    returnBody: { en: "Working paper sent back to the Compliance agent. Edit the prompt and run again.", ar: "أُعيدت ورقة العمل لوكيل الامتثال. عدّل الطلب وأعد التشغيل.", zh: "底稿已退回合规智能体。请修改提示后重新运行。" },
-    nextActions: [
-      { act: { en: "Sign off working paper & 4 indicators", ar: "توقيع ورقة العمل والمؤشرات الأربعة", zh: "签核工作底稿与 4 项指标" }, owner: "Huda Al-Faraj", role: { en: "Compliance Lead", ar: "قائدة الامتثال", zh: "合规负责人" }, phone: "+966 55 226 7781" },
-      { act: { en: "Confirm mapping suggestions with the Amanah", ar: "تأكيد مقترحات المطابقة مع الأمانة", zh: "与该阿玛纳确认映射建议" }, owner: "Yousef Al-Harbi", role: { en: "Senior Accountant", ar: "محاسب أول", zh: "高级会计" }, phone: "+966 50 339 1264" },
-      { act: { en: "Log rule changes into the governed rule set", ar: "تسجيل تغييرات القواعد في المجموعة المحوكمة", zh: "将规则变更纳入受治理规则集" }, owner: "Sara Al-Qahtani", role: { en: "Policy Officer", ar: "مسؤولة السياسات", zh: "政策专员" }, phone: "+966 53 884 2019" },
-    ],
-  },
-};
-
-/* ---- Financial Reporting Department (UC-10 · G-05) ---- */
-const WS_CFG_REPORTING = {
-  uc: "UC-10", kpiTone: "green", flow: FLOW_REP, plazaModel: PLAZA_G05, plazaSel: "uc10", flowRoute: "g05repflow",
-  title: { en: "Financial Reporting Department", ar: "إدارة التقارير المالية", zh: "财务报告部" },
-  mandate: { en: "Mandate: financial & administrative reports, narrative commentary & executive dashboards (UC-10). KPI metrics + Business Plaza for cross-dept hand-off + floating Smart Query.", ar: "المهمة: التقارير المالية والإدارية والتعليق السردي ولوحات المعلومات التنفيذية (UC-10). مؤشرات + ساحة الأعمال + استعلام ذكي عائم.", zh: "职责:财务与行政报告、叙述性评述与执行仪表盘(UC-10)。关键指标 + Business Plaza 跨部门协同 + 浮动智能查询。" },
-  sqScope: { en: "Scope: Reporting · read-only", ar: "النطاق: التقارير", zh: "范围:财务报告 · 只读" },
-  sqPrompts: [{ en: "What reports are in review?", ar: "ما التقارير قيد المراجعة؟", zh: "哪些报告在复核中?" }, { en: "Generate the quarterly narrative", ar: "إنشاء السرد الربعي", zh: "生成季度叙述" }, { en: "Prepare the executive summary", ar: "تجهيز الملخص التنفيذي", zh: "准备执行摘要" }],
-  kpiSlides: [
-    [
-      { lab: { en: "Reports (period)", ar: "التقارير (الفترة)", zh: "本期报告" }, v: "7", d: { en: "Q2 FY2026", ar: "الربع 2 2026", zh: "FY2026 Q2" } },
-      { lab: { en: "In Review", ar: "قيد المراجعة", zh: "复核中" }, v: "2", d: { en: "awaiting sign-off", ar: "بانتظار التوقيع", zh: "待签核" } },
-      { lab: { en: "Approved / Issued", ar: "معتمد / صادر", zh: "已批准 / 已发布" }, v: "2", d: { en: "this period", ar: "هذه الفترة", zh: "本期" }, up: true },
-      { lab: { en: "Drafts", ar: "مسودات", zh: "草稿" }, v: "3", d: { en: "auto-compiled", ar: "مجمّعة تلقائياً", zh: "自动汇编" } },
-    ],
-    [
-      { lab: { en: "Executive Dashboards", ar: "لوحات تنفيذية", zh: "执行仪表盘" }, v: "1", d: { en: "leadership view", ar: "عرض القيادة", zh: "领导视图" } },
-      { lab: { en: "Narrative Coverage", ar: "تغطية السرد", zh: "叙述覆盖" }, v: "100%", d: { en: "commentary on all KPIs", ar: "تعليق على كل المؤشرات", zh: "全部 KPI 有评述" }, up: true },
-      { lab: { en: "Ad-hoc (NL)", ar: "حسب الطلب (لغة)", zh: "即席(自然语言)" }, v: "1", d: { en: "natural-language query", ar: "استعلام بلغة طبيعية", zh: "自然语言查询" } },
-      { lab: { en: "Avg Turnaround", ar: "متوسط الإنجاز", zh: "平均周转" }, v: "2 d", d: { en: "request → draft", ar: "طلب ← مسودة", zh: "请求 → 草稿" } },
-    ],
-    [
-      { lab: { en: "Reports by Status", ar: "التقارير حسب الحالة", zh: "按状态报告" }, aging: [["Issued", 100, "2"], ["Review", 50, "2"], ["Draft", 75, "3"]] },
-      { lab: { en: "Sources Linked", ar: "مصادر مرتبطة", zh: "已链接来源" }, v: "6", d: { en: "traceable to UC-13/14/12/11/09/06", ar: "قابلة للتتبع", zh: "可追溯至各 UC" } },
-      { lab: { en: "Auto-filled", ar: "تعبئة تلقائية", zh: "自动填充" }, v: "Yes", d: { en: "from approved data", ar: "من بيانات معتمدة", zh: "源自批准数据" }, up: true },
-      { lab: { en: "On-time Issuance", ar: "الإصدار في الوقت", zh: "按时发布率" }, v: "96%", d: { en: "vs schedule", ar: "مقابل الجدول", zh: "对计划" }, up: true },
-    ],
-  ],
-  orch: {
-    uc: "UC-10", run: "#1100", agent: { en: "Reporting agent", ar: "وكيل التقارير", zh: "报告智能体" },
-    chips: ["scope: Q2 2026", "dept: Reporting", "policy: templates"],
-    defaultPrompt: { en: "Compile the G-06 quarterly report from approved sources, generate narrative commentary, and prepare the executive summary for review.", ar: "جمّع التقرير الربعي ج-06 من المصادر المعتمدة، وأنشئ التعليق السردي، وجهّز الملخص التنفيذي للمراجعة.", zh: "从批准来源汇编 G-06 季度报告,生成叙述性评述,并准备供复核的执行摘要。" },
-    startLog: { en: "Orchestrator started — compiling quarterly report & commentary (UC-10)", ar: "بدأ المنسّق — تجميع التقرير الربعي والتعليق", zh: "编排器已启动——汇编季度报告与评述(UC-10)" },
-    reviewLog: { en: "Draft ready — quarterly report & executive summary await sign-off", ar: "المسودة جاهزة — التقرير الربعي والملخص بانتظار التوقيع", zh: "草稿就绪——季度报告与执行摘要等待签核" },
-    approveLog: { en: "Report approved and issued; executive summary published", ar: "اعتُمد التقرير وصدر؛ ونُشر الملخص التنفيذي", zh: "报告已批准并发布;执行摘要已发布" },
-    returnLog: { en: "Report returned to the Reporting agent for rework", ar: "أُعيد التقرير لوكيل التقارير", zh: "报告已退回报告智能体重新处理" },
-    prompts: [{ t: { en: "Compile quarterly report", ar: "تجميع التقرير الربعي", zh: "汇编季度报告" }, s: { en: "G-06 · Q2", ar: "ج-06 · ر2", zh: "G-06 · Q2" } }, { t: { en: "Generate narrative commentary", ar: "إنشاء التعليق السردي", zh: "生成叙述性评述" }, s: { en: "all KPIs", ar: "كل المؤشرات", zh: "全部 KPI" } }, { t: { en: "Prepare executive summary", ar: "تجهيز الملخص التنفيذي", zh: "准备执行摘要" }, s: { en: "leadership", ar: "للقيادة", zh: "面向领导" } }],
-    tlMeta: [
-      { code: "UC-01", t: { en: "pull approved data", ar: "سحب البيانات المعتمدة", zh: "拉取批准数据" }, s: { en: "6 sources validated · 0.6s", ar: "6 مصادر مُتحقّقة · 0.6 ث", zh: "6 来源已校验 · 0.6s" } },
-      { code: "UC-10", t: { en: "build report & dashboard", ar: "بناء التقرير ولوحة المعلومات", zh: "构建报告与仪表盘" }, s: { en: "tables & indicators auto-filled", ar: "جداول ومؤشرات تلقائية", zh: "表格与指标自动填充" } },
-      { code: "UC-06", t: { en: "add narrative & alerts", ar: "إضافة السرد والتنبيهات", zh: "添加评述与告警" }, s: { en: "commentary + variances", ar: "تعليق + انحرافات", zh: "评述 + 偏差" } },
-      { code: "UC-10", t: { en: "prepare executive summary", ar: "تجهيز الملخص التنفيذي", zh: "准备执行摘要" }, s: { en: "waits for human approval", ar: "بانتظار الاعتماد البشري", zh: "等待人工审批" } },
-    ],
-    reviewBody: { en: "The G-06 quarterly report and executive summary require sign-off before issuance (2 reports in review).", ar: "يتطلب التقرير الربعي ج-06 والملخص التنفيذي التوقيع قبل الإصدار (تقريران قيد المراجعة).", zh: "G-06 季度报告与执行摘要需签核后方可发布(2 份报告在复核中)。" },
-    approveLabel: { en: "Approve & issue", ar: "اعتماد وإصدار", zh: "批准并发布" },
-    approvedChip: { en: "Approved · report issued", ar: "معتمد · صدر التقرير", zh: "已批准 · 报告已发布" },
-    diff: [
-      { k: "rem", t: { en: "quarterly report · draft", ar: "التقرير الربعي · مسودة", zh: "季度报告 · 草稿" } },
-      { k: "add", t: { en: "quarterly report · issued (PDF/Word)", ar: "التقرير الربعي · صادر", zh: "季度报告 · 已发布(PDF/Word)" } },
-      { k: "rem", t: { en: "narrative commentary · missing", ar: "التعليق السردي · مفقود", zh: "叙述性评述 · 缺失" } },
-      { k: "add", t: { en: "narrative commentary · generated", ar: "التعليق السردي · مُنشأ", zh: "叙述性评述 · 已生成" } },
-    ],
-    returnBody: { en: "Report sent back to the Reporting agent. Edit the prompt and run again.", ar: "أُعيد التقرير لوكيل التقارير. عدّل الطلب وأعد التشغيل.", zh: "报告已退回报告智能体。请修改提示后重新运行。" },
-    nextActions: [
-      { act: { en: "Approve & issue G-06 quarterly report", ar: "اعتماد وإصدار التقرير الربعي ج-06", zh: "批准并发布 G-06 季度报告" }, owner: "Maha Al-Subaie", role: { en: "Reporting Lead", ar: "قائدة التقارير", zh: "报告负责人" }, phone: "+966 55 901 3326" },
-      { act: { en: "Publish executive summary to leadership", ar: "نشر الملخص التنفيذي للقيادة", zh: "向领导层发布执行摘要" }, owner: "Omar Al-Bishi", role: { en: "Narrative Officer", ar: "مسؤول السرد", zh: "叙述专员" }, phone: "+966 50 447 8852" },
-      { act: { en: "Link sources & record issue log", ar: "ربط المصادر وتسجيل الإصدار", zh: "链接来源并记录发布日志" }, owner: "Nada Al-Otaibi", role: { en: "Reports Analyst", ar: "محللة التقارير", zh: "报告分析师" }, phone: "+966 53 220 6691" },
-    ],
-  },
-};
-
-
 function FpaWorkspace() { return <DeptWorkspace cfg={WS_CFG_FPA} />; }
 function BudgetExecWorkspace() { return <DeptWorkspace cfg={WS_CFG_BUDEXEC} />; }
 function PlanningWorkspace() { return <DeptWorkspace cfg={WS_CFG_PLANNING} />; }
-function AccountingWorkspace() { return <DeptWorkspace cfg={WS_CFG_ACCT} />; }
-function CostWorkspace() { return <DeptWorkspace cfg={WS_CFG_COST} />; }
-function ComplianceWorkspace() { return <DeptWorkspace cfg={WS_CFG_COMPLIANCE} />; }
-function ReportingWorkspace() { return <DeptWorkspace cfg={WS_CFG_REPORTING} />; }
 
 /* =========================================================================
    Reports
@@ -8567,7 +8255,8 @@ function Shell() {
   else if (route === "entwork") page = <EntitlementsWorkspace />;
   else if (route === "g04bench01") page = <UcBenchG04 key="g04bench01" cfg={G04_BENCH_UC01} />;
   else if (route === "g04bench09") page = <UcBenchG04 key="g04bench09" cfg={G04_BENCH_UC09} />;
-  else if (route === "g04bench02") page = <UcBench key="g04bench02" cfg={BENCH_UC02_AUD} />;
+  else if (route === "g05bench09") page = <UcBenchG04 key="g05bench09" cfg={BENCH_UC09_G05} />;
+  else if (route === "g04bench02") page = <G04Uc02Anomaly />;
   else if (route === "g04bench10") page = <UcBench key="g04bench10" cfg={BENCH_UC10_AUD} />;
   else if (route === "g04reports") page = <ReportsEnt />;
   else if (route === "acctwork") page = <AccountingWorkspace />;
